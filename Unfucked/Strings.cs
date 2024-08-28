@@ -1,8 +1,5 @@
 ﻿using System.Globalization;
 using System.Text;
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-using System.Diagnostics.CodeAnalysis;
-#endif
 
 namespace Unfucked;
 
@@ -27,42 +24,37 @@ public static class Strings {
         this string? source) => !string.IsNullOrWhiteSpace(source);
 
     [Pure]
+    public static bool HasLength(
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-    [return: NotNullIfNotNull(nameof(source))]
+        [NotNullWhen(true)]
 #endif
-    public static string? ToLowerFirstLetter(this string? source, CultureInfo? culture = null) {
-        if (string.IsNullOrEmpty(source)) {
-            return source;
-        }
+        this string? source) => !string.IsNullOrEmpty(source);
 
-        char   head = culture is null ? char.ToLowerInvariant(source[0]) : char.ToLower(source[0], culture);
-        string tail;
+    [Pure]
+    public static string Join(this IEnumerable<string?> source, string? separator) => string.Join(separator, source);
+
+    [Pure]
+    public static string Join(this IEnumerable<string?> source, char separator) {
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-        tail = source[1..];
+        return string.Join(separator, source);
 #else
-        tail = source!.Substring(1);
+        return string.Join(Convert.ToString(separator), source);
 #endif
-        return head + tail;
     }
 
     [Pure]
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
     [return: NotNullIfNotNull(nameof(source))]
 #endif
-    public static string? ToUpperFirstLetter(this string? source, CultureInfo? culture = null) {
-        if (string.IsNullOrEmpty(source)) {
-            return source;
-        }
+    public static string? ToLowerFirstLetter(this string? source, CultureInfo? culture = null) =>
+        string.IsNullOrEmpty(source) ? source : char.ToLower(source[0], culture ?? CultureInfo.InvariantCulture) + source.Substring(1);
 
-        char   head = culture is null ? char.ToUpperInvariant(source[0]) : char.ToUpper(source[0], culture);
-        string tail;
+    [Pure]
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-        tail = source[1..];
-#else
-        tail = source!.Substring(1);
+    [return: NotNullIfNotNull(nameof(source))]
 #endif
-        return head + tail;
-    }
+    public static string? ToUpperFirstLetter(this string? source, CultureInfo? culture = null) =>
+        string.IsNullOrEmpty(source) ? source : char.ToUpper(source[0], culture ?? CultureInfo.InvariantCulture) + source.Substring(1);
 
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
     [Pure]

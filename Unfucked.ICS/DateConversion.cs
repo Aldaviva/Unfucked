@@ -1,7 +1,6 @@
 ﻿using Ical.Net.DataTypes;
 using NodaTime;
 using NodaTime.Extensions;
-using System;
 using System.Diagnostics.Contracts;
 
 namespace Unfucked;

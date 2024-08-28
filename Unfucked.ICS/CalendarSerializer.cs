@@ -28,7 +28,7 @@ public static class CalendarSerializer {
         object encodingStack = serializer.GetService(EncodingStackType);
         EncodingStackPush.Invoke(encodingStack, [streamEncoding]);
 
-        await streamWriter.WriteAsync(serializer.SerializeToString(dataToSerialize));
+        await streamWriter.WriteAsync(serializer.SerializeToString(dataToSerialize)).ConfigureAwait(false);
 
         EncodingStackPop.Invoke(encodingStack, []);
         serializer.SerializationContext.Pop();

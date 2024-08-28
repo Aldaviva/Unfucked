@@ -125,7 +125,7 @@ public static class Collections {
     /// <param name="key">key to look up or insert into the <paramref name="dictionary"/></param>
     /// <param name="newValueFactory">Function that lazily returns the new value to add if <paramref name="key"/> is not already present</param>
     /// <returns>a tuple that contains the existing value with key <paramref name="key"/>, or the new value if it was not already present, as well as a boolean that shows whether the value was added to the dictionary in this method invocation</returns>
-    public static async Task<(TValue value, bool added)> GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<ValueTask<TValue>> newValueFactory) {
+    public static async Task<(TValue value, bool added)> GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<Task<TValue>> newValueFactory) {
         if (!dictionary.TryGetValue(key, out TValue? oldValue)) {
             TValue newValue = await newValueFactory().ConfigureAwait(false);
             dictionary.Add(key, newValue);

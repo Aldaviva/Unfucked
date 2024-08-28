@@ -97,4 +97,18 @@ public static class Tasks {
         return FirstOrDefault(childTasks, predicate, cts);
     }
 
+    public static Task Wait(this CancellationToken token) {
+        if (token.IsCancellationRequested) {
+            return Task.CompletedTask;
+        } else {
+            TaskCompletionSource<bool>    completion   = new();
+            CancellationTokenRegistration registration = default;
+            registration = token.Register(_ => {
+                registration.Dispose();
+                completion.SetResult(true);
+            }, false);
+            return completion.Task;
+        }
+    }
+
 }

@@ -4,10 +4,10 @@ using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Unfucked;
+namespace Unfucked.DependencyInjection;
 
 [ExcludeFromCodeCoverage]
-public class ConsoleFormatter(IOptions<ConsoleFormatter.Options> options): Microsoft.Extensions.Logging.Console.ConsoleFormatter(Id) {
+public class ConsoleFormatter(IOptions<ConsoleFormatter.UnfuckedConsoleFormatterOptions> options): Microsoft.Extensions.Logging.Console.ConsoleFormatter(Id) {
 
     public const  string Id                = "myConsoleFormatter";
     private const string DefaultDateFormat = "yyyy'-'MM'-'dd' 'HH':'mm':'ss.fff";
@@ -16,7 +16,7 @@ public class ConsoleFormatter(IOptions<ConsoleFormatter.Options> options): Micro
 
     private static readonly int MaxPaddedCategoryLength = Padding.Length;
 
-    private readonly Options _options = options.Value;
+    private readonly UnfuckedConsoleFormatterOptions _options = options.Value;
 
     private int _maxCategoryLength;
 
@@ -86,7 +86,7 @@ public class ConsoleFormatter(IOptions<ConsoleFormatter.Options> options): Micro
         _                    => "  "
     };
 
-    public class Options: ConsoleFormatterOptions {
+    public class UnfuckedConsoleFormatterOptions: ConsoleFormatterOptions {
 
         public bool IncludeNamespaces { get; set; }
         public string ColumnSeparator { get; set; } = " | ";

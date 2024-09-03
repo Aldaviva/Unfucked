@@ -1,10 +1,16 @@
-﻿namespace Unfucked;
+#if NETSTANDARD2_0
+using System.Diagnostics.CodeAnalysis;
+#endif
+
+namespace Unfucked;
 
 /// <summary>
 /// <para>Analogy of <see cref="Math"/> class for decimal types </para>
-/// <para>Author: Ramin Rahimzada (raminrahimzada)</para>
-/// <para>Source: <see href="https://github.com/raminrahimzada/CSharp-Helper-Classes/blob/bdc4abec4851c3c515284826cf9afa6aece10185/Math/DecimalMath/DecimalMath.cs"/></para>
 /// </summary>
+/// <remarks>
+/// <para>By Ramin Rahimzada: <see href="https://github.com/raminrahimzada/CSharp-Helper-Classes/blob/bdc4abec4851c3c515284826cf9afa6aece10185/Math/DecimalMath/DecimalMath.cs"/></para>
+/// </remarks>
+[ExcludeFromCodeCoverage]
 public static class DecimalMath {
 
     /// <summary>
@@ -13,7 +19,7 @@ public static class DecimalMath {
     public const decimal Pi = 3.14159265358979323846264338327950288419716939937510M;
 
     /// <summary>
-    /// represents PI
+    /// represents a very small number
     /// </summary>
     public const decimal Epsilon = 0.0000000000000000001M;
 

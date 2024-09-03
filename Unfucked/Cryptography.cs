@@ -1,7 +1,11 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 #if NETSTANDARD2_0
 using System.Text;
+#endif
+
+#if NETSTANDARD
+using System.Diagnostics.CodeAnalysis;
 #endif
 
 namespace Unfucked;
@@ -45,7 +49,7 @@ public static class Cryptography {
 
         return new string(result);
 #else
-        StringBuilder result       = new((int) length);
+        StringBuilder result = new((int) length);
         byte[]        randomBuffer = new byte[length * 4];
         Rng.GetBytes(randomBuffer);
 

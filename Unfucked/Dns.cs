@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Sockets;
 
 namespace Unfucked;
@@ -13,7 +13,7 @@ public static class Dns {
 #else
             responseTask = System.Net.Dns.GetHostAddressesAsync(host.Host);
 #endif
-            return await responseTask.ConfigureAwait(false) is { Length: > 0 } response ? new IPEndPoint(response[0], host.Port) : null;
+            return await responseTask.ConfigureAwait(false) is { LongLength: > 0 } response ? new IPEndPoint(response[0], host.Port) : null;
         } catch (SocketException) {
             return null;
         }

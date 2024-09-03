@@ -7,25 +7,27 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unfucked", "Unfucked\Unfuck
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{2FB799FF-0480-435A-A95A-E053B90FF6D9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unfucked.ICS", "Unfucked.ICS\Unfucked.ICS.csproj", "{C4640BD3-C2FF-4106-93AB-B1F64451257D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ICS", "ICS\ICS.csproj", "{C4640BD3-C2FF-4106-93AB-B1F64451257D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unfucked.DateTime", "Unfucked.DateTime\Unfucked.DateTime.csproj", "{6C731F6E-E127-4ABF-866F-1437837E4F4B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DateTime", "DateTime\DateTime.csproj", "{6C731F6E-E127-4ABF-866F-1437837E4F4B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unfucked.DependencyInjection", "Unfucked.DependencyInjection\Unfucked.DependencyInjection.csproj", "{3FFD46DD-40B3-437B-BDE6-305973FF6140}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DependencyInjection", "DependencyInjection\DependencyInjection.csproj", "{3FFD46DD-40B3-437B-BDE6-305973FF6140}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unfucked.PGP", "Unfucked.PGP\Unfucked.PGP.csproj", "{3F479479-4FD2-4EA4-9CCA-6E53B3EBBF03}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PGP", "PGP\PGP.csproj", "{3F479479-4FD2-4EA4-9CCA-6E53B3EBBF03}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unfucked.Compression", "Unfucked.Compression\Unfucked.Compression.csproj", "{5E2A5B82-7BAF-4BE5-AF7D-21FE602449FF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Compression", "Compression\Compression.csproj", "{5E2A5B82-7BAF-4BE5-AF7D-21FE602449FF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unfucked.DNS", "Unfucked.DNS\Unfucked.DNS.csproj", "{C163AF95-576A-4A1F-A3E1-CE977B82221F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DNS", "DNS\DNS.csproj", "{C163AF95-576A-4A1F-A3E1-CE977B82221F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unfucked.Windows", "Unfucked.Windows\Unfucked.Windows.csproj", "{723752F1-BB13-4520-A01B-B45F2CE1DCF0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Windows", "Windows\Windows.csproj", "{723752F1-BB13-4520-A01B-B45F2CE1DCF0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unfucked.Twitch", "Unfucked.Twitch\Unfucked.Twitch.csproj", "{8BD8E146-E61D-478E-B1DC-CF9E38AA9878}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Twitch", "Twitch\Twitch.csproj", "{8BD8E146-E61D-478E-B1DC-CF9E38AA9878}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unfucked.OBS", "Unfucked.OBS\Unfucked.OBS.csproj", "{D30F4F22-FC40-4BB6-B58B-AA560ABCAF94}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OBS", "OBS\OBS.csproj", "{D30F4F22-FC40-4BB6-B58B-AA560ABCAF94}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unfucked.STUN", "Unfucked.STUN\Unfucked.STUN.csproj", "{3AD941DA-9A67-4748-96F4-7318F18ABC3B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "STUN", "STUN\STUN.csproj", "{3AD941DA-9A67-4748-96F4-7318F18ABC3B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Caching", "Caching\Caching.csproj", "{F71AE41E-120B-43E3-A49D-321878E65071}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -81,6 +83,10 @@ Global
 		{3AD941DA-9A67-4748-96F4-7318F18ABC3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3AD941DA-9A67-4748-96F4-7318F18ABC3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3AD941DA-9A67-4748-96F4-7318F18ABC3B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F71AE41E-120B-43E3-A49D-321878E65071}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F71AE41E-120B-43E3-A49D-321878E65071}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F71AE41E-120B-43E3-A49D-321878E65071}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F71AE41E-120B-43E3-A49D-321878E65071}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

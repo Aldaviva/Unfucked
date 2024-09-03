@@ -1,4 +1,4 @@
-﻿namespace Unfucked;
+namespace Unfucked;
 
 public static class Tasks {
 
@@ -50,51 +50,45 @@ public static class Tasks {
     }
 #endif
 
-    public static async Task<bool> Any(IEnumerable<Task> childTasks, Predicate<Task> predicate, CancellationTokenSource? cts = default) {
+    public static async Task<bool> WhenAny<T>(IEnumerable<Task<T>> childTasks, Predicate<Task<T>> predicate, CancellationToken? ct = default) {
         TaskCompletionSource<bool> predicatePassed = new();
+        CancellationTokenSource    cts             = CancellationTokenSource.CreateLinkedTokenSource(ct ?? default);
 
         Task allChildrenDone = Task.WhenAll(childTasks.Select(childTask => childTask.ContinueWith(c => {
-            if (predicate(c)) {
+            if (!cts.IsCancellationRequested && predicate(c)) {
                 predicatePassed.TrySetResult(true);
-                cts?.Cancel();
+                cts.Cancel();
             }
-        }, TaskContinuationOptions.OnlyOnRanToCompletion)));
+        }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current)));
 
         await Task.WhenAny(predicatePassed.Task, allChildrenDone).ConfigureAwait(false);
         return predicatePassed.Task.Status == TaskStatus.RanToCompletion;
     }
 
-    public static Task<bool> Any(Task childTask1, Task childTask2, Predicate<Task> predicate, CancellationTokenSource? cts = default) {
-        return Any([childTask1, childTask2], predicate, cts);
-    }
+    // public static Task<bool> Any(Task childTask1, Task childTask2, Predicate<Task> predicate, CancellationToken? ct = default) {
+    //     return Any([childTask1, childTask2], predicate, ct);
+    // }
+    //
+    // public static Task<bool> Any(Predicate<Task> predicate, CancellationToken? ct = default, params Task[] childTasks) {
+    //     return Any(childTasks, predicate, ct);
+    // }
 
-    public static Task<bool> Any(Predicate<Task> predicate, CancellationTokenSource? cts = default, params Task[] childTasks) {
-        return Any(childTasks, predicate, cts);
-    }
-
-    public static async Task<T?> FirstOrDefault<T>(IEnumerable<Task<T>> childTasks, Predicate<Task<T>> predicate, CancellationTokenSource? cts = default) {
+    public static async Task<T?> FirstOrDefault<T>(IEnumerable<Task<T>> childTasks, Predicate<Task<T>> predicate, CancellationToken? ct = default) {
         TaskCompletionSource<T> predicatePassed = new();
+        CancellationTokenSource cts             = CancellationTokenSource.CreateLinkedTokenSource(ct ?? default);
 
         Task<T[]> allChildrenDone = Task.WhenAll(childTasks.Select(childTask => childTask.ContinueWith(c => {
-            if (predicate(c)) {
+            if (!cts.IsCancellationRequested && predicate(c)) {
                 predicatePassed.TrySetResult(c.Result);
-                cts?.Cancel();
+                cts.Cancel();
             }
 
             return c.Result;
-        }, TaskContinuationOptions.OnlyOnRanToCompletion)));
+        }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current)));
 
         await Task.WhenAny(predicatePassed.Task, allChildrenDone).ConfigureAwait(false);
 
         return predicatePassed.Task is { Status: TaskStatus.RanToCompletion, Result: { } result } ? result : default;
-    }
-
-    public static Task<T?> FirstOrDefault<T>(Task<T> childTask1, Task<T> childTask2, Predicate<Task<T>> predicate, CancellationTokenSource? cts = default) {
-        return FirstOrDefault([childTask1, childTask2], predicate, cts);
-    }
-
-    public static Task<T?> FirstOrDefault<T>(Predicate<Task<T>> predicate, CancellationTokenSource? cts = default, params Task<T>[] childTasks) {
-        return FirstOrDefault(childTasks, predicate, cts);
     }
 
     public static Task Wait(this CancellationToken token) {

@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 
@@ -56,25 +56,29 @@ public static class Collections {
     public static IDictionary<TKey, TValue> Compact<TKey, TValue>(this IDictionary<TKey, TValue?> source) where TKey: notnull where TValue: struct =>
         source.Where(entry => entry.Value != null).ToDictionary(entry => entry.Key, pair => pair.Value!.Value);
 
+    [Pure]
     public static IEnumerable<KeyValuePair<TKey, TValue>> Compact<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue?>> source) where TKey: notnull where TValue: struct =>
         from pair in source
         where pair.Value.HasValue
         select new KeyValuePair<TKey, TValue>(pair.Key, pair.Value!.Value);
 
+    [Pure]
     public static IEnumerable<KeyValuePair<TKey, TValue>> Compact<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue?>> source) where TKey: notnull where TValue: class =>
         from pair in source
         where pair.Value != null
         select new KeyValuePair<TKey, TValue>(pair.Key, pair.Value);
 
-    public static void AddAll<T>(this ICollection<T> destination, IEnumerable<T> source) {
-        foreach (T item in source) {
-            destination.Add(item);
+    public static void AddAll<T>(this ICollection<T> destination, IEnumerable<T>? source) {
+        if (source is not null) {
+            foreach (T item in source) {
+                destination.Add(item);
+            }
         }
     }
 
     /// <summary>
     /// <para>Returns an existing value from a dictionary, or if it wasn't already present, add it.</para>
-    /// <para>Not atomic.</para>
+    /// <para>Not atomic. If this data needs to be accessed concurrently, use <see cref="ConcurrentDictionary{TKey,TValue}.GetOrAdd(TKey,TValue)"/> instead.</para>
     /// </summary>
     /// <typeparam name="TKey">type of <paramref name="dictionary"/> keys</typeparam>
     /// <typeparam name="TValue">type of <paramref name="dictionary"/> values</typeparam>
@@ -184,7 +188,7 @@ public static class Collections {
     /// </summary>
     /// <typeparam name="TSource">type of item in <paramref name="source"/></typeparam>
     /// <param name="source">sequence of items</param>
-    /// <returns>the first item in <paramref name="source"/>, or <c>null</c> if it it empty</returns>
+    /// <returns>the first item in <paramref name="source"/>, or <c>null</c> if it is empty</returns>
     [Pure]
     public static TSource? FirstOrNull<TSource>(this IEnumerable<TSource> source) where TSource: struct {
         if (source is IList<TSource> list) {
@@ -207,7 +211,7 @@ public static class Collections {
     /// <typeparam name="TSource">type of item in <paramref name="source"/></typeparam>
     /// <param name="source">sequence of items</param>
     /// <param name="predicate">function that should return <c>true</c> when the passed in item from <paramref name="source"/> should be returned, or <c>false</c> to not return it</param>
-    /// <returns>the first item in <paramref name="source"/> that causes <paramref name="predicate"/> to return <c>true</c>, or <c>null</c> if it it empty or every item causes <paramref name="predicate"/> to return <c>false</c></returns>
+    /// <returns>the first item in <paramref name="source"/> that causes <paramref name="predicate"/> to return <c>true</c>, or <c>null</c> if it is empty or every item causes <paramref name="predicate"/> to return <c>false</c></returns>
     [Pure]
     public static TSource? FirstOrNull<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) where TSource: struct {
         foreach (TSource element in source) {
@@ -219,16 +223,19 @@ public static class Collections {
         return null;
     }
 
+    [Pure]
     public static (T? head, IEnumerable<T> tail) HeadAndTail<T>(this IEnumerable<T> source) where T: class? {
         using IEnumerator<T> enumerator = source.GetEnumerator();
         return (head: enumerator.MoveNext() ? enumerator.Current : null, tail: new Enumerable<T>(enumerator));
     }
 
+    [Pure]
     public static (T? head, IEnumerable<T> tail) HeadAndTailStruct<T>(this IEnumerable<T> source) where T: struct {
         using IEnumerator<T> enumerator = source.GetEnumerator();
         return (head: enumerator.MoveNext() ? enumerator.Current : null, tail: new Enumerable<T>(enumerator));
     }
 
+    [Pure]
     public static (T? head, IEnumerable<T?> tail) HeadAndTailStruct<T>(this IEnumerable<T?> source) where T: struct {
         using IEnumerator<T?> enumerator = source.GetEnumerator();
         return (head: enumerator.MoveNext() ? enumerator.Current : null, tail: new Enumerable<T?>(enumerator));
@@ -243,8 +250,54 @@ public static class Collections {
     }
 
     [Pure]
-    public static ConcurrentDictionary<TKey, ValueHolder<TValue>> CreateConcurrentDictionary<TKey, TValue>() where TKey: notnull {
+    public static ConcurrentDictionary<TKey, ValueHolder<TValue>> CreateConcurrentDictionary<TKey, TValue>(
+        IEqualityComparer<TKey>? equalityComparer = null,
+        int?                     concurrency      = null)
+        where TKey: notnull {
+#if NETSTANDARD
+        equalityComparer ??= EqualityComparer<TKey>.Default;
+#endif
+#if NET8_0_OR_GREATER
+        concurrency ??= -1;
+#else
+        concurrency ??= Environment.ProcessorCount;
+#endif
         return new ConcurrentDictionary<TKey, ValueHolder<TValue>>();
+    }
+
+    [Pure]
+    public static ConcurrentDictionary<TKey, ValueHolder<TValue>> CreateConcurrentDictionary<TKey, TValue>(
+        IEnumerable<KeyValuePair<TKey, TValue>> collection,
+        IEqualityComparer<TKey>?                equalityComparer = null,
+        int?                                    concurrency      = null)
+        where TKey: notnull {
+#if NETSTANDARD
+        equalityComparer ??= EqualityComparer<TKey>.Default;
+#endif
+#if NET8_0_OR_GREATER
+        concurrency ??= -1;
+#else
+        concurrency ??= Environment.ProcessorCount;
+#endif
+        return new ConcurrentDictionary<TKey, ValueHolder<TValue>>(concurrency.Value,
+            collection.Select(pair => new KeyValuePair<TKey, ValueHolder<TValue>>(pair.Key, new ValueHolder<TValue>(pair.Value))), equalityComparer);
+    }
+
+    [Pure]
+    public static ConcurrentDictionary<TKey, ValueHolder<TValue>> CreateConcurrentDictionary<TKey, TValue>(
+        int                      capacity,
+        IEqualityComparer<TKey>? equalityComparer = null,
+        int?                     concurrency      = null)
+        where TKey: notnull {
+#if NETSTANDARD
+        equalityComparer ??= EqualityComparer<TKey>.Default;
+#endif
+#if NET8_0_OR_GREATER
+        concurrency ??= -1;
+#else
+        concurrency ??= Environment.ProcessorCount;
+#endif
+        return new ConcurrentDictionary<TKey, ValueHolder<TValue>>(concurrency.Value, capacity, equalityComparer);
     }
 
     public static TValue ExchangeEnum<TKey, TValue>(this ConcurrentDictionary<TKey, ValueHolder<int>> dictionary, TKey key, TValue newValue) where TValue: Enum where TKey: notnull {

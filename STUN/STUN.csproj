@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Version>0.0.0-alpha1</Version>
+        <RootNamespace>Unfucked</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Stun.Net" />
+    </ItemGroup>
+
+    <Choose>
+        <When Condition="'$(Configuration)' == 'Release'">
+            <ItemGroup>
+                <PackageReference Include="Unfucked"  />
+                <PackageReference Include="Unfucked.Caching" />
+            </ItemGroup>
+        </When>
+        <Otherwise>
+            <ItemGroup>
+                <ProjectReference Include="..\Unfucked\Unfucked.csproj" />
+                <ProjectReference Include="..\Caching\Caching.csproj" />
+            </ItemGroup>
+        </Otherwise>
+    </Choose>
+
+</Project>

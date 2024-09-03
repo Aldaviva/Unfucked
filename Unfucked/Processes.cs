@@ -1,8 +1,11 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+#if NETSTANDARD2_0
+using System.Diagnostics.CodeAnalysis;
+#endif
 
 namespace Unfucked;
 
@@ -11,6 +14,7 @@ public static class Processes {
     /// <summary>
     /// From https://stackoverflow.com/a/2611075/979493
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public static string CommandLineToString(IEnumerable<string> args) {
         StringBuilder sb = new();
         foreach (string s in args) {
@@ -43,6 +47,7 @@ public static class Processes {
         return sb.ToString(0, Math.Max(0, sb.Length - 1));
     }
 
+    [ExcludeFromCodeCoverage]
     private static void EscapeBackslashes(StringBuilder sb, string s, int lastSearchIndex) {
         // Backslashes must be escaped if and only if they precede a double quote.
         for (int i = lastSearchIndex; i >= 0; i--) {
@@ -57,6 +62,7 @@ public static class Processes {
     /// <summary>
     /// From https://stackoverflow.com/a/64236441/979493
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public static IEnumerable<string> CommandLineToEnumerable(string commandLine) {
         StringBuilder result = new();
 
@@ -102,14 +108,36 @@ public static class Processes {
         if (started) yield return result.ToString();
     }
 
-    public static async Task<(int exitCode, string standardOutput, string standardError)?> ExecFile(string file, params string[] arguments) {
+    public static Task<(int exitCode, string standardOutput, string standardError)?> ExecFile(string file, params string[] arguments) => ExecFile(file, arguments.AsEnumerable());
+
+    public static async Task<(int exitCode, string standardOutput, string standardError)?> ExecFile(
+        string                        file,
+        IEnumerable<string>?          arguments        = null,
+        IDictionary<string, string?>? extraEnvironment = null,
+        string                        workingDirectory = "",
+        bool                          hideWindow       = false) {
+
         Process? process;
         try {
             ProcessStartInfo processStartInfo = new(file) {
                 UseShellExecute        = false,
                 RedirectStandardOutput = true,
-                RedirectStandardError  = true
+                RedirectStandardError  = true,
+                WorkingDirectory       = workingDirectory,
+                CreateNoWindow         = hideWindow
             };
+
+            if (extraEnvironment is not null) {
+                IDictionary<string, string?> processEnvironment = processStartInfo.Environment;
+                foreach (KeyValuePair<string, string?> envVar in extraEnvironment) {
+                    if (envVar.Value is null) {
+                        processEnvironment.Remove(envVar.Key);
+                    } else {
+                        processEnvironment.Add(envVar);
+                    }
+                }
+            }
+
 #if NET8_0_OR_GREATER
             processStartInfo.ArgumentList.AddAll(arguments);
 #else
@@ -143,6 +171,8 @@ public static class Processes {
 
     /// <summary>Gets the parent process of the current process.</summary>
     /// <returns>An instance of the Process class. Remember to <see cref="IDisposable.Dispose"/> the returned value.</returns>
+    /// <inheritdoc cref="GetParentProcess(Process)" path="/remarks" />
+    [ExcludeFromCodeCoverage]
     public static Process? GetParentProcess() {
         using Process currentProcess = Process.GetCurrentProcess();
         return GetParentProcess(currentProcess);
@@ -151,6 +181,8 @@ public static class Processes {
     /// <summary>Gets the process that started a given child process.</summary>
     /// <param name="id">The child process ID of which you want to find the parent.</param>
     /// <returns>The parent process of the child process that has the given <paramref name="id"/>. Remember to <see cref="IDisposable.Dispose"/> the returned value.</returns>
+    /// <inheritdoc cref="GetParentProcess(Process)" path="/remarks" />
+    [ExcludeFromCodeCoverage]
     public static Process? GetParentProcess(int id) {
         using Process process = Process.GetProcessById(id);
         return GetParentProcess(process);
@@ -159,6 +191,10 @@ public static class Processes {
     /// <summary>Gets the process that started a given child process.</summary>
     /// <param name="child">The child process of which you want to find the parent.</param>
     /// <returns>The parent process of <paramref name="child"/>. Remember to <see cref="IDisposable.Dispose"/> the returned value.</returns>
+    /// <remarks>
+    /// <para>By Simon Mourier: <see href="https://stackoverflow.com/a/3346055/979493"/></para>
+    /// </remarks>
+    [ExcludeFromCodeCoverage]
     public static Process? GetParentProcess(this Process child) {
         ProcessBasicInformation pbi = new();
         if (0 != NtQueryInformationProcess(child.Handle, 0, ref pbi, Marshal.SizeOf(pbi), out int _)) {
@@ -177,33 +213,33 @@ public static class Processes {
     private static extern int NtQueryInformationProcess(IntPtr  processHandle, int processInfoClass, ref ProcessBasicInformation processInfo, int processInfoLength,
                                                         out int returnLength);
 
-    public static IEnumerable<Process> GetDescendentProcesses(Process parent) {
+    public static IEnumerable<Process> GetDescendantProcesses(Process parent) {
         Process[] allProcesses = Process.GetProcesses();
 
         //eagerly find child processes, because once we start killing processes, their parent PIDs won't mean anything anymore
-        List<Process> descendents = GetDescendentProcesses(parent, allProcesses).ToList();
+        List<Process> descendants = GetDescendantProcesses(parent, allProcesses).ToList();
 
-        foreach (Process nonDescendant in allProcesses.Except(descendents, ProcessEqualityComparer.Instance)) {
+        foreach (Process nonDescendant in allProcesses.Except(descendants, ProcessEqualityComparer.Instance)) {
             nonDescendant.Dispose();
         }
 
-        return descendents;
+        return descendants;
     }
 
     // ReSharper disable once ParameterTypeCanBeEnumerable.Local (Avoid double enumeration heuristic)
-    private static IEnumerable<Process> GetDescendentProcesses(Process parent, Process[] allProcesses) {
-        return allProcesses.SelectMany(descendent => {
-            bool isDescendentOfParent = false;
+    private static IEnumerable<Process> GetDescendantProcesses(Process parent, Process[] allProcesses) {
+        return allProcesses.SelectMany(descendant => {
+            bool isDescendantOfParent = false;
             try {
-                using Process? descendentParent = GetParentProcess(descendent);
-                isDescendentOfParent = descendentParent?.Id == parent.Id;
+                using Process? descendantParent = GetParentProcess(descendant);
+                isDescendantOfParent = descendantParent?.Id == parent.Id;
             } catch (Exception) {
                 //leave isDescendentOfParent false
             }
 
-            return isDescendentOfParent
-                ? GetDescendentProcesses(descendent, allProcesses).Prepend(descendent)
-                : Enumerable.Empty<Process>();
+            return isDescendantOfParent
+                ? GetDescendantProcesses(descendant, allProcesses).Prepend(descendant)
+                : [];
         });
     }
 
@@ -211,23 +247,16 @@ public static class Processes {
 
         public static readonly ProcessEqualityComparer Instance = new();
 
-        public bool Equals(Process x, Process y) {
-            if (ReferenceEquals(x, y)) return true;
-            if (ReferenceEquals(x, null)) return false;
-            if (ReferenceEquals(y, null)) return false;
-            if (x.GetType() != y.GetType()) return false;
-            return x.Id == y.Id;
-        }
+        public bool Equals(Process x, Process y) => ReferenceEquals(x, y) || (!ReferenceEquals(x, null) && !ReferenceEquals(y, null) && x.GetType() == y.GetType() && x.Id == y.Id);
 
-        public int GetHashCode(Process obj) {
-            return obj.Id;
-        }
+        public int GetHashCode(Process obj) => obj.Id;
 
     }
 
     /// <summary>A utility class to determine a process parent.</summary>
     /// <remarks><a href="https://stackoverflow.com/a/3346055/979493">Source</a></remarks>
     [StructLayout(LayoutKind.Sequential)]
+    [ExcludeFromCodeCoverage]
     private readonly struct ProcessBasicInformation {
 
         // These members must match PROCESS_BASIC_INFORMATION

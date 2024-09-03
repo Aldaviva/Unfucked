@@ -1,9 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
         <RootNamespace>Tests</RootNamespace>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+        <NoWarn>$(NoWarn);CA1816</NoWarn>
 
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
@@ -14,6 +16,7 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="FakeItEasy" Version="8.3.0" />
         <PackageReference Include="FluentAssertions" Version="6.12.0" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.0" />
         <PackageReference Include="xunit" Version="2.9.0" />
@@ -21,13 +24,27 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Remove="Microsoft.SourceLink.GitHub" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Unfucked.DateTime\Unfucked.DateTime.csproj" />
-        <ProjectReference Include="..\Unfucked.DependencyInjection\Unfucked.DependencyInjection.csproj" />
-        <ProjectReference Include="..\Unfucked.ICalendar\Unfucked.ICS.csproj" />
+        <ProjectReference Include="..\DateTime\DateTime.csproj" />
+        <ProjectReference Include="..\DependencyInjection\DependencyInjection.csproj" />
+        <ProjectReference Include="..\ICS\ICS.csproj" />
         <ProjectReference Include="..\Unfucked\Unfucked.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <None Remove="..\Unfucked\icon.png" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <None Update="Unfucked\cert.pem">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Unfucked\key.pem">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

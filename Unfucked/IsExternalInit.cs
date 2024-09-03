@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 
 // ReSharper disable once CheckNamespace - this is the exact namespace required by this type to fix broken record compilation for .NET Standard 2.0
 namespace System.Runtime.CompilerServices;

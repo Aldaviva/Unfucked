@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <Version>0.0.0-alpha1</Version>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="SharpCompress" />
+    </ItemGroup>
+
+</Project>

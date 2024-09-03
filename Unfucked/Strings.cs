@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text;
 
 namespace Unfucked;
@@ -31,7 +31,7 @@ public static class Strings {
         this string? source) => !string.IsNullOrEmpty(source);
 
     [Pure]
-    public static string Join(this IEnumerable<string?> source, string? separator) => string.Join(separator, source);
+    public static string Join(this IEnumerable<string?> source, string? separator = null) => string.Join(separator, source);
 
     [Pure]
     public static string Join(this IEnumerable<string?> source, char separator) {

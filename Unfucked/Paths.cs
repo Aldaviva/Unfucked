@@ -1,4 +1,4 @@
-﻿namespace Unfucked;
+namespace Unfucked;
 
 public static class Paths {
 

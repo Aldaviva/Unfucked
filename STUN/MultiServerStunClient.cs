@@ -4,9 +4,16 @@ using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
+using Unfucked.Caching;
 
-namespace Unfucked;
+namespace Unfucked.STUN;
 
+/// <summary>
+/// A STUN client that makes requests to a constantly-updated pool of online public STUN servers, retrying with different servers if any of them are not responding, including a hardcoded fallback list if the online pool is unavailable.
+/// </summary>
+/// <param name="http">HTTP client used to fetch online pool of public STUN servers.</param>
+/// <param name="stunClientFactory">Factory class for single-server STUN clients.</param>
+/// <param name="serverBlacklist">Set of STUN server hostnames to never send requests to, for example if they are known to return incorrect responses.</param>
 public class MultiServerStunClient(HttpClient http, IStunClientFactory stunClientFactory, ISet<string>? serverBlacklist = null): IStunClient5389 {
 
     private static readonly Random   Random                = new();
@@ -26,17 +33,29 @@ public class MultiServerStunClient(HttpClient http, IStunClientFactory stunClien
         new("stun4.l.google.com", 19302)
     ];
 
-    private readonly IReadOnlySet<string> _blacklistedServers = (serverBlacklist?.Select(s => s.ToLowerInvariant()) ?? new HashSet<string>(0)).ToFrozenSet();
+    private readonly IReadOnlySet<string> blacklistedServers = (serverBlacklist?.Select(s => s.ToLowerInvariant()) ?? new HashSet<string>(0)).ToFrozenSet();
 
+    /// <summary>
+    /// The result of the most recent STUN request that this client instance processed.
+    /// </summary>
     public StunResult5389 State { get; private set; } = new();
+
+    /// <summary>
+    /// The server hostname that this client instance used for its most recent request.
+    /// </summary>
     public DnsEndPoint Server { get; private set; } = null!;
+
+    /// <summary>
+    /// The server IP address that this client instance used for its most recent request.
+    /// </summary>
     public IPEndPoint ServerAddress { get; private set; } = null!;
 
-    private async IAsyncEnumerable<IStunClient5389> GetStunClients([EnumeratorCancellation] CancellationToken ct = default) {
+    private async IAsyncEnumerable<IStunClient5389> GetStunClients([EnumeratorCancellation] CancellationToken cancellationToken = default) {
         const string  stunListCacheKey = "always-on-stun";
         DnsEndPoint[] servers          = [];
         try {
-            servers = (await ServersCache.GetOrAdd(stunListCacheKey, async () => await FetchStunServers(ct).ConfigureAwait(false), StunListCacheDuration).ConfigureAwait(false)).ToArray();
+            servers =
+                (await ServersCache.GetOrAdd(stunListCacheKey, async () => await FetchStunServers(cancellationToken).ConfigureAwait(false), StunListCacheDuration).ConfigureAwait(false)).ToArray();
         } catch (HttpRequestException) { } catch (TaskCanceledException) { /* timeout */
         } catch (Exception e) when (e is not OutOfMemoryException) { }
 
@@ -51,21 +70,21 @@ public class MultiServerStunClient(HttpClient http, IStunClientFactory stunClien
 
     /// <exception cref="HttpRequestException"></exception>
     /// <exception cref="TaskCanceledException"></exception>
-    private async Task<IEnumerable<DnsEndPoint>> FetchStunServers(CancellationToken ct) {
+    private async Task<IEnumerable<DnsEndPoint>> FetchStunServers(CancellationToken cancellationToken) {
         Debug.WriteLine("Fetching list of STUN servers from pradt2/always-online-stun");
-        ICollection<DnsEndPoint> servers = (await http.GetStringAsync(StunServerListUrl, ct).ConfigureAwait(false))
-            .TrimEnd()
-            .Split('\n')
-            .Select(line => {
-                string[] columns = line.Split(':', 2);
-                try {
-                    return new DnsEndPoint(columns[0], columns.ElementAtOrDefault(1) is { } port ? ushort.Parse(port) : 3478);
-                } catch (FormatException) {
-                    return null;
-                }
-            })
-            .Compact()
-            .ExceptBy(_blacklistedServers, host => host.Host)
+        ICollection<DnsEndPoint> servers = Enumerable
+            .ExceptBy<DnsEndPoint, string>((await http.GetStringAsync(StunServerListUrl, cancellationToken).ConfigureAwait(false))
+                .TrimEnd()
+                .Split('\n')
+                .Select(line => {
+                    string[] columns = line.Split(':', 2);
+                    try {
+                        return new DnsEndPoint(columns[0], columns.ElementAtOrDefault(1) is { } port ? ushort.Parse(port) : 3478);
+                    } catch (FormatException) {
+                        return null;
+                    }
+                })
+                .Compact(), blacklistedServers, host => host.Host)
             .ToList();
 
         Debug.WriteLine("Fetched {0:N0} STUN servers", servers.Count);

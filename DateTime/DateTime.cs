@@ -3,6 +3,9 @@ using System.Diagnostics.Contracts;
 
 namespace Unfucked;
 
+/// <summary>
+/// Methods that make it easier to work with dates and times
+/// </summary>
 public static class DateTime {
 
     /// <summary>

@@ -3,7 +3,7 @@ using System.Net;
 
 // ReSharper disable InconsistentNaming
 
-namespace Unfucked;
+namespace Unfucked.STUN;
 
 /// <summary>
 /// Like <see cref="global::STUN.Client.IStunClient5389"/> but it allows consumers to introspect the STUN server that the instance was configured with, without restoring to reflection on private fields.

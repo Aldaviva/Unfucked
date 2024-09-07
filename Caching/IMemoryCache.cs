@@ -2,7 +2,7 @@ using System.Runtime.Caching;
 
 // ReSharper disable InconsistentNaming
 
-namespace Unfucked;
+namespace Unfucked.Caching;
 
 /// <summary>
 /// Like <see cref="MemoryCache"/>, but strongly typed
@@ -60,10 +60,10 @@ public interface IMemoryCache<T>: IDisposable where T: notnull {
     /// <inheritdoc cref="MemoryCache.GetEnumerator()" />
     IEnumerator<T> GetEnumerator();
 
-    /// <inheritdoc cref="MemoryCache.Add(string,object,DateTimeOffset,string?)" />
+    /// <inheritdoc cref="ObjectCache.Add(string,object,System.DateTimeOffset,string)" />
     bool Add(string key, T value, DateTimeOffset absoluteExpiration);
 
-    /// <inheritdoc cref="MemoryCache.Add(string,object,CacheItemPolicy,string?)" />
+    /// <inheritdoc cref="ObjectCache.Add(string,object,CacheItemPolicy,string?)" />
     bool Add(string key, T value, CacheItemPolicy policy);
 
     /// <inheritdoc cref="MemoryCache.Add(CacheItem,CacheItemPolicy)" />

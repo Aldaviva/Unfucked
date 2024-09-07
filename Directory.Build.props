@@ -2,6 +2,7 @@
 
     <PropertyGroup>
         <AssemblyName>Unfucked.$(MSBuildProjectName)</AssemblyName>
+        <RootNamespace>Unfucked.$(MSBuildProjectName)</RootNamespace>
         <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -23,6 +24,12 @@
         <NoWarn>$(NoWarn);8524;VSTHRD200</NoWarn>
     </PropertyGroup>
 
+    <!-- Self version numbers -->
+    <PropertyGroup>
+        <UnfuckedVersion>0.0.0-beta1</UnfuckedVersion>
+        <UnfuckedCachingVersion>0.0.0-alpha1</UnfuckedCachingVersion>
+    </PropertyGroup>
+
     <ItemGroup>
         <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
     </ItemGroup>
@@ -30,6 +37,11 @@
     <ItemGroup>
         <None Include="..\Unfucked\icon.png" Pack="true" PackagePath="\icon.png" />
         <None Include="..\Readme.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="..\ExceptionAdjustments.txt" />
+        <AdditionalFiles Include="..\ExceptionAdjustments.txt" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' or '$(Configuration)' == 'Release'">

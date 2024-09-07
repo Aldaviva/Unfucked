@@ -29,7 +29,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\DateTime\DateTime.csproj" />
-        <ProjectReference Include="..\DependencyInjection\DependencyInjection.csproj" />
+        <ProjectReference Include="..\DI\DI.csproj" />
         <ProjectReference Include="..\ICS\ICS.csproj" />
         <ProjectReference Include="..\Unfucked\Unfucked.csproj" />
     </ItemGroup>

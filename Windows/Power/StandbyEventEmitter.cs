@@ -1,6 +1,6 @@
 using System.Diagnostics.Eventing.Reader;
 
-namespace Unfucked.Power;
+namespace Unfucked.Windows.Power;
 
 public interface IStandbyListener: IDisposable {
 

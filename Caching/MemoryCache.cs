@@ -4,7 +4,7 @@ using MemoryCache = System.Runtime.Caching.MemoryCache;
 
 // ReSharper disable InconsistentNaming
 
-namespace Unfucked;
+namespace Unfucked.Caching;
 
 /// <inheritdoc cref="IMemoryCache{T}" />
 public class MemoryCache<T>(string name = "", NameValueCollection? config = null, bool ignoreConfigSection = false): IMemoryCache<T> where T: notnull {
@@ -33,6 +33,9 @@ public class MemoryCache<T>(string name = "", NameValueCollection? config = null
         return await GetOrAdd(key, valueCreator, new CacheItemPolicy { AbsoluteExpiration = DateTimeOffset.Now + evictAfterCreation }).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Remove all entries from the cache
+    /// </summary>
     public void Clear() {
         Trim(100);
     }

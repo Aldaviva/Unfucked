@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
-using Unfucked.DependencyInjection;
+using Unfucked.DI;
 #if !NET6_0_OR_GREATER
 using System.Diagnostics;
 using System.Reflection;
@@ -15,12 +15,12 @@ namespace Unfucked;
 
 public static class DependencyInjectionExtensions {
 
-    public static ILoggingBuilder AddUnfuckedConsole(this ILoggingBuilder logging, Action<ConsoleFormatter.UnfuckedConsoleFormatterOptions>? options = null) {
+    public static ILoggingBuilder AddUnfuckedConsole(this ILoggingBuilder logging, Action<ConsoleFormatter.ConsoleFormatterOptions>? options = null) {
         logging.AddConsole(opts => opts.FormatterName = ConsoleFormatter.Id);
         if (options != null) {
-            logging.AddConsoleFormatter<ConsoleFormatter, ConsoleFormatter.UnfuckedConsoleFormatterOptions>(options);
+            logging.AddConsoleFormatter<ConsoleFormatter, ConsoleFormatter.ConsoleFormatterOptions>(options);
         } else {
-            logging.AddConsoleFormatter<ConsoleFormatter, ConsoleFormatter.UnfuckedConsoleFormatterOptions>();
+            logging.AddConsoleFormatter<ConsoleFormatter, ConsoleFormatter.ConsoleFormatterOptions>();
         }
         return logging;
     }

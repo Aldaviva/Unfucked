@@ -1,6 +1,6 @@
 using Twitch.Net.Interfaces;
 
-namespace Unfucked;
+namespace Unfucked.Twitch;
 
 public interface ITwitchApi {
 

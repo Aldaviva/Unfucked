@@ -3,7 +3,7 @@ using System.CodeDom.Compiler;
 
 // ReSharper disable InconsistentNaming - these names must match a third-party library
 
-namespace Unfucked;
+namespace Unfucked.DNS;
 
 /// <summary>
 /// <para>Gandi LiveDNS Management API</para>

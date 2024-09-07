@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using Twitch.Net;
 using Twitch.Net.Interfaces;
 
-namespace Unfucked;
+namespace Unfucked.Twitch;
 
 [ExcludeFromCodeCoverage]
 [GeneratedCode("TwitchApi.Net", "3.2.0")]

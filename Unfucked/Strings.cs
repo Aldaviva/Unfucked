@@ -119,7 +119,7 @@ public static class Strings {
                 int prefixLength = prefixToTrim.Length;
                 if (prefixLength != 0 && startIndex + prefixLength <= str.Length && str[startIndex..(startIndex + prefixLength)].SequenceEqual(prefixToTrim)) {
                     startIndex += prefixLength;
-                    found      =  true;
+                    found = true;
                     break;
                 }
             }
@@ -151,7 +151,7 @@ public static class Strings {
                 int suffixLength = suffixToTrim.Length;
                 if (suffixLength != 0 && endIndex >= 0 && endIndex - suffixLength >= 0 && str[(endIndex - suffixLength)..endIndex].SequenceEqual(suffixToTrim)) {
                     endIndex -= suffixLength;
-                    found    =  true;
+                    found = true;
                     break;
                 }
             }

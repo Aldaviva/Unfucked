@@ -9,7 +9,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using Monitor = OBSStudioClient.Classes.Monitor;
 
-namespace Unfucked;
+namespace Unfucked.OBS;
 
 /*
  * How to generate this facade:

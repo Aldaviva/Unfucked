@@ -5,7 +5,7 @@ using System.Reflection;
 
 // ReSharper disable InconsistentNaming - these names must match a third-party library
 
-namespace Unfucked;
+namespace Unfucked.DNS;
 
 /// <inheritdoc />
 [GeneratedCode("G6.GandiLiveDns", "1.0.0")]

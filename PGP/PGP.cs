@@ -59,7 +59,7 @@ public class PGP: PgpCore.PGP, IPGP {
     public async Task<string> DetachedSignAsync(string input, IDictionary<string, string>? headers = null) {
         headers ??= new Dictionary<string, string>(0);
 
-        using Stream inputStream  = input.ToStream();
+        using Stream inputStream  = input.ToByteStream();
         using Stream outputStream = new MemoryStream();
         await DetachedSignAsync(inputStream, outputStream, headers).ConfigureAwait(false);
         outputStream.Seek(0, SeekOrigin.Begin);

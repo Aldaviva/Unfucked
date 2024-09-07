@@ -63,17 +63,34 @@ public class TasksTest: IDisposable {
     [Fact]
     public async Task FirstOrDefault() {
         Stopwatch stopwatch = Stopwatch.StartNew();
-        int actual = await Tasks.FirstOrDefault([
+        string? actual = await Tasks.FirstOrDefault([
+            Task.FromCanceled<string>(new CancellationToken(true)),
+            Task.FromException<string>(new ApplicationException()),
+            Task.FromResult("a"),
+            Task.Run(async () => {
+                await Task.Delay(TimeSpan.FromHours(24), ct);
+                return "b";
+            }, ct)
+        ], task => task.Result == "a", ct);
+
+        actual.Should().Be("a");
+        stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromMinutes(1));
+    }
+
+    [Fact]
+    public async Task FirstOrDefaultNull() {
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        int? actual = await Tasks.FirstOrDefaultValueType([
             Task.FromCanceled<int>(new CancellationToken(true)),
             Task.FromException<int>(new ApplicationException()),
             Task.FromResult(1),
             Task.Run(async () => {
-                await Task.Delay(TimeSpan.FromHours(24), ct);
+                await Task.Delay(TimeSpan.FromMilliseconds(50), ct);
                 return 2;
             }, ct)
-        ], task => task.Result == 1, ct);
+        ], task => task.Result == 3, ct);
 
-        actual.Should().Be(1);
+        actual.Should().BeNull("no tasks passed the predicate");
         stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromMinutes(1));
     }
 
@@ -88,8 +105,8 @@ public class TasksTest: IDisposable {
 
     [Fact]
     public async Task WaitFastPath() {
-        CancellationToken cancelled = new(true);
-        await cancelled.Wait();
+        CancellationToken canceled = new(true);
+        await canceled.Wait();
     }
 
     /// <inheritdoc />

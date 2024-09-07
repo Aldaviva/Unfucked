@@ -1,13 +1,29 @@
 namespace Unfucked;
 
+/// <summary>
+/// Methods that make it easier to work with filesystem path names.
+/// </summary>
 public static class Paths {
 
+    /// <summary>
+    /// <para>Remove trailing slashes from a path.</para>
+    /// <para>By default, the trailing slashes that are trimmed are dependent on the operating system that your program is running on. On Windows, forwards and backslashes will be trimmed, but only forward slashes will be trimmed on all other operating systems. To always trim backslashes on all operating systems, for example to output Windows-compatible paths on a Linux computer, set <paramref name="forceTrimBackslashes"/> to <c>true</c>.</para>
+    /// </summary>
+    /// <param name="path">Path to remove trailing slashes from.</param>
+    /// <param name="forceTrimBackslashes">On non-Windows operating systems, also trim trailing backslashes from paths, not just trailing forward slashes. Has no effect on Windows, where trailing backslashes are always trimmed, regardless of this argument.</param>
+    /// <returns>The same path as the <paramref name="path"/> argument, but without any trailing slashes.</returns>
 #if NET6_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
     [return: NotNullIfNotNull(nameof(path))]
 #endif
     [Pure]
-    public static string? TrimSlashes(string? path) => path?.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+    public static string? TrimSlashes(string? path, bool forceTrimBackslashes = false) => path?.TrimEnd(Path.DirectorySeparatorChar, forceTrimBackslashes ? '\\' : Path.AltDirectorySeparatorChar);
 
+    /// <summary>
+    /// Create a new, empty subdirectory in a given parent directory with a random, 8-character alphanumeric name that starts with <c>temp-</c>, such as <c>temp-Hi884Xbd</c>.
+    /// </summary>
+    /// <param name="parentDir">Directory in which to create this new subdirectory. If <c>null</c>, it will be created in the OS user's temporary directory (generally <c>%TEMP%</c> on Windows, <c>%TMPDIR%</c> or <c>/tmp</c> on Linux).</param>
+    /// <returns>Absolute path to the newly-created, empty directory.</returns>
+    /// <seealso cref="Path.GetTempPath"/>
     public static string GetTempDirectory(string? parentDir = null) {
         parentDir ??= Path.GetTempPath();
 
@@ -18,14 +34,14 @@ public static class Paths {
 
         Directory.CreateDirectory(tempDirectory);
 
-        return tempDirectory;
+        return Path.GetFullPath(tempDirectory);
     }
 
     /// <summary>
-    /// Replace Windows-style directory separators (backslash, \) with Unix-style ones (forward slash, /)
+    /// Replace Windows-style directory separators (backslash, <c>\</c>) with Unix-style ones (forward slash, <c>/</c>).
     /// </summary>
-    /// <param name="dosPath">A file path that may contain backslashes</param>
-    /// <returns>A copy of <paramref name="dosPath"/> with all backslashes replaced with forward slashes</returns>
+    /// <param name="dosPath">A file path that may contain backslashes.</param>
+    /// <returns>A copy of <paramref name="dosPath"/> with all backslashes replaced with forward slashes.</returns>
 #if NET6_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
     [return: NotNullIfNotNull(nameof(dosPath))]
 #endif
@@ -33,14 +49,22 @@ public static class Paths {
     public static string? Dos2UnixSlashes(string? dosPath) => dosPath?.Replace('\\', '/');
 
     /// <summary>
-    /// See if a given filename has one of a set of expected extensions
+    /// Test if a given filename has one of a set of expected extensions.
     /// </summary>
-    /// <param name="filename">filename or path to file</param>
-    /// <param name="allowedExtensions">A set of lowercase file extensions with leading periods. Compound extensions like .tar.gz are not supported. Can be a <c>FrozenSet</c> for faster lookups (<c>new HashSet&lt;string&gt;{ ... }.ToFrozenSet()</c>, which may require the <c>System.Collections.Immutable</c> package in .NET 6 and earlier).</param>
+    /// <param name="filename">Filename or path to file.</param>
+    /// <param name="allowedExtensions">A set of lowercase file extensions with or without leading periods. Compound extensions like .tar.gz are not supported. Can be a <c>FrozenSet</c> for faster lookups (<c>new HashSet&lt;string&gt;{ ... }.ToFrozenSet()</c>, which may require the <c>System.Collections.Immutable</c> package in .NET 6 and earlier).</param>
     /// <returns><c>true</c> if the file extension is in <paramref name="allowedExtensions"/>, <c>false</c> otherwise</returns>
-    public static bool MatchesExtensions(string filename, IEnumerable<string> allowedExtensions) {
+    [Pure]
+    public static bool MatchesExtensions(string filename,
+#if NET6_0_OR_GREATER
+                                         IReadOnlySet<string> allowedExtensions
+#else
+                                         ISet<string> allowedExtensions
+#endif
+    ) {
         // don't use Contains(string, IEqualityComparer<string>) because that's an O(N) operation, in case we have a fast FrozenSet in allowedExtensions
-        return allowedExtensions.Contains(Path.GetExtension(filename).ToLowerInvariant());
+        string actualExtensionWithLeadingPeriod = Path.GetExtension(filename).ToLowerInvariant();
+        return allowedExtensions.Contains(actualExtensionWithLeadingPeriod) || allowedExtensions.Contains(actualExtensionWithLeadingPeriod.TrimStart('.'));
     }
 
 }

@@ -19,6 +19,7 @@
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <PackageIcon>icon.png</PackageIcon>
+        <PackageReadmeFile>Readme.md</PackageReadmeFile>
         <NoWarn>$(NoWarn);8524;VSTHRD200</NoWarn>
     </PropertyGroup>
 
@@ -28,6 +29,7 @@
 
     <ItemGroup>
         <None Include="..\Unfucked\icon.png" Pack="true" PackagePath="\icon.png" />
+        <None Include="..\Readme.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' or '$(Configuration)' == 'Release'">

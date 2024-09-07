@@ -16,7 +16,6 @@ public class ProcessesTest {
 
     [Fact]
     public async Task ExecFileWithEnvironment() {
-
         (int exitCode, string standardOutput, string standardError)? gitResult =
             await Processes.ExecFile("git", ["--version"], new Dictionary<string, string?> { { "abc", "def" }, { "removeme", null } });
 
@@ -33,6 +32,24 @@ public class ProcessesTest {
         gitResult.Should().BeNull();
     }
 
+    [Fact]
+    public async Task CancelExecFile() {
+        CancellationTokenSource                                            cts  = new();
+        Task<(int exitCode, string standardOutput, string standardError)?> task = Processes.ExecFile("ping", ["127.0.0.1"], cancellationToken: cts.Token);
+
+        await cts.CancelAsync();
+
+        try {
+            await task;
+            Assert.Fail("Task should have asynchronously thrown a TaskCanceledException");
+        } catch (TaskCanceledException e) {
+            int? pid = e.Data["pid"] as int?;
+            pid.Should().BeGreaterThan(0);
+            using Process childProcess = Process.GetProcessById(pid!.Value);
+            childProcess.Kill();
+        }
+    }
+
     /*
      * On Windows, this is a race to get the self process descendants before 4 pings are sent and received (about 3 seconds total).
      */
@@ -43,7 +60,7 @@ public class ProcessesTest {
         try {
             int childId = child.Id;
 
-            IEnumerable<Process> actual = Processes.GetDescendantProcesses(self).ToList();
+            IEnumerable<Process> actual = self.GetDescendantProcesses().ToList();
             actual.Should().Contain(process => process.Id == childId && "ping".Equals(process.ProcessName, StringComparison.InvariantCultureIgnoreCase));
 
         } finally {

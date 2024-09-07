@@ -76,6 +76,7 @@ public class ConsoleFormatter(IOptions<ConsoleFormatter.UnfuckedConsoleFormatter
 
     private string FormatTime(DateTimeOffset now) => now.ToString(_options.TimestampFormat ?? DefaultDateFormat);
 
+    //TODO use ConsoleControl to fix Windows console color support, or not output color characters if unsupported or disabled by configuration
     private static string FormatLevel(LogLevel level) => level switch {
         LogLevel.Trace       => "\u001b[0;90m t",
         LogLevel.Debug       => " d",

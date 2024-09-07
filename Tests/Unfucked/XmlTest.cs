@@ -42,7 +42,7 @@ public class XmlTest {
             <Root name="a" />
             """;
 
-        using HttpContent httpContent = new ByteArrayContent(xml.ToBytes());
+        using HttpContent httpContent = new ByteArrayContent(xml.ToByteArray());
 
         XDocument doc = await httpContent.ReadFromXmlAsync();
         doc.Root!.Attribute("name")!.Value.Should().Be("a");

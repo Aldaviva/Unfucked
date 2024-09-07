@@ -1,5 +1,8 @@
 namespace Unfucked;
 
+/// <summary>
+/// Methods that make it easier to work with filesystem directories.
+/// </summary>
 public static class Directories {
 
     /// <summary>Deletes the specified directory and, if indicated, any subdirectories and files in the directory.</summary>

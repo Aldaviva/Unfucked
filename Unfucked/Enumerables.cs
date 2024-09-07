@@ -4,40 +4,44 @@ using System.Collections.ObjectModel;
 
 namespace Unfucked;
 
-public static class Collections {
+/// <summary>
+/// Methods that make it easier to work with enumerables and arrays.
+/// </summary>
+public static partial class Enumerables {
 
-    /// <summary>Remove null values.</summary>
-    /// <param name="source">enumerable that may contain null values</param>
-    /// <returns>Input enumerable with null values removed.</returns>
+    /// <summary>Remove <c>null</c> values.</summary>
+    /// <param name="source">Enumerable that may contain <c>null</c> values</param>
+    /// <returns>Input enumerable with <c>null</c> values removed.</returns>
+    /// <remarks>Inspired by Underscore.js' <c>_.compact()</c>: <see href="https://underscorejs.org/#compact"/></remarks>
     [Pure]
     public static IEnumerable<T> Compact<T>(this IEnumerable<T?> source) where T: class => source.Where(item => item != null)!;
 
     // Not using <inheritdoc> for any Compact() overloads because it seems to cause ServiceHub.RoslynCodeAnalysisService.exe to crash repeatedly
     // <inheritdoc cref="Compact{T}(IEnumerable{T?})" />
-    /// <summary>Remove null values.</summary>
-    /// <param name="source">enumerable that may contain null values</param>
-    /// <returns>Input enumerable with null values removed.</returns>
+    /// <summary>Remove <c>null</c> values.</summary>
+    /// <param name="source">Enumerable that may contain <c>null</c> values</param>
+    /// <returns>Input enumerable with <c>null</c> values removed.</returns>
     [Pure]
     public static IEnumerable<T> Compact<T>(this IEnumerable<T?> source) where T: struct => source.Where(item => item != null).Cast<T>();
 
-    /// <summary>Remove null values.</summary>
-    /// <param name="source">array that may contain null values</param>
-    /// <returns>Copy of input array with null values removed.</returns>
+    /// <summary>Remove <c>null</c> values.</summary>
+    /// <param name="source">Array that may contain <c>null</c> values</param>
+    /// <returns>Copy of input array with <c>null</c> values removed.</returns>
     [Pure]
     public static T[] Compact<T>(this T?[] source) where T: class => source.Where(item => item != null).ToArray()!;
 
     // <inheritdoc cref="Compact{T}(T?[])" />
-    /// <summary>Remove null values.</summary>
-    /// <param name="source">array that may contain null values</param>
-    /// <returns>Copy of input array with null values removed.</returns>
+    /// <summary>Remove <c>null</c> values.</summary>
+    /// <param name="source">Array that may contain <c>null</c> values</param>
+    /// <returns>Copy of input array with <c>null</c> values removed.</returns>
     [Pure]
     public static T[] Compact<T>(this T?[] source) where T: struct => source.Where(item => item != null).Cast<T>().ToArray();
 
     /// <summary>
     /// Remove <c>null</c> values from a dictionary.
     /// </summary>
-    /// <typeparam name="TKey">key type of the dictionary</typeparam>
-    /// <typeparam name="TValue">value type of the dictionary</typeparam>
+    /// <typeparam name="TKey">Key type of the dictionary</typeparam>
+    /// <typeparam name="TValue">Value type of the dictionary</typeparam>
     /// <param name="source">Dictionary with possible <c>null</c> values. This dictionary and its values are not modified by this method.</param>
     /// <returns>A copy of <paramref name="source"/> where all the <c>null</c> values have been removed.</returns>
     [Pure]
@@ -48,26 +52,46 @@ public static class Collections {
     /// <summary>
     /// Remove <c>null</c> values from a dictionary.
     /// </summary>
-    /// <typeparam name="TKey">key type of the dictionary</typeparam>
-    /// <typeparam name="TValue">value type of the dictionary</typeparam>
+    /// <typeparam name="TKey">Key type of the dictionary</typeparam>
+    /// <typeparam name="TValue">Value type of the dictionary</typeparam>
     /// <param name="source">Dictionary with possible <c>null</c> values. This dictionary and its values are not modified by this method.</param>
     /// <returns>A copy of <paramref name="source"/> where all the <c>null</c> values have been removed.</returns>
     [Pure]
     public static IDictionary<TKey, TValue> Compact<TKey, TValue>(this IDictionary<TKey, TValue?> source) where TKey: notnull where TValue: struct =>
         source.Where(entry => entry.Value != null).ToDictionary(entry => entry.Key, pair => pair.Value!.Value);
 
+    /// <summary>
+    /// Remove <c>null</c> values from a dictionary.
+    /// </summary>
+    /// <typeparam name="TKey">Key type of the dictionary</typeparam>
+    /// <typeparam name="TValue">Value type of the dictionary</typeparam>
+    /// <param name="source">Dictionary with possible <c>null</c> values. This dictionary and its values are not modified by this method.</param>
+    /// <returns>A copy of <paramref name="source"/> where all the <c>null</c> values have been removed.</returns>
     [Pure]
     public static IEnumerable<KeyValuePair<TKey, TValue>> Compact<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue?>> source) where TKey: notnull where TValue: struct =>
         from pair in source
         where pair.Value.HasValue
         select new KeyValuePair<TKey, TValue>(pair.Key, pair.Value!.Value);
 
+    /// <summary>
+    /// Remove <c>null</c> values from a dictionary.
+    /// </summary>
+    /// <typeparam name="TKey">Key type of the dictionary</typeparam>
+    /// <typeparam name="TValue">Value type of the dictionary</typeparam>
+    /// <param name="source">Dictionary with possible <c>null</c> values. This dictionary and its values are not modified by this method.</param>
+    /// <returns>A copy of <paramref name="source"/> where all the <c>null</c> values have been removed.</returns>
     [Pure]
     public static IEnumerable<KeyValuePair<TKey, TValue>> Compact<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue?>> source) where TKey: notnull where TValue: class =>
         from pair in source
         where pair.Value != null
         select new KeyValuePair<TKey, TValue>(pair.Key, pair.Value);
 
+    /// <summary>
+    /// Copy each of the items in <paramref name="source"/> to this collection.
+    /// </summary>
+    /// <param name="destination">Items will be copied into here.</param>
+    /// <param name="source">Items will be copied from here.</param>
+    /// <typeparam name="T">Type of items in both enumerables.</typeparam>
     public static void AddAll<T>(this ICollection<T> destination, IEnumerable<T>? source) {
         if (source is not null) {
             foreach (T item in source) {
@@ -87,13 +111,14 @@ public static class Collections {
     /// <param name="newValue">the new value to insert if <paramref name="key"/> is not found</param>
     /// <param name="added">after this method returns, this will be set to <c>true</c> if the new value was added to <paramref name="dictionary"/>, or <c>false</c> if a value with key <paramref name="key"/> was already present</param>
     /// <returns>the existing value with key <paramref name="key"/>, or the new value if it was not already present</returns>
+    /// <exception cref="NotSupportedException"><paramref name="dictionary"/> is read-only</exception>
     public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue newValue, out bool added) {
         added = !dictionary.TryGetValue(key, out TValue? oldValue);
         if (added) {
             dictionary.Add(key, newValue);
             return newValue;
         } else {
-            return oldValue;
+            return oldValue!;
         }
     }
 
@@ -108,6 +133,7 @@ public static class Collections {
     /// <param name="newValueFactory">Function that lazily returns the new value to add if <paramref name="key"/> is not already present</param>
     /// <param name="added">after this method returns, this will be set to <c>true</c> if the new value was added to <paramref name="dictionary"/>, or <c>false</c> if a value with key <paramref name="key"/> was already present</param>
     /// <returns>the existing value with key <paramref name="key"/>, or the new value if it was not already present</returns>
+    /// <exception cref="NotSupportedException"><paramref name="dictionary"/> is read-only</exception>
     public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TValue> newValueFactory, out bool added) {
         added = !dictionary.TryGetValue(key, out TValue? oldValue);
         if (added) {
@@ -115,7 +141,7 @@ public static class Collections {
             dictionary.Add(key, newValue);
             return newValue;
         } else {
-            return oldValue;
+            return oldValue!;
         }
     }
 
@@ -129,6 +155,7 @@ public static class Collections {
     /// <param name="key">key to look up or insert into the <paramref name="dictionary"/></param>
     /// <param name="newValueFactory">Function that lazily returns the new value to add if <paramref name="key"/> is not already present</param>
     /// <returns>a tuple that contains the existing value with key <paramref name="key"/>, or the new value if it was not already present, as well as a boolean that shows whether the value was added to the dictionary in this method invocation</returns>
+    /// <exception cref="NotSupportedException"><paramref name="dictionary"/> is read-only</exception>
     public static async Task<(TValue value, bool added)> GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<Task<TValue>> newValueFactory) {
         if (!dictionary.TryGetValue(key, out TValue? oldValue)) {
             TValue newValue = await newValueFactory().ConfigureAwait(false);
@@ -153,6 +180,14 @@ public static class Collections {
         return difference;
     }
 
+    /// <summary>
+    /// <para>Return a copy of an enumerable with all runs of consecutive duplicate items replaced with only one instance of that item.</para>
+    /// <para>For example, given the input <c>[1, 1, 1, 2, 3, 1, 1]</c>, the distinct consecutive version would be <c>[1, 2, 3, 1]</c>.</para>
+    /// </summary>
+    /// <typeparam name="T">Type of items in <paramref name="source"/>.</typeparam>
+    /// <param name="source">Input enumeration of items that may have runs of consecutive duplicate items.</param>
+    /// <param name="comparer">Used to compare whether two items are equal, or the default <see cref="EqualityComparer{T}"/> if <c>null</c>.</param>
+    /// <returns>An enumerable containing the items from <paramref name="source"/> in order, but with consecutive duplicate items excluded, or an empty enumerable if <paramref name="source"/> is empty.</returns>
     [Pure]
     public static IEnumerable<T> DistinctConsecutive<T>(this IEnumerable<T> source, IEqualityComparer<T>? comparer = null) {
         comparer ??= EqualityComparer<T>.Default;
@@ -160,26 +195,58 @@ public static class Collections {
         bool isFirstItem  = true;
 
         foreach (T item in source) {
-            if (isFirstItem || !comparer.Equals(previousItem, item)) {
+            if (isFirstItem || !comparer.Equals(previousItem!, item)) {
+                isFirstItem = false;
                 yield return item;
             }
 
             previousItem = item;
-            isFirstItem  = false;
         }
     }
 
+    /// <summary>
+    /// <para>Return a copy of an enumerable with all runs of consecutive duplicate items replaced with only one instance of that item.</para>
+    /// <para>For example, given the input <c>[1, 1, 1, 2, 3, 1, 1]</c>, the distinct consecutive version would be <c>[1, 2, 3, 1]</c>.</para>
+    /// </summary>
+    /// <typeparam name="T">Type of items in <paramref name="source"/>.</typeparam>
+    /// <typeparam name="TKey">Type of the derived value to compare uniqueness on.</typeparam>
+    /// <param name="source">Input enumeration of items that may have runs of consecutive duplicate items.</param>
+    /// <param name="keySelector">Compare uniqueness not on the items of <paramref name="source"/>, but on the output of this function that takes each item as input.</param>
+    /// <param name="comparer">Used to compare whether two items are equal, or the default <see cref="EqualityComparer{T}"/> if <c>null</c>.</param>
+    /// <returns>An enumerable containing the items from <paramref name="source"/> in order, but with consecutive duplicate items excluded, or an empty enumerable if <paramref name="source"/> is empty.</returns>
     [Pure]
-    public static async Task<IReadOnlyCollection<T>> ToList<T>(this IAsyncEnumerator<T> source) {
+    public static IEnumerable<T> DistinctConsecutive<T, TKey>(this IEnumerable<T> source, Func<T, TKey> keySelector, IEqualityComparer<TKey>? comparer = null) {
+        comparer ??= EqualityComparer<TKey>.Default;
+        TKey? previousKey = default;
+        bool  isFirstItem = true;
+
+        foreach (T item in source) {
+            TKey key = keySelector(item);
+            if (isFirstItem || !comparer.Equals(previousKey!, key)) {
+                isFirstItem = false;
+                yield return item;
+            }
+
+            previousKey = key;
+        }
+    }
+
+    /// <summary>
+    /// Convert an <see cref="IAsyncEnumerator{T}"/> to a list by fully enumerating all of its items.
+    /// </summary>
+    /// <param name="source">An <see cref="IAsyncEnumerator{T}"/> of finite size.</param>
+    /// <typeparam name="T">Type of items in <paramref name="source"/>.</typeparam>
+    /// <returns>A read-only list containing all of the items from <paramref name="source"/> in order, or an empty list if <paramref name="source"/> returned no items.</returns>
+    [Pure]
+    public static async Task<IReadOnlyList<T>> ToList<T>(this IAsyncEnumerator<T> source) {
         if (!await source.MoveNextAsync().ConfigureAwait(false)) {
             return [];
         }
 
-        IList<T> result = [source.Current];
+        IList<T> result = new List<T> { source.Current };
         while (await source.MoveNextAsync().ConfigureAwait(false)) {
             result.Add(source.Current);
         }
-
         return new ReadOnlyCollection<T>(result);
     }
 
@@ -223,20 +290,38 @@ public static class Collections {
         return null;
     }
 
+    /// <summary>
+    /// Split an enumerable into the first element and the rest of the elements.
+    /// </summary>
+    /// <typeparam name="T">Type of elements in the enumerable</typeparam>
+    /// <param name="source">Enumerable with zero or more elements.</param>
+    /// <returns>A tuple with two items. The first item, <c>head</c>, is the first element of <paramref name="source"/>, or <c>null</c> if <paramref name="source"/> is empty. The second item, <c>tail</c>, is an enumerable of the remaining elements of <paramref name="source"/>, or an empty enumerable if <paramref name="source"/> has fewer than 2 elements.</returns>
     [Pure]
     public static (T? head, IEnumerable<T> tail) HeadAndTail<T>(this IEnumerable<T> source) where T: class? {
         using IEnumerator<T> enumerator = source.GetEnumerator();
         return (head: enumerator.MoveNext() ? enumerator.Current : null, tail: new Enumerable<T>(enumerator));
     }
 
+    /// <summary>
+    /// Split an enumerable into the first element and the rest of the elements.
+    /// </summary>
+    /// <typeparam name="T">Type of elements in the enumerable</typeparam>
+    /// <param name="source">Enumerable with zero or more elements.</param>
+    /// <returns>A tuple with two items. The first item, <c>head</c>, is the first element of <paramref name="source"/>, or <c>null</c> if <paramref name="source"/> is empty. The second item, <c>tail</c>, is an enumerable of the remaining elements of <paramref name="source"/>, or an empty enumerable if <paramref name="source"/> has fewer than 2 elements.</returns>
     [Pure]
-    public static (T? head, IEnumerable<T> tail) HeadAndTailStruct<T>(this IEnumerable<T> source) where T: struct {
+    public static (T? head, IEnumerable<T> tail) HeadAndTailValueType<T>(this IEnumerable<T> source) where T: struct {
         using IEnumerator<T> enumerator = source.GetEnumerator();
         return (head: enumerator.MoveNext() ? enumerator.Current : null, tail: new Enumerable<T>(enumerator));
     }
 
+    /// <summary>
+    /// Split an enumerable into the first element and the rest of the elements.
+    /// </summary>
+    /// <typeparam name="T">Type of elements in the enumerable</typeparam>
+    /// <param name="source">Enumerable with zero or more elements.</param>
+    /// <returns>A tuple with two items. The first item, <c>head</c>, is the first element of <paramref name="source"/>, or <c>null</c> if <paramref name="source"/> is empty. The second item, <c>tail</c>, is an enumerable of the remaining elements of <paramref name="source"/>, or an empty enumerable if <paramref name="source"/> has fewer than 2 elements.</returns>
     [Pure]
-    public static (T? head, IEnumerable<T?> tail) HeadAndTailStruct<T>(this IEnumerable<T?> source) where T: struct {
+    public static (T? head, IEnumerable<T?> tail) HeadAndTailValueType<T>(this IEnumerable<T?> source) where T: struct {
         using IEnumerator<T?> enumerator = source.GetEnumerator();
         return (head: enumerator.MoveNext() ? enumerator.Current : null, tail: new Enumerable<T?>(enumerator));
     }
@@ -246,84 +331,6 @@ public static class Collections {
         public IEnumerator<T> GetEnumerator() => enumerator;
 
         IEnumerator IEnumerable.GetEnumerator() => enumerator;
-
-    }
-
-    [Pure]
-    public static ConcurrentDictionary<TKey, ValueHolder<TValue>> CreateConcurrentDictionary<TKey, TValue>(
-        IEqualityComparer<TKey>? equalityComparer = null,
-        int?                     concurrency      = null)
-        where TKey: notnull {
-#if NETSTANDARD
-        equalityComparer ??= EqualityComparer<TKey>.Default;
-#endif
-#if NET8_0_OR_GREATER
-        concurrency ??= -1;
-#else
-        concurrency ??= Environment.ProcessorCount;
-#endif
-        return new ConcurrentDictionary<TKey, ValueHolder<TValue>>();
-    }
-
-    [Pure]
-    public static ConcurrentDictionary<TKey, ValueHolder<TValue>> CreateConcurrentDictionary<TKey, TValue>(
-        IEnumerable<KeyValuePair<TKey, TValue>> collection,
-        IEqualityComparer<TKey>?                equalityComparer = null,
-        int?                                    concurrency      = null)
-        where TKey: notnull {
-#if NETSTANDARD
-        equalityComparer ??= EqualityComparer<TKey>.Default;
-#endif
-#if NET8_0_OR_GREATER
-        concurrency ??= -1;
-#else
-        concurrency ??= Environment.ProcessorCount;
-#endif
-        return new ConcurrentDictionary<TKey, ValueHolder<TValue>>(concurrency.Value,
-            collection.Select(pair => new KeyValuePair<TKey, ValueHolder<TValue>>(pair.Key, new ValueHolder<TValue>(pair.Value))), equalityComparer);
-    }
-
-    [Pure]
-    public static ConcurrentDictionary<TKey, ValueHolder<TValue>> CreateConcurrentDictionary<TKey, TValue>(
-        int                      capacity,
-        IEqualityComparer<TKey>? equalityComparer = null,
-        int?                     concurrency      = null)
-        where TKey: notnull {
-#if NETSTANDARD
-        equalityComparer ??= EqualityComparer<TKey>.Default;
-#endif
-#if NET8_0_OR_GREATER
-        concurrency ??= -1;
-#else
-        concurrency ??= Environment.ProcessorCount;
-#endif
-        return new ConcurrentDictionary<TKey, ValueHolder<TValue>>(concurrency.Value, capacity, equalityComparer);
-    }
-
-    public static TValue ExchangeEnum<TKey, TValue>(this ConcurrentDictionary<TKey, ValueHolder<int>> dictionary, TKey key, TValue newValue) where TValue: Enum where TKey: notnull {
-        int newValueInt = (int) Convert.ChangeType(newValue, newValue.GetTypeCode());
-        return (TValue) Enum.ToObject(typeof(TValue), Interlocked.Exchange(ref dictionary.GetOrAdd(key, new ValueHolder<int>(newValueInt)).Value, newValueInt));
-    }
-
-    public static TValue Exchange<TKey, TValue>(this ConcurrentDictionary<TKey, ValueHolder<TValue>> dictionary, TKey key, TValue newValue) where TValue: class where TKey: notnull {
-        return Interlocked.Exchange(ref dictionary.GetOrAdd(key, new ValueHolder<TValue>(newValue)).Value, newValue);
-    }
-
-    public static long Exchange<TKey>(this ConcurrentDictionary<TKey, ValueHolder<long>> dictionary, TKey key, long newValue) where TKey: notnull {
-        return Interlocked.Exchange(ref dictionary.GetOrAdd(key, new ValueHolder<long>(newValue)).Value, newValue);
-    }
-
-    public static int Exchange<TKey>(this ConcurrentDictionary<TKey, ValueHolder<int>> dictionary, TKey key, int newValue) where TKey: notnull {
-        return Interlocked.Exchange(ref dictionary.GetOrAdd(key, new ValueHolder<int>(newValue)).Value, newValue);
-    }
-
-    public static double Exchange<TKey>(this ConcurrentDictionary<TKey, ValueHolder<double>> dictionary, TKey key, double newValue) where TKey: notnull {
-        return Interlocked.Exchange(ref dictionary.GetOrAdd(key, new ValueHolder<double>(newValue)).Value, newValue);
-    }
-
-    public class ValueHolder<T>(T value) {
-
-        public T Value = value;
 
     }
 

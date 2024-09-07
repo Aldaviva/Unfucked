@@ -2,12 +2,19 @@
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;net8.0</TargetFrameworks>
-        <Version>0.0.0-alpha1</Version>
+        <Version>0.0.0-alpha2</Version><!-- Keep in sync with ..\Directory.Packages.props -->
         <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+        <Description>Fix egregiously broken or missing functionality in .NET libraries. Inspired by underscore, jQuery, Apache Commons, Spring, and Guava.</Description>
+        <PackageTags>boilerplate polyfill common utilities helpers toolbelt swiss-army-knife</PackageTags>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
         <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="ExceptionAdjustments.txt" />
+        <AdditionalFiles Include="ExceptionAdjustments.txt" />
     </ItemGroup>
 
 </Project>

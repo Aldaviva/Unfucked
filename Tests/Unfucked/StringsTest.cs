@@ -158,7 +158,7 @@ public class StringsTest {
 
     [Fact]
     public void StringToStream() {
-        Stream actual = "abc".ToStream();
+        Stream actual = "abc".ToByteStream();
         actual.Should().HaveLength(3);
         byte[] buffer = new byte[3];
         actual.Read(buffer).Should().Be(3);
@@ -167,7 +167,7 @@ public class StringsTest {
 
     [Fact]
     public void StringToBytes() {
-        byte[] actual = "abc".ToBytes();
+        byte[] actual = "abc".ToByteArray();
         actual.Should().HaveCount(3);
         actual.Should().Equal("abc"u8.ToArray());
     }
@@ -182,6 +182,19 @@ public class StringsTest {
     [InlineData("abc\ndef\r\n", "abc\ndef\n")]
     public void Dos2Unix(string? input, string? expected) {
         input.Dos2Unix().Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("ab", 0, "")]
+    [InlineData("ab", 1, "ab")]
+    [InlineData("ab", 2, "abab")]
+    [InlineData("ab", 3, "ababab")]
+    [InlineData("ab", 4, "abababab")]
+    [InlineData("ab", 5, "ababababab")]
+    [InlineData("  ", 6, "            ")]
+    [InlineData(" ", 12, "            ")]
+    public void Repeat(string toRepeat, uint repetitions, string expected) {
+        toRepeat.Repeat(repetitions).Should().Be(expected);
     }
 
 }

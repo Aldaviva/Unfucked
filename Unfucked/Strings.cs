@@ -3,71 +3,121 @@ using System.Text;
 
 namespace Unfucked;
 
+/// <summary>
+/// Methods that make it easier to work with strings.
+/// </summary>
 public static class Strings {
 
     private static readonly UTF8Encoding DefaultEncoding = new(false, true);
 
+    /// <summary>
+    /// Coerce strings with length 0 to <c>null</c>, which is easier to deal with than empty strings using null coalescing.
+    /// </summary>
+    /// <param name="str">A string that could be <c>null</c> or empty.</param>
+    /// <returns>The input string or <c>null</c>, but never the empty string.</returns>
+    /// <seealso cref="string.IsNullOrEmpty"/>
     [Pure]
-    public static string? EmptyToNull(this string? source) => string.IsNullOrEmpty(source) ? null : source;
+    public static string? EmptyToNull(this string? str) => string.IsNullOrEmpty(str) ? null : str;
 
     /// <summary>
-    /// Indicates whether a specified string is <c>null</c>, empty, or consists only of white-space characters.
+    /// Determine if a string contains any non-whitespace characters.
     /// </summary>
-    /// <param name="source">The string to test</param>
-    /// <returns><c>false</c> if the <paramref name="source"/> parameter is <c>null</c> or <see cref="string.Empty"/>, or if <paramref name="source"/> consists exclusively of whitespace characters; <c>true</c> otherwise.</returns>
+    /// <param name="str">A string that could be <c>null</c>, empty, or whitespace only.</param>
+    /// <returns><c>true</c> if the input string contains at least one non-whitespace character, or <c>false</c> if it is <c>null</c>, empty, or consists only of whitespace characters.</returns>
     /// <seealso cref="string.IsNullOrWhiteSpace"/>
     [Pure]
     public static bool HasText(
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
         [NotNullWhen(true)]
 #endif
-        this string? source) => !string.IsNullOrWhiteSpace(source);
+        this string? str) => !string.IsNullOrWhiteSpace(str);
 
+    /// <summary>
+    /// Determine if a string contains any characters.
+    /// </summary>
+    /// <param name="str">A string that could be <c>null</c> or empty.</param>
+    /// <returns><c>true</c> if the input string contains at least one character, or <c>false</c> if it is <c>null</c> or the empty string.</returns>
+    /// <seealso cref="string.IsNullOrEmpty"/>
     [Pure]
     public static bool HasLength(
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
         [NotNullWhen(true)]
 #endif
-        this string? source) => !string.IsNullOrEmpty(source);
+        this string? str) => !string.IsNullOrEmpty(str);
 
+    /// <summary>
+    /// Concatenate multiple strings together, with a separator between each one.
+    /// </summary>
+    /// <param name="strings">Strings to combine</param>
+    /// <param name="separator">Optional string to appear between each pair of items in <paramref name="strings"/></param>
+    /// <returns>A string that consists of each item in <paramref name="strings"/> concatenated together, with <paramref name="separator"/> between them.</returns>
+    /// <seealso cref="string.Join(string?,IEnumerable{string?})"/>
     [Pure]
-    public static string Join(this IEnumerable<string?> source, string? separator = null) => string.Join(separator, source);
+    public static string Join(this IEnumerable<string?> strings, string? separator = null) => string.Join(separator, strings);
 
+    /// <summary>
+    /// Concatenate multiple strings together, with a separator between each one.
+    /// </summary>
+    /// <param name="strings">Strings to combine</param>
+    /// <param name="separator">Character to appear between each pair of items in <paramref name="strings"/></param>
+    /// <returns>A string that consists of each item in <paramref name="strings"/> concatenated together, with <paramref name="separator"/> between them.</returns>
+    /// <seealso cref="string.Join(string?,IEnumerable{string?})"/>
     [Pure]
-    public static string Join(this IEnumerable<string?> source, char separator) {
+    public static string Join(this IEnumerable<string?> strings, char separator) {
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-        return string.Join(separator, source);
+        return string.Join(separator, strings);
 #else
-        return string.Join(Convert.ToString(separator), source);
+        return string.Join(Convert.ToString(separator), strings);
 #endif
     }
 
+    // ReSharper disable ReplaceSubstringWithRangeIndexer
+    /// <summary>
+    /// Converts the first character of a string to lowercase.
+    /// </summary>
+    /// <param name="str">A string that could contain an uppercase first letter</param>
+    /// <param name="culture">The language information to use for case conversion</param>
+    /// <returns>A string with the same characters as <paramref name="str"/> except the first character is lowercase, or <c>null</c> if <paramref name="str"/> is <c>null</c></returns>
     [Pure]
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-    [return: NotNullIfNotNull(nameof(source))]
+    [return: NotNullIfNotNull(nameof(str))]
 #endif
-    public static string? ToLowerFirstLetter(this string? source, CultureInfo? culture = null) =>
-        string.IsNullOrEmpty(source) ? source : char.ToLower(source[0], culture ?? CultureInfo.InvariantCulture) + source.Substring(1);
+    public static string? ToLowerFirstLetter(this string? str, CultureInfo? culture = null) =>
+        string.IsNullOrEmpty(str) ? str : char.ToLower(str![0], culture ?? CultureInfo.InvariantCulture) + str.Substring(1);
 
+    /// <summary>
+    /// Converts the first character of a string to uppercase.
+    /// </summary>
+    /// <param name="str">A string that could contain an lowercase first letter</param>
+    /// <param name="culture">The language information to use for case conversion</param>
+    /// <returns>A string with the same characters as <paramref name="str"/> except the first character is uppercase, or <c>null</c> if <paramref name="str"/> is <c>null</c></returns>
     [Pure]
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-    [return: NotNullIfNotNull(nameof(source))]
+    [return: NotNullIfNotNull(nameof(str))]
 #endif
-    public static string? ToUpperFirstLetter(this string? source, CultureInfo? culture = null) =>
-        string.IsNullOrEmpty(source) ? source : char.ToUpper(source[0], culture ?? CultureInfo.InvariantCulture) + source.Substring(1);
+    public static string? ToUpperFirstLetter(this string? str, CultureInfo? culture = null) =>
+        string.IsNullOrEmpty(str) ? str : char.ToUpper(str![0], culture ?? CultureInfo.InvariantCulture) + str.Substring(1);
+    // ReSharper restore ReplaceSubstringWithRangeIndexer
 
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+    /// <summary>
+    /// Remove all occurrences of any of a given array of prefixes from the beginning of a string.
+    /// </summary>
+    /// <param name="str">The string to remove prefixes from.</param>
+    /// <param name="prefixesToTrim">Array of prefixes, all of which will be removed from <paramref name="str"/>.</param>
+    /// <returns>A substring of <paramref name="str"/> that does not start with any of the <paramref name="prefixesToTrim"/>.</returns>
     [Pure]
-    public static string TrimStart(this string source, params string[] preficesToTrim) => TrimStart(source.AsSpan(), preficesToTrim);
+    public static string TrimStart(this string str, params string[] prefixesToTrim) => TrimStart(str.AsSpan(), prefixesToTrim);
 
+    /// <inheritdoc cref="TrimStart(string,string[])" />
     [Pure]
-    public static string TrimStart(this ReadOnlySpan<char> source, params string[] preficesToTrim) {
+    public static string TrimStart(this ReadOnlySpan<char> str, params string[] prefixesToTrim) {
         int startIndex = 0;
         while (true) {
             bool found = false;
-            foreach (string prefixToTrim in preficesToTrim) {
+            foreach (string prefixToTrim in prefixesToTrim) {
                 int prefixLength = prefixToTrim.Length;
-                if (prefixLength != 0 && startIndex + prefixLength <= source.Length && source[startIndex..(startIndex + prefixLength)].SequenceEqual(prefixToTrim)) {
+                if (prefixLength != 0 && startIndex + prefixLength <= str.Length && str[startIndex..(startIndex + prefixLength)].SequenceEqual(prefixToTrim)) {
                     startIndex += prefixLength;
                     found      =  true;
                     break;
@@ -79,20 +129,27 @@ public static class Strings {
             }
         }
 
-        return source[startIndex..].ToString();
+        return str[startIndex..].ToString();
     }
 
+    /// <summary>
+    /// Remove all occurrences of any of a given array of suffixes from the end of a string.
+    /// </summary>
+    /// <param name="str">The string to remove suffixes from.</param>
+    /// <param name="suffixesToTrim">Array of suffixes, all of which will be removed from <paramref name="str"/>.</param>
+    /// <returns>A substring of <paramref name="str"/> that does not end with any of the <paramref name="suffixesToTrim"/>.</returns>
     [Pure]
-    public static string TrimEnd(this string source, params string[] sufficesToTrim) => TrimEnd(source.AsSpan(), sufficesToTrim);
+    public static string TrimEnd(this string str, params string[] suffixesToTrim) => TrimEnd(str.AsSpan(), suffixesToTrim);
 
+    /// <inheritdoc cref="TrimEnd(string,string[])" />
     [Pure]
-    public static string TrimEnd(this ReadOnlySpan<char> source, params string[] sufficesToTrim) {
-        int endIndex = source.Length;
+    public static string TrimEnd(this ReadOnlySpan<char> str, params string[] suffixesToTrim) {
+        int endIndex = str.Length;
         while (true) {
             bool found = false;
-            foreach (string suffixToTrim in sufficesToTrim) {
+            foreach (string suffixToTrim in suffixesToTrim) {
                 int suffixLength = suffixToTrim.Length;
-                if (suffixLength != 0 && endIndex >= 0 && endIndex - suffixLength >= 0 && source[(endIndex - suffixLength)..endIndex].SequenceEqual(suffixToTrim)) {
+                if (suffixLength != 0 && endIndex >= 0 && endIndex - suffixLength >= 0 && str[(endIndex - suffixLength)..endIndex].SequenceEqual(suffixToTrim)) {
                     endIndex -= suffixLength;
                     found    =  true;
                     break;
@@ -104,19 +161,34 @@ public static class Strings {
             }
         }
 
-        return source[..endIndex].ToString();
+        return str[..endIndex].ToString();
     }
 
+    /// <summary>
+    /// Remove all occurrences of any of a given array of affixes from the beginning and end of a string.
+    /// </summary>
+    /// <param name="str">The string to remove affixes from.</param>
+    /// <param name="affixesToTrim">Array of suffixes, all of which will be removed from <paramref name="str"/>.</param>
+    /// <returns>A substring of <paramref name="str"/> that does neither starts nor ends with any of the <paramref name="affixesToTrim"/>.</returns>
     [Pure]
-    public static string Trim(this string source, params string[] affices) => Trim(source.AsSpan(), affices);
+    public static string Trim(this string str, params string[] affixesToTrim) => Trim(str.AsSpan(), affixesToTrim);
 
+    /// <inheritdoc cref="Trim(string,string[])" />
     [Pure]
-    public static string Trim(this ReadOnlySpan<char> source, params string[] affices) => TrimEnd(TrimStart(source, affices), affices);
+    public static string Trim(this ReadOnlySpan<char> str, params string[] affixesToTrim) => TrimEnd(TrimStart(str, affixesToTrim), affixesToTrim);
 #endif
 
+    /// <summary>
+    /// Combine a sequence of objects into an English comma-separated list
+    /// </summary>
+    /// <param name="items">Sequence of objects</param>
+    /// <param name="comma">String used to separate items in a list, <c>,</c> by default. A space will be inserted after each usage of this.</param>
+    /// <param name="conjunction">A word that appears before the last item in a list of 3 or more items. This is <c>and</c> by default, but you can change it to <c>or</c> for a disjunction, or any other word.</param>
+    /// <param name="oxfordComma"><c>true</c> (default) to include a <paramref name="comma"/> after the penultimate item in a list of 3 or more items, or <c>false</c> to omit it from this position.</param>
+    /// <returns>English-style list of items, such as <c>A and B</c> or <c>A, B, and C</c></returns>
     [Pure]
-    public static string JoinHumanized(this IEnumerable<object> source, string comma = ",", string conjunction = "and", bool oxfordComma = true) {
-        using IEnumerator<object> enumerator = source.GetEnumerator();
+    public static string JoinHumanized(this IEnumerable<object> items, string comma = ",", string conjunction = "and", bool oxfordComma = true) {
+        using IEnumerator<object> enumerator = items.GetEnumerator();
 
         if (!enumerator.MoveNext()) {
             return string.Empty;
@@ -152,11 +224,23 @@ public static class Strings {
         return stringBuilder.ToString();
     }
 
+    /// <summary>
+    /// Serialize a string to a stream of bytes.
+    /// </summary>
+    /// <param name="str">The string to convert to bytes.</param>
+    /// <param name="encoding">The character encoding to use, or <c>null</c> to use UTF-8.</param>
+    /// <returns>A stream of bytes that represent <paramref name="str"/> in the given <paramref name="encoding"/>.</returns>
     [Pure]
-    public static Stream ToStream(this string source, Encoding? encoding = null) => new MemoryStream((encoding ?? DefaultEncoding).GetBytes(source), false);
+    public static Stream ToByteStream(this string str, Encoding? encoding = null) => new MemoryStream((encoding ?? DefaultEncoding).GetBytes(str), false);
 
+    /// <summary>
+    /// Serialize a string to an array of bytes.
+    /// </summary>
+    /// <param name="str">The string to convert to bytes.</param>
+    /// <param name="encoding">The character encoding to use, or <c>null</c> to use UTF-8.</param>
+    /// <returns>An array of bytes that represent <paramref name="str"/> in the given <paramref name="encoding"/>.</returns>
     [Pure]
-    public static byte[] ToBytes(this string source, Encoding? encoding = null) => (encoding ?? DefaultEncoding).GetBytes(source);
+    public static byte[] ToByteArray(this string str, Encoding? encoding = null) => (encoding ?? DefaultEncoding).GetBytes(str);
 
     /// <summary>
     /// Replace Windows-style line endings (CRLF, <c>\r\n</c>, 0x0d 0x0a) with Unix-style line endings (LF, <c>\n</c>, 0x0a)
@@ -168,5 +252,34 @@ public static class Strings {
     [return: NotNullIfNotNull(nameof(dosString))]
 #endif
     public static string? Dos2Unix(this string? dosString) => dosString?.Replace("\r\n", "\n");
+
+    /// <summary>
+    /// Repeat the string multiple times.
+    /// </summary>
+    /// <param name="str">The string to be repeated</param>
+    /// <param name="count">The total number of times <paramref name="str"/> should appear in the returned string</param>
+    /// <returns>A string that consists of <paramref name="count"/> copies of <paramref name="str"/> concatenated together</returns>
+    public static string Repeat(this string str, uint count) {
+        switch (count) {
+            case 0:
+                return string.Empty;
+            case 1:
+                return str;
+            case 2:
+                return str + str;
+            case 3:
+                return str + str + str;
+            case 4:
+                return str + str + str + str;
+            // At count ≥ 5, concatenation is not faster than a pre-allocated StringBuilder
+            default:
+                StringBuilder stringBuilder = new((int) (str.Length * count));
+                for (int i = 0; i < count; i++) {
+                    stringBuilder.Append(str);
+                }
+
+                return stringBuilder.ToString();
+        }
+    }
 
 }

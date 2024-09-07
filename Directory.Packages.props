@@ -4,7 +4,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageVersion Include="Unfucked" Version="0.0.1-alpha1" />
+        <PackageVersion Include="Unfucked" Version="0.0.1-alpha2" /> <!-- Keep in sync with Version in Unfucked\Unfucked.csproj -->
         <PackageVersion Include="Unfucked.Caching" Version="0.0.1-alpha1" />
 
         <PackageVersion Include="G6.GandiLiveDns" Version="1.0.0" />

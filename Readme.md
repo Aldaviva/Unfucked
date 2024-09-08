@@ -187,6 +187,11 @@ Automatically connect and reconnect to USB HID peripherals.
 
 Automatically implement INotifyPropertyChanged to allow you to create composable properties with no publisher or subscriber boilerplate.
 
+#### SolCalc
+[![NuGet](https://img.shields.io/nuget/v/SolCalc?logo=nuget&label=SolCalc%20on%20NuGet)](https://www.nuget.org/packages/SolCalc)
+
+Calculate a stream of solar time of day transitions for a given point on Earth, including sunrise, sunset, astronomical dawn and dusk, nautical dawn and dusk, and civil dawn and dusk.
+
 #### ThrottleDebounce
 [![NuGet](https://img.shields.io/nuget/v/ThrottleDebounce?logo=nuget&label=ThrottleDebounce%20on%20NuGet)](https://www.nuget.org/packages/ThrottleDebounce)
 

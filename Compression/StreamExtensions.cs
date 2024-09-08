@@ -2,7 +2,7 @@ using System.Buffers;
 
 namespace Unfucked.Compression;
 
-public static class StreamExtensions {
+internal static class StreamExtensions {
 
     // Copied from internal SharpCompress.StreamExtensions.Write(Stream,ReadOnlySpan<byte>)
     internal static void Write(this Stream stream, ReadOnlySpan<byte> buffer) {

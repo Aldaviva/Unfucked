@@ -16,3 +16,5 @@
 # P:System.Diagnostics.Process.Handle get -T:System.NotSupportedException
 # M:System.IntPtr.ToInt32 -T:System.OverflowException
 # M:System.TimeSpan.Negate -T:System.OverflowException
+M:System.Array.CopyTo(System.Array,System.Int32) -T:System.ArrayTypeMismatchException
+M:System.Array.CopyTo(System.Array,System.Int32) -T:System.RankException

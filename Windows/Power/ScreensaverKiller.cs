@@ -2,21 +2,28 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace Unfucked.Windows.Screensaver;
+namespace Unfucked.Windows.Power;
 
-public interface IScreensaverManager {
+/// <summary>
+/// Allows you to programmatically kill/cancel/interrupt/stop a running screensaver in Windows.
+/// </summary>
+public interface IScreensaverKiller {
 
+    /// <summary>
+    /// Kill/cancel/interrupt/stop the running screensaver in Windows, or do nothing if the screensaver is not currently running.
+    /// </summary>
     void KillScreensaver();
 
 }
 
-// https://stackoverflow.com/a/36292070/979493
-public class ScreensaverManager: IScreensaverManager {
+/// <inheritdoc />
+/// <remarks>By BatteryBackupUnit: <see href="https://stackoverflow.com/a/36292070/979493"/></remarks>
+public class ScreensaverKiller: IScreensaverKiller {
 
-    public void KillScreensaver() => turnOnScreenAndInterruptScreensaver();
-
-    private void turnOnScreenAndInterruptScreensaver() {
-        turnOnScreenAndResetDisplayIdleTimer();
+    /// <inheritdoc />
+    /// <remarks>By BatteryBackupUnit: <see href="https://stackoverflow.com/a/36292070/979493"/></remarks>
+    public void KillScreensaver() {
+        TurnOnScreenAndResetDisplayIdleTimer();
         InterruptScreensaver();
     }
 
@@ -25,7 +32,7 @@ public class ScreensaverManager: IScreensaverManager {
     /// display idle timer, which is key, because otherwise the 
     /// screen would be turned off again immediately.
     /// </summary>
-    private void turnOnScreenAndResetDisplayIdleTimer() {
+    private static void TurnOnScreenAndResetDisplayIdleTimer() {
         SendInputNativeMethods.Input input = new() { type = SendInputNativeMethods.SendInputEventType.InputMouse };
         try {
             SendInputNativeMethods.SendInput(input);
@@ -34,7 +41,7 @@ public class ScreensaverManager: IScreensaverManager {
         }
     }
 
-    private void InterruptScreensaver() {
+    private static void InterruptScreensaver() {
         try {
             if (ScreensaverNativeMethods.GetScreenSaverRunning()) {
                 ScreensaverNativeMethods.KillScreenSaver();
@@ -101,6 +108,7 @@ public class ScreensaverManager: IScreensaverManager {
 
         }
 
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value - you don't need to move the mouse to kill the screensaver, just send a mouse input event
         public struct MouseInputData {
 
             public int             Dx;
@@ -111,6 +119,7 @@ public class ScreensaverManager: IScreensaverManager {
             public IntPtr          DwExtraInfo;
 
         }
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
         [Flags]
         public enum MouseEventFlags: uint {

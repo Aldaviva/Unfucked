@@ -28,7 +28,14 @@ public interface IPGP: PgpCore.Abstractions.IPGP {
 /// <inheritdoc cref="IPGP"/>
 public class PGP: PgpCore.PGP, IPGP {
 
+    /// <summary>
+    /// Create a new instance without specifying any encryption keys
+    /// </summary>
     public PGP() { }
+
+    /// <summary>
+    /// Create a new instance with specific encryption keys to use for signing operations
+    /// </summary>
     public PGP(IEncryptionKeys encryptionKeys): base(encryptionKeys) { }
 
     // Copied from PGP.ClearSignAsync(Stream,Stream,IDictionary<string,string>) and PGP.SignAsync(Stream,Stream,bool,string,IDictionary<string,string>,bool)

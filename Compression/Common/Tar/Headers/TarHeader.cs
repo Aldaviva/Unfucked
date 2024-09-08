@@ -1,7 +1,9 @@
 using SharpCompress;
 using SharpCompress.Common;
+using SharpCompress.Writers;
 using System.Buffers.Binary;
 using System.Text;
+using Unfucked.Compression.Writers.Tar;
 
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable InconsistentNaming
@@ -11,7 +13,9 @@ namespace Unfucked.Compression.Common.Tar.Headers;
 #nullable disable
 
 /// <summary>
-/// Like <c>SharpCompress.Common.Tar.Headers.TarHeader</c> except you're not prevented from setting the file mode, owner, and group, or from adding symlinks.
+/// <para>Like <c>SharpCompress.Common.Tar.Headers.TarHeader</c> except you're not prevented from setting the file mode, owner, and group, or from adding symlinks.</para>
+/// <para>This is generally used inside <see cref="TarWriter"/>, but if you're subclassing it, you may need to create an instance of this yourself.</para>
+/// <para>Usage: construct a new instance and set all the properties you want like <see cref="Name"/> and <see cref="EntryType"/>, then call <see cref="Write"/>, passing the <see cref="Stream"/> from <see cref="AbstractWriter.OutputStream"/>.</para>
 /// </summary>
 public class TarHeader(ArchiveEncoding archiveEncoding) {
 
@@ -20,17 +24,38 @@ public class TarHeader(ArchiveEncoding archiveEncoding) {
     internal string Name { get; set; }
     internal string LinkName { get; set; }
 
+    /// <summary>
+    /// Unix file permissions mode for the file or directory, or -1 to use the default 0o777 mode.
+    /// </summary>
     public long Mode { get; set; } = -1;
+
+    /// <summary>
+    /// Unix owner user ID for the file or directory, or 0 to not specify an owner.
+    /// </summary>
     public long UserId { get; set; }
+
+    /// <summary>
+    /// Unix group ID for the file or directory, or 0 to not specify a group.
+    /// </summary>
     public long GroupId { get; set; }
+
     internal long Size { get; set; }
     internal DateTime LastModifiedTime { get; set; }
+
+    /// <summary>
+    /// Specifies the type of the filesystem object, such as file, directory, or symlink.
+    /// </summary>
     public EntryType EntryType { get; set; }
+
     internal Stream PackedStream { get; set; }
     internal ArchiveEncoding ArchiveEncoding { get; } = archiveEncoding;
 
     internal const int BLOCK_SIZE = 512;
 
+    /// <summary>
+    /// Serialize the file into the TAR archive.
+    /// </summary>
+    /// <param name="output">TAR archive output stream, usually provided by <see cref="AbstractWriter.OutputStream"/> in <see cref="TarWriter"/>.</param>
     protected internal virtual void Write(Stream output) {
         byte[] buffer = new byte[BLOCK_SIZE];
 
@@ -100,6 +125,8 @@ public class TarHeader(ArchiveEncoding archiveEncoding) {
         output.Write(stackalloc byte[numPaddingBytes]);
     }
 
+    /// <exception cref="InvalidOperationException"></exception>
+    /// <exception cref="FormatException"></exception>
     internal bool Read(BinaryReader reader) {
         byte[] buffer = ReadBlock(reader);
         if (buffer.Length == 0) {
@@ -131,9 +158,9 @@ public class TarHeader(ArchiveEncoding archiveEncoding) {
         long unixTimeStamp = ReadAsciiInt64Base8(buffer, 136, 11);
         LastModifiedTime = EPOCH.AddSeconds(unixTimeStamp).ToLocalTime();
 
-        Magic = ArchiveEncoding.Decode(buffer, 257, 6).TrimNulls();
+        string magic = ArchiveEncoding.Decode(buffer, 257, 6).TrimNulls();
 
-        if (!string.IsNullOrEmpty(Magic) && "ustar".Equals(Magic)) {
+        if (!string.IsNullOrEmpty(magic) && "ustar".Equals(magic)) {
             string namePrefix = ArchiveEncoding.Decode(buffer, 345, 157);
             namePrefix = namePrefix.TrimNulls();
             if (!string.IsNullOrEmpty(namePrefix)) {
@@ -148,6 +175,7 @@ public class TarHeader(ArchiveEncoding archiveEncoding) {
         return true;
     }
 
+    /// <exception cref="FormatException"></exception>
     private string ReadLongName(BinaryReader reader, byte[] buffer) {
         long   size                 = ReadSize(buffer);
         int    nameLength           = (int) size;
@@ -164,6 +192,7 @@ public class TarHeader(ArchiveEncoding archiveEncoding) {
 
     private static EntryType ReadEntryType(byte[] buffer) => (EntryType) buffer[156];
 
+    /// <exception cref="FormatException"></exception>
     private static long ReadSize(byte[] buffer) {
         if ((buffer[124] & 0x80) == 0x80) // if size in binary
         {
@@ -173,6 +202,7 @@ public class TarHeader(ArchiveEncoding archiveEncoding) {
         return ReadAsciiInt64Base8(buffer, 124, 11);
     }
 
+    /// <exception cref="InvalidOperationException"></exception>
     private static byte[] ReadBlock(BinaryReader reader) {
         byte[] buffer = reader.ReadBytes(BLOCK_SIZE);
 
@@ -213,6 +243,7 @@ public class TarHeader(ArchiveEncoding archiveEncoding) {
         }
     }
 
+    /// <exception cref="FormatException"></exception>
     private static int ReadAsciiInt32Base8(byte[] buffer, int offset, int count) {
         string s = Encoding.UTF8.GetString(buffer, offset, count).TrimNulls();
         if (string.IsNullOrEmpty(s)) {
@@ -222,6 +253,7 @@ public class TarHeader(ArchiveEncoding archiveEncoding) {
         return Convert.ToInt32(s, 8);
     }
 
+    /// <exception cref="FormatException"></exception>
     private static long ReadAsciiInt64Base8(byte[] buffer, int offset, int count) {
         string s = Encoding.UTF8.GetString(buffer, offset, count).TrimNulls();
         if (string.IsNullOrEmpty(s)) {
@@ -231,6 +263,7 @@ public class TarHeader(ArchiveEncoding archiveEncoding) {
         return Convert.ToInt64(s, 8);
     }
 
+    /// <exception cref="FormatException"></exception>
     private static long ReadAsciiInt64Base8oldGnu(byte[] buffer, int offset, int count) {
         if (buffer[offset] == 0x80 && buffer[offset + 1] == 0x00) {
             return (buffer[offset + 4] << 24)
@@ -248,6 +281,7 @@ public class TarHeader(ArchiveEncoding archiveEncoding) {
         return Convert.ToInt64(s, 8);
     }
 
+    /// <exception cref="FormatException"></exception>
     private static long ReadAsciiInt64(byte[] buffer, int offset, int count) {
         string s = Encoding.UTF8.GetString(buffer, offset, count).TrimNulls();
         if (string.IsNullOrEmpty(s)) {
@@ -257,28 +291,14 @@ public class TarHeader(ArchiveEncoding archiveEncoding) {
         return Convert.ToInt64(s);
     }
 
-    private static readonly byte[] eightSpaces = {
-        (byte) ' ',
-        (byte) ' ',
-        (byte) ' ',
-        (byte) ' ',
-        (byte) ' ',
-        (byte) ' ',
-        (byte) ' ',
-        (byte) ' '
-    };
+    private static readonly byte[] eightSpaces = "        "u8.ToArray();
 
     internal static int RecalculateChecksum(byte[] buf) {
         // Set default value for checksum. That is 8 spaces.
         eightSpaces.CopyTo(buf, 148);
 
         // Calculate checksum
-        int headerChecksum = 0;
-        foreach (byte b in buf) {
-            headerChecksum += b;
-        }
-
-        return headerChecksum;
+        return buf.Aggregate(0, (current, b) => current + b);
     }
 
     internal static int RecalculateAltChecksum(byte[] buf) {
@@ -295,26 +315,80 @@ public class TarHeader(ArchiveEncoding archiveEncoding) {
         return headerChecksum;
     }
 
-    public long? DataStartPosition { get; set; }
+    // public long? DataStartPosition { get; set; }
 
-    public string Magic { get; set; }
+    // public string Magic { get; set; }
 
 }
 
+/// <summary>
+/// Specifies the type of a filesystem object, such as file, directory, or symlink.
+/// </summary>
 public enum EntryType: byte {
 
-    File                 = 0,
-    OldFile              = (byte) '0',
-    HardLink             = (byte) '1',
-    SymLink              = (byte) '2',
-    CharDevice           = (byte) '3',
-    BlockDevice          = (byte) '4',
-    Directory            = (byte) '5',
-    Fifo                 = (byte) '6',
-    LongLink             = (byte) 'K',
-    LongName             = (byte) 'L',
-    SparseFile           = (byte) 'S',
-    VolumeHeader         = (byte) 'V',
+    /// <summary>
+    /// A regular file
+    /// </summary>
+    File = 0,
+
+    /// <summary>
+    /// A regular file
+    /// </summary>
+    OldFile = (byte) '0',
+
+    /// <summary>
+    /// A hardlink
+    /// </summary>
+    HardLink = (byte) '1',
+
+    /// <summary>
+    /// A symbolic link
+    /// </summary>
+    SymLink = (byte) '2',
+
+    /// <summary>
+    /// Character device node
+    /// </summary>
+    CharDevice = (byte) '3',
+
+    /// <summary>
+    /// Block device node
+    /// </summary>
+    BlockDevice = (byte) '4',
+
+    /// <summary>
+    /// A directory/folder
+    /// </summary>
+    Directory = (byte) '5',
+
+    /// <summary>
+    /// FIFO node
+    /// </summary>
+    Fifo = (byte) '6',
+
+    /// <summary>
+    /// The data for this entry is a long linkname for the following regular entry.
+    /// </summary>
+    LongLink = (byte) 'K',
+
+    /// <summary>
+    /// The data for this entry is a long pathname for the following regular entry.
+    /// </summary>
+    LongName = (byte) 'L',
+
+    /// <summary>
+    /// This is a "sparse" regular file. Sparse files are stored as a series of fragments. The header contains a list of fragment offset/length pairs. If more than four such entries are required, the header is extended as necessary with “extra” header extensions (an older format that is no longer used), or "sparse" extensions.
+    /// </summary>
+    SparseFile = (byte) 'S',
+
+    /// <summary>
+    /// The <c>name</c> field should be interpreted as a tape/volume header name. This entry should generally be ignored on extraction.
+    /// </summary>
+    VolumeHeader = (byte) 'V',
+
+    /// <summary>
+    /// Global extended header
+    /// </summary>
     GlobalExtendedHeader = (byte) 'g'
 
 }

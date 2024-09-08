@@ -1,15 +1,31 @@
+using Microsoft.Win32;
 using System.Diagnostics.Eventing.Reader;
 
 namespace Unfucked.Windows.Power;
 
+/// <summary>
+/// Emit events when Windows enters and leaves standby/sleep. More reliable than <see cref="SystemEvents.PowerModeChanged"/>, which sometimes ignores events.
+/// </summary>
 public interface IStandbyListener: IDisposable {
 
+    /// <summary>
+    /// Triggered right before the computer enters standby mode.
+    /// </summary>
     event EventHandler StandingBy;
+
+    /// <summary>
+    /// Triggered right after the computer wakes up from standby mode.
+    /// </summary>
     event EventHandler Resumed;
+
+    /// <summary>
+    /// Triggered if there is an unrecoverable error on the event listener, preventing all future events from being fired.
+    /// </summary>
     event EventHandler<Exception> FatalError;
 
 }
 
+/// <inheritdoc />
 public class EventLogStandbyListener: IStandbyListener {
 
     private const int StandByEventId = 42;
@@ -24,23 +40,23 @@ public class EventLogStandbyListener: IStandbyListener {
     /// <inheritdoc />
     public event EventHandler<Exception>? FatalError;
 
-    private readonly EventLogWatcher _logWatcher;
+    private readonly EventLogWatcher logWatcher;
 
     /// <exception cref="EventLogNotFoundException">if the given event log or file was not found</exception>
     /// <exception cref="UnauthorizedAccessException">if the log did not already exist and this program is not running elevated</exception>
     public EventLogStandbyListener() {
-        _logWatcher = new EventLogWatcher(new EventLogQuery("System", PathType.LogName,
+        logWatcher = new EventLogWatcher(new EventLogQuery("System", PathType.LogName,
             $"*[System[Provider/@Name=\"Microsoft-Windows-Kernel-Power\" and (EventID={StandByEventId} or EventID={ResumeEventId})]]"));
 
-        _logWatcher.EventRecordWritten += onEventRecord;
+        logWatcher.EventRecordWritten += onEventRecord;
 
         try {
-            _logWatcher.Enabled = true;
+            logWatcher.Enabled = true;
         } catch (EventLogNotFoundException) {
-            _logWatcher.Dispose();
+            logWatcher.Dispose();
             throw;
         } catch (UnauthorizedAccessException) {
-            _logWatcher.Dispose();
+            logWatcher.Dispose();
             throw;
         }
     }
@@ -64,8 +80,8 @@ public class EventLogStandbyListener: IStandbyListener {
 
     /// <inheritdoc />
     public void Dispose() {
-        _logWatcher.EventRecordWritten -= onEventRecord;
-        _logWatcher.Dispose();
+        logWatcher.EventRecordWritten -= onEventRecord;
+        logWatcher.Dispose();
         GC.SuppressFinalize(this);
     }
 

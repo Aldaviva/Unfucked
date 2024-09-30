@@ -7,7 +7,7 @@ namespace Unfucked;
 /// <summary>
 /// Methods that make it easier to work with Ical.Net's <see cref="Ical.Net.Serialization.CalendarSerializer"/> class.
 /// </summary>
-public static class CalendarSerializer {
+public static class CalendarSerializerExtensions {
 
     private const int BufferSize = 1024;
 

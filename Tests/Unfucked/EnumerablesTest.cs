@@ -337,4 +337,60 @@ public class EnumerablesTest {
 
     }
 
+    [Fact]
+    public void GetOrAddWithDisposalCreatedAndAdded() {
+        Disposable created    = new();
+        var        dictionary = new ConcurrentDictionary<int, Disposable>();
+
+        dictionary.GetOrAddWithDisposal(0, _ => created);
+
+        dictionary[0].Should().BeSameAs(created);
+        dictionary[0].IsDisposed.Should().BeFalse();
+    }
+
+    [Fact]
+    public void GetOrAddWithDisposalNotCreatedAndNotAdded() {
+        Disposable created = new();
+        var dictionary = new ConcurrentDictionary<int, Disposable> {
+            [0] = new()
+        };
+
+        dictionary[0].IsDisposed.Should().BeFalse();
+        bool factoryRun = false;
+        dictionary.GetOrAddWithDisposal(0, _ => {
+            factoryRun = true;
+            return created;
+        });
+
+        dictionary[0].Should().NotBeSameAs(created);
+        dictionary[0].IsDisposed.Should().BeFalse();
+        factoryRun.Should().BeFalse("key already existed in the dictionary");
+        created.IsDisposed.Should().BeFalse("factory was never run");
+    }
+
+    [Fact]
+    public void GetOrAddWithDisposalCreatedButNotAdded() {
+        Disposable created    = new();
+        Disposable added      = new();
+        var        dictionary = new ConcurrentDictionary<int, Disposable>();
+
+        dictionary.GetOrAddWithDisposal(0, (_, toAdd) => {
+            dictionary[0] = toAdd;
+            return created;
+        }, added);
+
+        dictionary[0].Should().BeSameAs(added);
+        dictionary[0].Should().NotBeSameAs(created);
+        added.IsDisposed.Should().BeFalse();
+        created.IsDisposed.Should().BeTrue("factory was run but value was not added");
+    }
+
+    private class Disposable: IDisposable {
+
+        public bool IsDisposed { get; private set; }
+
+        public void Dispose() => IsDisposed = true;
+
+    }
+
 }

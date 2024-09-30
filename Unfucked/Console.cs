@@ -100,13 +100,11 @@ public static class ConsoleControl {
     public static bool IsColorSupported() {
         if (_virtualTerminalProcessingState == VirtualTerminalProcessing.Disabled) {
             IntPtr stdout = GetStdHandle(StandardHandle.StandardOutputHandle);
-            _virtualTerminalProcessingState = stdout == InvalidHandleValue ||
-                !GetConsoleMode(stdout, out ConsoleMode originalStdoutMode) || (
-                    !SetConsoleMode(stdout, originalStdoutMode | ConsoleMode.EnableVirtualTerminalProcessing | ConsoleMode.DisableNewlineAutoReturn) &&
-                    !SetConsoleMode(stdout, originalStdoutMode | ConsoleMode.EnableVirtualTerminalProcessing)
-                ) ?
-                    VirtualTerminalProcessing.Unavailable :
-                    VirtualTerminalProcessing.Enabled;
+            _virtualTerminalProcessingState = stdout == InvalidHandleValue
+                || !GetConsoleMode(stdout, out ConsoleMode originalStdoutMode)
+                || !SetConsoleMode(stdout, originalStdoutMode | ConsoleMode.EnableVirtualTerminalProcessing)
+                    ? VirtualTerminalProcessing.Unavailable
+                    : VirtualTerminalProcessing.Enabled;
         }
 
         return _virtualTerminalProcessingState == VirtualTerminalProcessing.Enabled;
@@ -204,21 +202,21 @@ public static class ConsoleControl {
     private enum ConsoleMode: uint {
 
         // stdin
-        EnableEchoInput            = 0x4,
-        EnableInsertMode           = 0x20,
-        EnableLineInput            = 0x2,
-        EnableMouseInput           = 0x10,
-        EnableProcessedInput       = 0x1,
-        EnableQuickEditMode        = 0x40,
-        EnableWindowInput          = 0x8,
-        EnableVirtualTerminalInput = 0x200,
+        EnableProcessedInput       = 1 << 0,
+        EnableLineInput            = 1 << 1,
+        EnableEchoInput            = 1 << 2,
+        EnableWindowInput          = 1 << 3,
+        EnableMouseInput           = 1 << 4,
+        EnableInsertMode           = 1 << 5,
+        EnableQuickEditMode        = 1 << 6,
+        EnableVirtualTerminalInput = 1 << 9,
 
         // stdout
-        EnableProcessedOutput           = 0x1,
-        EnableWrapAtEolOutput           = 0x2,
-        EnableVirtualTerminalProcessing = 0x4,
-        DisableNewlineAutoReturn        = 0x8,
-        EnableLvbGridWorldwide          = 0x10,
+        EnableProcessedOutput           = 1 << 0,
+        EnableWrapAtEolOutput           = 1 << 1,
+        EnableVirtualTerminalProcessing = 1 << 2,
+        DisableNewlineAutoReturn        = 1 << 3,
+        EnableLvbGridWorldwide          = 1 << 4
 
     }
 

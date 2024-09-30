@@ -4,9 +4,9 @@ using System.Diagnostics.Contracts;
 namespace Unfucked;
 
 /// <summary>
-/// Methods that make it easier to work with dates and times
+/// Methods that make it easier to work with NodaTime dates and times
 /// </summary>
-public static class DateTime {
+public static class NodaTimeExtensions {
 
     /// <summary>
     /// Absolute value of a duration
@@ -22,16 +22,6 @@ public static class DateTime {
     [Pure]
     public static Duration? Abs(this Duration? input) {
         return input != null && input < Duration.Zero ? Duration.Negate(input.Value) : input;
-    }
-
-    /// <summary>
-    /// Absolute value of a time span
-    /// </summary>
-    /// <param name="input">a time span that may be positive, negative, or zero</param>
-    /// <returns>the nonnegative magnitude of <paramref name="input"/></returns>
-    [Pure]
-    public static TimeSpan Abs(this TimeSpan input) {
-        return input < TimeSpan.Zero ? input.Negate() : input;
     }
 
     /// <summary>

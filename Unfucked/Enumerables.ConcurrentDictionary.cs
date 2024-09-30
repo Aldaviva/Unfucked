@@ -400,12 +400,25 @@ public static partial class Enumerables {
     /// </summary>
     /// <typeparam name="T">Type of the dictionary value.</typeparam>
     /// <param name="value">Initial value for the dictionary key-value pair.</param>
-    public class ValueHolder<T>(T value) {
+    public class ValueHolder<T>(T value): IEquatable<ValueHolder<T>> {
 
         /// <summary>
         /// Actual value of the dictionary key-value pair. Can be atomically updated and the old value returned using <see cref="Exchange{TKey,TValue}"/>.
         /// </summary>
         public T Value = value;
+
+        /// <inheritdoc />
+        public bool Equals(ValueHolder<T>? other) => other is not null && (ReferenceEquals(this, other) || EqualityComparer<T>.Default.Equals(Value, other.Value));
+
+        /// <inheritdoc />
+        public override bool Equals(object? obj) => obj is not null && (ReferenceEquals(this, obj) || (obj.GetType() == typeof(ValueHolder<T>) && Equals((ValueHolder<T>) obj)));
+
+        /// <inheritdoc />
+        public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode(Value);
+
+        public static bool operator ==(ValueHolder<T>? left, ValueHolder<T>? right) => Equals(left, right);
+
+        public static bool operator !=(ValueHolder<T>? left, ValueHolder<T>? right) => !Equals(left, right);
 
     }
 
@@ -466,6 +479,59 @@ public static partial class Enumerables {
             return Convert.ToBoolean(Interlocked.Exchange(ref ((ValueHolder<int>) this).Value, Convert.ToInt32(newBoolValue)));
         }
 
+    }
+
+    /// <summary>
+    /// <para>Adds a key/value pair to the <see cref="T:System.Collections.Concurrent.ConcurrentDictionary`2" /> by using the specified function if the key does not already exist. Returns the new value, or the existing value if the key exists.</para>
+    /// <para>This extension method will also dispose of the value created by <paramref name="valueFactory"/> if it was unused. To avoid deadlocks, <see cref="ConcurrentDictionary{TKey,TValue}"/> does not atomically create the value and add it to the dictionary, because <paramref name="valueFactory"/> is untrusted code and could deadlock. Instead, the <see cref="ConcurrentDictionary{TKey,TValue}"/> takes a three phased approach: check if the key already exists, create the value, and add the value. This means that the key could be concurrently added after the first check, which would lead to the value being created in the second step but not added in the third step. In this case, the created value is unused and will never be disposed.</para>
+    /// <para>If you want values created by <paramref name="valueFactory"/> that are never added to the dictionary to be disposed, call this method.</para>
+    /// </summary>
+    /// <typeparam name="TKey">Type of keys in the dictionary.</typeparam>
+    /// <typeparam name="TValue">Type of values in the dictionary.</typeparam>
+    /// <param name="dictionary">The <see cref="ConcurrentDictionary{TKey,TValue}"/> to get or add a value to.</param>
+    /// <param name="key">The key of the element to add.</param>
+    /// <param name="valueFactory">The function used to generate a value for the key.</param>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// <paramref name="key" /> or <paramref name="valueFactory" /> is <c>null</c>.</exception>
+    /// <exception cref="T:System.OverflowException">The dictionary contains too many elements.</exception>
+    /// <returns>The value for the key. This will be either the existing value for the key if the key is already in the dictionary, or the new value if the key was not in the dictionary.</returns>
+    public static TValue GetOrAddWithDisposal<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> valueFactory)
+        where TKey: notnull where TValue: IDisposable {
+
+        TValue? toAdd   = default;
+        bool    created = false;
+        TValue result = dictionary.GetOrAdd(key, k => {
+            toAdd   = valueFactory(k);
+            created = true;
+            return toAdd;
+        });
+
+        if (created && !ReferenceEquals(toAdd, result)) {
+            toAdd?.Dispose();
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// <para>Adds a key/value pair to the <see cref="T:System.Collections.Concurrent.ConcurrentDictionary`2" /> by using the specified function and an argument if the key does not already exist, or returns the existing value if the key exists.</para>
+    /// <para>This extension method will also dispose of the value created by <paramref name="valueFactory"/> if it was unused. To avoid deadlocks, <see cref="ConcurrentDictionary{TKey,TValue}"/> does not atomically create the value and add it to the dictionary, because <paramref name="valueFactory"/> is untrusted code and could deadlock. Instead, the <see cref="ConcurrentDictionary{TKey,TValue}"/> takes a three phased approach: check if the key already exists, create the value, and add the value. This means that the key could be concurrently added after the first check, which would lead to the value being created in the second step but not added in the third step. In this case, the created value is unused and will never be disposed.</para>
+    /// <para>If you want values created by <paramref name="valueFactory"/> that are never added to the dictionary to be disposed, call this method.</para>
+    /// </summary>
+    /// <param name="dictionary">The <see cref="ConcurrentDictionary{TKey,TValue}"/> to get or add a value to.</param>
+    /// <param name="key">The key of the element to add.</param>
+    /// <param name="valueFactory">The function used to generate a value for the key.</param>
+    /// <param name="factoryArgument">An argument value to pass into <paramref name="valueFactory" />.</param>
+    /// <typeparam name="TKey">Type of keys in the dictionary.</typeparam>
+    /// <typeparam name="TArg">The type of an argument to pass into <paramref name="valueFactory" />.</typeparam>
+    /// <typeparam name="TValue">Type of values in the dictionary.</typeparam>
+    /// <exception cref="T:System.ArgumentNullException">
+    /// <paramref name="key" /> is a <see langword="null" /> reference (Nothing in Visual Basic).</exception>
+    /// <exception cref="T:System.OverflowException">The dictionary contains too many elements.</exception>
+    /// <returns>The value for the key. This will be either the existing value for the key if the key is already in the dictionary, or the new value if the key was not in the dictionary.</returns>
+    public static TValue GetOrAddWithDisposal<TKey, TArg, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument)
+        where TKey: notnull where TValue: IDisposable {
+        return GetOrAddWithDisposal(dictionary, key, k => valueFactory(k, factoryArgument));
     }
 
 }

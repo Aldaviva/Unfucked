@@ -12,7 +12,7 @@
     <Choose>
         <When Condition="'$(Configuration)' == 'Release'">
             <ItemGroup>
-                <PackageReference Include="Unfucked"  />
+                <PackageReference Include="Unfucked" />
                 <PackageReference Include="Unfucked.Caching" />
             </ItemGroup>
         </When>

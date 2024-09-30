@@ -1,8 +1,17 @@
-﻿using System.Xml.Linq;
+﻿using System.Xml;
+using System.Xml.Linq;
+using System.Xml.Serialization;
+using System.Xml.XPath;
 
 namespace Tests.Unfucked;
 
 public class XmlTest {
+
+    // lang=xml
+    private const string Xml =
+        """
+        <Root name="a" />
+        """;
 
     [Fact]
     public void Descendants() {
@@ -35,17 +44,43 @@ public class XmlTest {
     }
 
     [Fact]
-    public async Task ReadXmlFromHttpResponse() {
-        // lang=xml
-        const string xml =
-            """
-            <Root name="a" />
-            """;
+    public async Task ReadXmlLinqFromHttpResponse() {
+        using HttpContent httpContent = new ByteArrayContent(Xml.ToByteArray());
 
-        using HttpContent httpContent = new ByteArrayContent(xml.ToByteArray());
-
-        XDocument doc = await httpContent.ReadFromXmlAsync();
+        XDocument doc = await httpContent.ReadLinqFromXmlAsync();
         doc.Root!.Attribute("name")!.Value.Should().Be("a");
+    }
+
+    [Fact]
+    public async Task ReadXmlDomFromHttpResponse() {
+        using HttpContent httpContent = new ByteArrayContent(Xml.ToByteArray());
+
+        XmlDocument doc = await httpContent.ReadDomFromXmlAsync();
+        doc.DocumentElement!.GetAttribute("name").Should().Be("a");
+    }
+
+    [Fact]
+    public async Task ReadXmlMappingFromHttpResponse() {
+        using HttpContent httpContent = new ByteArrayContent(Xml.ToByteArray());
+
+        XmlObject doc = await httpContent.ReadObjectFromXmlAsync<XmlObject>();
+        doc.name.Should().Be("a");
+    }
+
+    [Fact]
+    public async Task ReadXpathFromHttpResponse() {
+        using HttpContent httpContent = new ByteArrayContent(Xml.ToByteArray());
+
+        XPathNavigator doc = await httpContent.ReadXPathFromXmlAsync();
+        doc.SelectSingleNode("/Root/@name")!.Value.Should().Be("a");
+    }
+
+    [XmlRoot("Root")]
+    public class XmlObject {
+
+        [XmlAttribute("name")]
+        public string name { get; set; }
+
     }
 
 }

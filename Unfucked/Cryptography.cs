@@ -73,7 +73,7 @@ public static class Cryptography {
 
         return new string(result);
 #else
-        StringBuilder result       = new((int) length);
+        StringBuilder result = new((int) length);
         byte[]        randomBuffer = new byte[length * 4];
         Rng.GetBytes(randomBuffer);
 

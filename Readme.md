@@ -54,6 +54,7 @@
     - Head and tail
     - Delta changeset between two enumerables (created, updated, deleted, and unchanged items)
     - Atomic swap on `ConcurrentDictionary` to upsert new value and get old value
+    - Get or add to `ConcurrentDictionary` and dispose of created but unadded values
 - Paths
     - Trim trailing slashes
     - Create new empty temporary subdirectory in specific parent directory
@@ -89,27 +90,27 @@
     - Fluent method to get URI query parameters
     - Check if a URI host belongs to a given domain (site locking)
 - XML
-    - Fluent method to read an XML document from an HTTP response body
+    - Fluent methods to read an XML document from an HTTP response body as a mapped object, DOM, LINQ, or XPath
     - Find all descendant elements of a parent node which have a given tag name
 
 ### Caching
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.Caching?logo=nuget&label=Unfucked.Caching%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.Caching)
-- For use with `System.Runtime.Caching`
+- For use with [System.Runtime.Caching](https://www.nuget.org/packages/System.Runtime.Caching)
 - Type-safe `MemoryCache<T>`
 
 ### Compression
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.Compression?logo=nuget&label=Unfucked.Compression%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.Compression)
-- For use with SharpCompress
-- TAR archives
+- For use with [SharpCompress](https://www.nuget.org/packages/SharpCompress)
+- Added features for TAR archives
     - Symlinks
     - Directories
+    - File permissions
     - File owner
     - File group
-    - File permissions
 
 ### DateTime
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.DateTime?logo=nuget&label=Unfucked.DateTime%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.DateTime)
-- For use with NodaTime
+- For use with [NodaTime](https://www.nuget.org/packages/NodaTime)
 - Absolute value of a `Duration` or `TimeSpan`
 - Get midnight from a `ZonedDateTime` as a `ZonedDateTime`, `Period`, or `Duration`
 - Convert time zone offset to hours
@@ -117,48 +118,51 @@
 
 ### DI
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.DI?logo=nuget&label=Unfucked.DI%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.DI)
-- For use with `Microsoft.Extensions.Hosting` dependency injection/inversion of control
+- For use with [Microsoft.Extensions.Hosting](https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection) dependency injection/inversion of control
 - Add a colored console with column formatted data
 - Search for JSON configuration files in executable directory, not just current working directory
 - Allow provider functions to be injected, so long-lived consumers can depend on short-lived dependencies and control their lifecycle
 
 ### DNS
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.DNS?logo=nuget&label=Unfucked.DNS%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.DNS)
-- For use with G6.GandiLiveDns
+- For use with [G6.GandiLiveDns](https://www.nuget.org/packages/G6.GandiLiveDns)
 - Interface for Gandi LiveDNS HTTP API client to allow mocked testing isolation
 
 ### ICS
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.ICS?logo=nuget&label=Unfucked.ICS%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.ICS)
-- For use with Ical.Net
+- For use with [Ical.Net](https://www.nuget.org/packages/TwitchApi.Net)
 - Asynchronously serialize iCalendar files to a byte stream, to prevent Kestrel and IIS errors on synchronous I/O
 - Converters between the three implementations of a datetime used by Ical.Net, NodaTime, and .NET
 
 ### OBS
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.OBS?logo=nuget&label=Unfucked.OBS%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.OBS)
-- For use with OBSClient
+- For use with [OBSClient](https://www.nuget.org/packages/OBSClient)
 - Interface for Open Broadcaster Software Studio WebSocket API client to allow mocked testing isolation
+- Easily connect and authenticate to servers without all the boilerplate
 
 ### PGP
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.PGP?logo=nuget&label=Unfucked.PGP%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.PGP)
-- For use with PgpCore
+- For use with [PgpCore](https://www.nuget.org/packages/PgpCore)
 - Detached signing, where an ASCII-armored PGP signature is generated in a sidecar file, not inline wrapping the file being signed like in clearsigning
 
 ### STUN
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.STUN?logo=nuget&label=Unfucked.STUN%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.STUN)
-- For use with Stun.Net
+- For use with [Stun.Net](https://www.nuget.org/packages/Stun.Net)
 - STUN client that retains the server that it was configured with, useful for error logging
 - Multi-server STUN client that transparently picks a random public STUN server from a constantly-updated list when sending a request, with retries and fallbacks if any of them fail
 - Thread-safe multi-server STUN client that can be used concurrently from multiple threads without conflicts
 
 ### Twitch
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.Twitch?logo=nuget&label=Unfucked.Twitch%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.Twitch)
-- For use with TwitchApi.Net
+- For use with [TwitchApi.Net](https://www.nuget.org/packages/TwitchApi.Net)
 - Interface for Twitch HTTP API client to allow mocked testing isolation
 
 ### Windows
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.Windows?logo=nuget&label=Unfucked.Windows%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.Windows)
+- For use with [Managed Windows API](https://mwinapi.sourceforge.net) ([mwinapi](https://www.nuget.org/packages/mwinapi))
 - Reliably detect when computer is entering and exiting standby
 - Kill the running screensaver
+- Easier to get program's basename without memory leaks
 
 ## Related packages
 
@@ -185,7 +189,7 @@ Automatically connect and reconnect to USB HID peripherals.
 #### KoKo
 [![NuGet](https://img.shields.io/nuget/v/KoKo?logo=nuget&label=KoKo%20on%20NuGet)](https://www.nuget.org/packages/KoKo)
 
-Automatically implement INotifyPropertyChanged to allow you to create composable properties with no publisher or subscriber boilerplate.
+Automatically implement `INotifyPropertyChanged` to allow you to create composable properties with no publisher or subscriber boilerplate.
 
 #### SolCalc
 [![NuGet](https://img.shields.io/nuget/v/SolCalc?logo=nuget&label=SolCalc%20on%20NuGet)](https://www.nuget.org/packages/SolCalc)

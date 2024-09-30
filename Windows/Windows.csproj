@@ -2,8 +2,30 @@
 
     <PropertyGroup>
         <TargetFramework>net6.0-windows</TargetFramework>
-        <Version>0.0.0-beta2</Version>
+        <Version>0.0.0-beta3</Version>
+        <RootNamespace>Unfucked</RootNamespace>
         <UseWindowsForms>true</UseWindowsForms>
     </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="mwinapi" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.WindowsDesktop.App" /> <!-- UseWindowsForms is insufficient to refer to UIAutomationClient -->
+    </ItemGroup>
+
+    <Choose>
+        <When Condition="'$(Configuration)' == 'Release'">
+            <ItemGroup>
+                <PackageReference Include="Unfucked" />
+            </ItemGroup>
+        </When>
+        <Otherwise>
+            <ItemGroup>
+                <ProjectReference Include="..\Unfucked\Unfucked.csproj" />
+            </ItemGroup>
+        </Otherwise>
+    </Choose>
 
 </Project>

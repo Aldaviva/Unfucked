@@ -114,4 +114,34 @@ public static class DependencyInjectionExtensions {
         return services;
     }
 
+    /// <summary>
+    /// <para>By default in .NET 6 and later, an uncaught exception in a <see cref="BackgroundService"/> will log a critical error and cause the host application to exit with status code 0. This makes it very difficult to automatically determine if the application crashed, such as when it's run from a script or Task Scheduler.</para>
+    /// <para>This extension allows you to change the exit code returned by this program when it exits due to a <see cref="BackgroundService"/> throwing an exception. By default, this will return 1 on exceptions, but you can customize the exit code too. The exit code is only changed if a <see cref="BackgroundService"/> threw an exception, so the program will still exit with 0 normally.</para>
+    /// <para>Usage:</para>
+    /// <para><code>builder.Services.SetExitCodeOnBackgroundServiceException(1);</code></para>
+    /// </summary>
+    /// <param name="services"></param>
+    /// <param name="exceptionExitCode"></param>
+    /// <returns></returns>
+    public static IServiceCollection SetExitCodeOnBackgroundServiceException(this IServiceCollection services, int exceptionExitCode = 1) {
+        services.AddHostedService(context => new BackgroundServiceExceptionListener(context, context.GetRequiredService<IHostApplicationLifetime>(), exceptionExitCode));
+        return services;
+    }
+
+    internal class BackgroundServiceExceptionListener(IServiceProvider services, IHostApplicationLifetime applicationLifetime, int exitCode = 1): BackgroundService {
+
+        protected override Task ExecuteAsync(CancellationToken stoppingToken) {
+            IEnumerable<BackgroundService> backgroundServices = services.GetServices<IHostedService>().OfType<BackgroundService>();
+
+            applicationLifetime.ApplicationStopped.Register(() => {
+                if (backgroundServices.Any(service => service.ExecuteTask?.IsFaulted ?? false)) {
+                    Environment.ExitCode = exitCode;
+                }
+            });
+
+            return Task.CompletedTask;
+        }
+
+    }
+
 }

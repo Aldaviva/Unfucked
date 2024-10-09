@@ -5,8 +5,4 @@
         <Version>$(UnfuckedCachingVersion)</Version>
     </PropertyGroup>
 
-    <ItemGroup>
-        <PackageReference Include="System.Runtime.Caching" />
-    </ItemGroup>
-
 </Project>

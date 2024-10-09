@@ -16,13 +16,14 @@ public static class Dns {
     /// <returns>First IP address that the domain name points to, or <c>null</c> if resolution failed.</returns>
     public static async Task<IPEndPoint?> Resolve(this DnsEndPoint host, CancellationToken cancellationToken = default) {
         try {
-            Task<IPAddress[]> responseTask;
+            IEnumerable<IPAddress> response;
 #if NET6_0_OR_GREATER
-            responseTask = System.Net.Dns.GetHostAddressesAsync(host.Host, host.AddressFamily, cancellationToken);
+            response = await System.Net.Dns.GetHostAddressesAsync(host.Host, host.AddressFamily, cancellationToken).ConfigureAwait(false);
 #else
-            responseTask = System.Net.Dns.GetHostAddressesAsync(host.Host);
+            response = await System.Net.Dns.GetHostAddressesAsync(host.Host).ConfigureAwait(false);
 #endif
-            return await responseTask.ConfigureAwait(false) is { LongLength: > 0 } response ? new IPEndPoint(response[0], host.Port) : null;
+            return response.FirstOrDefault(addr => host.AddressFamily == AddressFamily.Unspecified || host.AddressFamily == addr.AddressFamily) is { } address
+                ? new IPEndPoint(address, host.Port) : null;
         } catch (SocketException) {
             return null;
         }

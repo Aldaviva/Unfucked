@@ -1,5 +1,6 @@
 using STUN.Proxy;
 using System.Net;
+using System.Net.Sockets;
 
 // ReSharper disable InconsistentNaming
 
@@ -29,6 +30,6 @@ public class StunClient5389UDP(IPEndPoint server, string serverName, IPEndPoint 
     public IPEndPoint ServerAddress { get; } = server;
 
     /// <inheritdoc />
-    public DnsEndPoint Server { get; } = new(serverName, server.Port);
+    public DnsEndPoint Server { get; } = new(serverName, server.Port, AddressFamily.InterNetwork);
 
 }

@@ -10,8 +10,6 @@ namespace Unfucked.STUN;
 /// </summary>
 public class MultiServerStunClient: IStunClient5389 {
 
-    // internal static readonly IMemoryCache<IEnumerable<DnsEndPoint>> ServersCache = new MemoryCache<IEnumerable<DnsEndPoint>>($"{nameof(MultiServerStunClient)}.{nameof(ServersCache)}");
-
     private readonly IStunClientFactory stunClientFactory;
     private readonly StunServerList     stunServerList;
 
@@ -56,7 +54,7 @@ public class MultiServerStunClient: IStunClient5389 {
                 ServerAddress = stun.ServerAddress;
                 await stun.QueryAsync(cancellationToken).ConfigureAwait(false);
                 State = stun.State;
-                if (isSuccessfulResponse(State)) {
+                if (IsSuccessfulResponse(State)) {
                     break;
                 } else {
                     Debug.WriteLine("STUN request to {0} ({1}:{2}) failed, trying another server", stun.Server.Host, stun.ServerAddress.Address, stun.ServerAddress.Port);
@@ -73,7 +71,7 @@ public class MultiServerStunClient: IStunClient5389 {
                 ServerAddress = stun.ServerAddress;
                 Debug.WriteLine("Sending UDP STUN request to {0} ({1}:{2})", stun.Server.Host, stun.ServerAddress.Address, stun.ServerAddress.Port);
                 State = await stun.BindingTestAsync(cancellationToken).ConfigureAwait(false);
-                if (isSuccessfulResponse(State)) {
+                if (IsSuccessfulResponse(State)) {
                     break;
                 } else {
                     Debug.WriteLine("STUN request to {0} ({1}:{2}) failed, trying another server", stun.Server.Host, stun.ServerAddress.Address, stun.ServerAddress.Port);
@@ -91,7 +89,7 @@ public class MultiServerStunClient: IStunClient5389 {
                 ServerAddress = stun.ServerAddress;
                 await stun.MappingBehaviorTestAsync(cancellationToken).ConfigureAwait(false);
                 State = stun.State;
-                if (isSuccessfulResponse(State)) {
+                if (IsSuccessfulResponse(State)) {
                     break;
                 } else {
                     Debug.WriteLine("STUN request to {0} ({1}:{2}) failed, trying another server", stun.Server.Host, stun.ServerAddress.Address, stun.ServerAddress.Port);
@@ -108,7 +106,7 @@ public class MultiServerStunClient: IStunClient5389 {
                 ServerAddress = stun.ServerAddress;
                 await stun.FilteringBehaviorTestAsync(cancellationToken).ConfigureAwait(false);
                 State = stun.State;
-                if (isSuccessfulResponse(State)) {
+                if (IsSuccessfulResponse(State)) {
                     break;
                 } else {
                     Debug.WriteLine("STUN request to {0} ({1}:{2}) failed, trying another server", stun.Server.Host, stun.ServerAddress.Address, stun.ServerAddress.Port);
@@ -117,12 +115,15 @@ public class MultiServerStunClient: IStunClient5389 {
         }
     }
 
-    private static bool isSuccessfulResponse(StunResult5389 response) =>
-        response.BindingTestResult != BindingTestResult.Fail &&
-        response.BindingTestResult != BindingTestResult.UnsupportedServer &&
+    private static bool IsSuccessfulResponse(StunResult5389 response) =>
         response.FilteringBehavior != FilteringBehavior.UnsupportedServer &&
         response.MappingBehavior != MappingBehavior.Fail &&
-        response.MappingBehavior != MappingBehavior.UnsupportedServer;
+        response.MappingBehavior != MappingBehavior.UnsupportedServer &&
+        response.BindingTestResult != BindingTestResult.Fail &&
+        response.BindingTestResult != BindingTestResult.UnsupportedServer &&
+        (response.BindingTestResult != BindingTestResult.Success || (response.PublicEndPoint?.Address is { } wanAddr && !IsPrivateAddress(wanAddr)));
+
+    private static bool IsPrivateAddress(IPAddress addr) => addr.GetAddressBytes() is [127, _, _, _] or [10, _, _, _] or [192, 168, _, _] or [172, >= 16 and <= 31, _, _];
 
     /// <inheritdoc />
     public void Dispose() => GC.SuppressFinalize(this);

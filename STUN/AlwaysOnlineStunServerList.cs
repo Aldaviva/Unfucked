@@ -76,7 +76,7 @@ public class AlwaysOnlineStunServerList: StunServerList {
     }
 
     public async Task<IEnumerable<DnsEndPoint>> ListStunServers() {
-        DnsEndPoint[] servers = /*[new("stun.l.google.com", 19302)];*/ [];
+        DnsEndPoint[] servers = [];
         try {
             servers = (await ServersCache.Get(CacheKey).ConfigureAwait(false)).ToArray();
         } catch (HttpRequestException) { } catch (TaskCanceledException) { // timeout

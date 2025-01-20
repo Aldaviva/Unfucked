@@ -7,7 +7,7 @@ namespace Unfucked;
 /// <summary>
 /// Methods that make it easier to work with Windows UI Automation and Win32 windows.
 /// </summary>
-public static class UIAutomation {
+public static class UIAutomationExtensions {
 
     /// <summary>
     /// Convert a UI Automation element to its native Win32 window handle.

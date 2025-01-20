@@ -101,7 +101,7 @@ public class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
         IEnumerable<KeyValuePair<int, Enumerables.ValueHolder<long>>> oldWindowsToCleanUp = alreadyOpenedWindows.Where(pair => DateTime.FromBinary(pair.Value.Value) < now - CleanUpInterval);
 
         foreach (KeyValuePair<int, Enumerables.ValueHolder<long>> windowToCleanUp in oldWindowsToCleanUp) {
-            alreadyOpenedWindows.TryRemove(windowToCleanUp);
+            alreadyOpenedWindows.TryRemove(windowToCleanUp.Key, out _);
         }
     }
 

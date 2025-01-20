@@ -120,22 +120,31 @@ public static class DependencyInjectionExtensions {
     /// <para>Usage:</para>
     /// <para><code>builder.Services.SetExitCodeOnBackgroundServiceException(1);</code></para>
     /// </summary>
-    /// <param name="services"></param>
-    /// <param name="exceptionExitCode"></param>
-    /// <returns></returns>
-    public static IServiceCollection SetExitCodeOnBackgroundServiceException(this IServiceCollection services, int exceptionExitCode = 1) {
-        services.AddHostedService(context => new BackgroundServiceExceptionListener(context, context.GetRequiredService<IHostApplicationLifetime>(), exceptionExitCode));
+    /// <param name="services">From <see cref="HostApplicationBuilder.Services"/> or similar.</param>
+    /// <param name="exitCode">The numeric status code you want the application to exit with when a <see cref="BackgroundService"/> throws an uncaught exception. To customize the exit code for different exceptions, use the overload that takes a function for this parameter.</param>
+    public static IServiceCollection SetExitCodeOnBackgroundServiceException(this IServiceCollection services, int exitCode = 1) => SetExitCodeOnBackgroundServiceException(services, _ => exitCode);
+
+    /// <summary>
+    /// <para>By default in .NET 6 and later, an uncaught exception in a <see cref="BackgroundService"/> will log a critical error and cause the host application to exit with status code 0. This makes it very difficult to automatically determine if the application crashed, such as when it's run from a script or Task Scheduler.</para>
+    /// <para>This extension allows you to change the exit code returned by this program when it exits due to a <see cref="BackgroundService"/> throwing an exception. By default, this will return 1 on exceptions, but you can customize the exit code too. The exit code is only changed if a <see cref="BackgroundService"/> threw an exception, so the program will still exit with 0 normally.</para>
+    /// <para>Usage:</para>
+    /// <para><code>builder.Services.SetExitCodeOnBackgroundServiceException(exception => exception is ApplicationException ? 1 : 2);</code></para>
+    /// </summary>
+    /// <param name="services">From <see cref="HostApplicationBuilder.Services"/> or similar.</param>
+    /// <param name="exitCodeGenerator">A function that takes the <see cref="Exception"/> thrown by the <see cref="BackgroundService"/> and returns the status code to exit this process with.</param>
+    public static IServiceCollection SetExitCodeOnBackgroundServiceException(this IServiceCollection services, Func<Exception, int> exitCodeGenerator) {
+        services.AddHostedService(context => new BackgroundServiceExceptionListener(context, exitCodeGenerator));
         return services;
     }
 
-    internal class BackgroundServiceExceptionListener(IServiceProvider services, IHostApplicationLifetime applicationLifetime, int exitCode = 1): BackgroundService {
+    internal class BackgroundServiceExceptionListener(IServiceProvider services, Func<Exception, int> exitCodeGenerator): BackgroundService {
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken) {
-            IEnumerable<BackgroundService> backgroundServices = services.GetServices<IHostedService>().OfType<BackgroundService>();
+            IEnumerable<BackgroundService> backgroundServices = services.GetServices<IHostedService>().OfType<BackgroundService>().Where(service => service is not BackgroundServiceExceptionListener);
 
-            applicationLifetime.ApplicationStopped.Register(() => {
-                if (backgroundServices.Any(service => service.ExecuteTask?.IsFaulted ?? false)) {
-                    Environment.ExitCode = exitCode;
+            services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopped.Register(() => {
+                if (backgroundServices.Select(service => service.ExecuteTask?.Exception?.InnerException).FirstOrDefault() is { } exception) {
+                    Environment.ExitCode = exitCodeGenerator(exception);
                 }
             });
 

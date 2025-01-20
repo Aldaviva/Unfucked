@@ -55,6 +55,7 @@
     - Delta changeset between two enumerables (created, updated, deleted, and unchanged items)
     - Atomic swap on `ConcurrentDictionary` to upsert new value and get old value
     - Get or add to `ConcurrentDictionary` and dispose of created but unadded values
+    - Get or add to `ConcurrentDictionary` and determine whether a new value was added or an existing value was returned
 - Paths
     - Trim trailing slashes
     - Create new empty temporary subdirectory in specific parent directory
@@ -65,8 +66,6 @@
         - String to array
         - Array to string
     - Run program and get output and exit code
-    - Get parent process of a process
-    - Get descendant processes recursively of a process
 - Strings
     - Coerce empty strings to `null`
     - Fluently check if a string has any non-whitespace characters
@@ -95,8 +94,7 @@
 
 ### Caching
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.Caching?logo=nuget&label=Unfucked.Caching%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.Caching)
-- For use with [System.Runtime.Caching](https://www.nuget.org/packages/System.Runtime.Caching)
-- Type-safe `MemoryCache<T>`
+- Type-safe in-memory cache
 
 ### Compression
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.Compression?logo=nuget&label=Unfucked.Compression%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.Compression)
@@ -163,6 +161,9 @@
 - Reliably detect when computer is entering and exiting standby
 - Kill the running screensaver
 - Easier to get program's basename without memory leaks
+- Get parent process of a process
+- Get descendant processes recursively of a process
+- Get locale of the operating system, rather than the user
 
 ## Related packages
 

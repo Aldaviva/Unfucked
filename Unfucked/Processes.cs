@@ -1,11 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
-#if NET6_0_OR_GREATER
-using System.Runtime.Versioning;
-#endif
 
 namespace Unfucked;
 
@@ -69,61 +65,6 @@ public static class Processes {
     }
 
     /// <summary>
-    /// Split a single command-line string into a sequence of individual arguments using Windows rules.
-    /// </summary>
-    /// <param name="commandLine">A command-line string, possibly consisting of multiple arguments, escaping, and quotation marks.</param>
-    /// <returns>An enumerable of the individual arguments in <paramref name="commandLine"/>, unescaped and unquoted.</returns>
-    /// <remarks>
-    /// By Mike Schwörer: <see href="https://stackoverflow.com/a/64236441/979493" />
-    /// </remarks>
-    [ExcludeFromCodeCoverage]
-    [Pure]
-    public static IEnumerable<string> CommandLineToEnumerable(string commandLine) {
-        StringBuilder result = new();
-
-        bool quoted     = false;
-        bool escaped    = false;
-        bool started    = false;
-        bool allowcaret = false;
-        for (int i = 0; i < commandLine.Length; i++) {
-            char chr = commandLine[i];
-
-            if (chr == '^' && !quoted) {
-                if (allowcaret) {
-                    result.Append(chr);
-                    started    = true;
-                    escaped    = false;
-                    allowcaret = false;
-                } else if (i + 1 < commandLine.Length && commandLine[i + 1] == '^') {
-                    allowcaret = true;
-                } else if (i + 1 == commandLine.Length) {
-                    result.Append(chr);
-                    started = true;
-                    escaped = false;
-                }
-            } else if (escaped) {
-                result.Append(chr);
-                started = true;
-                escaped = false;
-            } else if (chr == '"') {
-                quoted  = !quoted;
-                started = true;
-            } else if (chr == '\\' && i + 1 < commandLine.Length && commandLine[i + 1] == '"') {
-                escaped = true;
-            } else if (chr == ' ' && !quoted) {
-                if (started) yield return result.ToString();
-                result.Clear();
-                started = false;
-            } else {
-                result.Append(chr);
-                started = true;
-            }
-        }
-
-        if (started) yield return result.ToString();
-    }
-
-    /// <summary>
     /// Run a program, wait for it to exit, and return its exit code, stdout, and stderr.
     /// </summary>
     /// <remarks>Inspired by Node.js' <c>child_process.execFile()</c>: <see href="https://nodejs.org/api/child_process.html#child_processexecfilefile-args-options-callback"/></remarks>
@@ -147,12 +88,12 @@ public static class Processes {
     /// <returns>Tuple that contains the numeric exit code of the child process, the standard output text, and the standard error text, or <c>null</c> if the child process failed to start.</returns>
     /// <exception cref="TaskCanceledException"><paramref name="cancellationToken"/> was canceled before the child process exited. The child process will still be running at this point—cancelling this method does not kill it. To get information about the running child process, for example if you want to kill it yourself, you can read the integer <c>pid</c> value from the <see cref="Exception.Data"/> dictionary to pass to <see cref="Process.GetProcessById(int)"/>.</exception>
     public static async Task<(int exitCode, string standardOutput, string standardError)?> ExecFile(
-        string                        file,
-        IEnumerable<string>?          arguments         = null,
-        IDictionary<string, string?>? extraEnvironment  = null,
-        string                        workingDirectory  = "",
-        bool                          hideWindow        = false,
-        CancellationToken             cancellationToken = default) {
+        string file,
+        IEnumerable<string>? arguments = null,
+        IDictionary<string, string?>? extraEnvironment = null,
+        string workingDirectory = "",
+        bool hideWindow = false,
+        CancellationToken cancellationToken = default) {
 
         Process? process;
         try {
@@ -224,117 +165,6 @@ public static class Processes {
         }
     }
 
-    /// <summary>
-    /// <para>Gets the process that started a given child process.</para>
-    /// <para>Windows only.</para>
-    /// </summary>
-    /// <param name="pid">The child process ID of which you want to find the parent, or <c>null</c> to get the parent of the current process.</param>
-    /// <returns>The parent process of the child process that has the given <paramref name="pid"/>, or <c>null</c> if the process cannot be found (possibly because it already exited). Remember to <see cref="IDisposable.Dispose"/> the returned value.</returns>
-    /// <inheritdoc cref="GetParentProcess(Process)" path="/remarks" />
-#if NET6_0_OR_GREATER
-    [SupportedOSPlatform("windows")]
-#endif
-    [ExcludeFromCodeCoverage]
-    [Pure]
-    public static Process? GetParentProcess(int? pid = null) {
-        using Process process = pid.HasValue ? Process.GetProcessById(pid.Value) : Process.GetCurrentProcess();
-        return GetParentProcess(process);
-    }
-
-    /// <summary>
-    /// <para>Gets the process that started a given child process.</para>
-    /// <para>Windows only.</para>
-    /// </summary>
-    /// <param name="child">The child process of which you want to find the parent.</param>
-    /// <returns>The parent process of <paramref name="child"/>. Remember to <see cref="IDisposable.Dispose"/> the returned value.</returns>
-    /// <remarks>
-    /// <para>By Simon Mourier: <see href="https://stackoverflow.com/a/3346055/979493"/></para>
-    /// </remarks>
-#if NET6_0_OR_GREATER
-    [SupportedOSPlatform("windows")]
-#endif
-    [ExcludeFromCodeCoverage]
-    [Pure]
-    public static Process? GetParentProcess(this Process child) {
-        ProcessBasicInformation basicInfo = new();
-        if (0 != NtQueryInformationProcess(child.Handle, 0, ref basicInfo, Marshal.SizeOf(basicInfo), out int _)) {
-            return null;
-        }
-
-        try {
-            return Process.GetProcessById(basicInfo.InheritedFromUniqueProcessId.ToInt32());
-        } catch (ArgumentException) {
-            // not found
-            return null;
-        }
-    }
-
-    [DllImport("ntdll.dll")]
-    private static extern int NtQueryInformationProcess(IntPtr processHandle, int processInfoClass, ref ProcessBasicInformation processInfo, int processInfoLength, out int returnLength);
-
-    /// <summary>
-    /// <para>List all currently running processes that were started by the given <paramref name="ancestor"/> process, including transitively to an unlimited depth.</para>
-    /// <para>Windows only.</para>
-    /// </summary>
-    /// <param name="ancestor">The parent, grandparent, or further process that started the processes to return</param>
-    /// <returns>List of processes which were started by either <paramref name="ancestor"/>, one of its children, grandchildren, or further to an unlimited depth. Remember to <see cref="IDisposable.Dispose"/> all of these <see cref="Process"/> instances.</returns>
-#if NET6_0_OR_GREATER
-    [SupportedOSPlatform("windows")]
-#endif
-    [Pure]
-    public static IEnumerable<Process> GetDescendantProcesses(this Process ancestor) {
-        Process[] allProcesses = Process.GetProcesses();
-
-        //eagerly find child processes, because once we start killing processes, their parent PIDs won't mean anything anymore
-        List<Process> descendants = GetDescendantProcesses(ancestor, allProcesses).ToList();
-
-        foreach (Process nonDescendant in allProcesses.Except(descendants, ProcessIdEqualityComparer.Instance)) {
-            nonDescendant.Dispose();
-        }
-
-        return descendants;
-    }
-
-#if NET6_0_OR_GREATER
-    [SupportedOSPlatform("windows")]
-#endif
-    [Pure]
-    // ReSharper disable once ParameterTypeCanBeEnumerable.Local (Avoid double enumeration heuristic)
-    private static IEnumerable<Process> GetDescendantProcesses(Process ancestor, Process[] allProcesses) =>
-        allProcesses.SelectMany(descendant => {
-            bool isDescendantOfParent = false;
-            try {
-                using Process? descendantParent = GetParentProcess(descendant);
-                isDescendantOfParent = descendantParent?.Id == ancestor.Id;
-            } catch (Exception e) when (e is not OutOfMemoryException) {
-                //leave isDescendentOfParent false
-            }
-
-            return isDescendantOfParent ? GetDescendantProcesses(descendant, allProcesses).Prepend(descendant) : [];
-        });
-
-    private class ProcessIdEqualityComparer: IEqualityComparer<Process> {
-
-        public static readonly ProcessIdEqualityComparer Instance = new();
-
-        public bool Equals(Process? x, Process? y) => ReferenceEquals(x, y) || (x is not null && y is not null && x.GetType() == y.GetType() && x.Id == y.Id);
-
-        public int GetHashCode(Process obj) => obj.Id;
-
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    [ExcludeFromCodeCoverage]
-    private readonly struct ProcessBasicInformation {
-
-        // These members must match PROCESS_BASIC_INFORMATION
-        private readonly  IntPtr Reserved1;
-        internal readonly IntPtr PebBaseAddress;
-        private readonly  IntPtr Reserved2_0;
-        private readonly  IntPtr Reserved2_1;
-        internal readonly IntPtr UniqueProcessId;
-        internal readonly IntPtr InheritedFromUniqueProcessId;
-
-    }
+    public static string StripExeSuffix(string processName) => processName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? processName.Substring(0, processName.Length - 4) : processName;
 
 }

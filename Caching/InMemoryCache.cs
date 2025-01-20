@@ -6,14 +6,14 @@ namespace Unfucked.Caching;
 
 public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
 
+    public event RemovalNotification<K, V>? Removal;
+
     private readonly CacheOptions                           options;
     private readonly Func<K, Task<V>>?                      defaultLoader;
     private readonly ConcurrentDictionary<K, CacheEntry<V>> cache;
     private readonly Timer?                                 expirationTimer;
 
-    public event RemovalNotification<K, V>? Removal;
-
-    private volatile bool disposed;
+    private volatile bool isDisposed;
 
     public InMemoryCache(CacheOptions? options = null, Func<K, Task<V>>? loader = null) {
         this.options                  = options ?? new CacheOptions();
@@ -38,30 +38,43 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
     public async Task<V> Get(K key, Func<K, Task<V>>? loader = null) {
         CacheEntry<V> cacheEntry = cache.GetOrAdd(key, ValueFactory);
         if (cacheEntry.IsNew) {
-            cacheEntry.IsNew = false;
+            await cacheEntry.ValueLock.WaitAsync().ConfigureAwait(false);
             try {
-                cacheEntry.Value = await LoadValue(key, loader ?? defaultLoader).ConfigureAwait(false);
-                cacheEntry.LastWritten.Start();
-                cacheEntry.RefreshTimer?.Start();
-                cacheEntry.ValueLock.Release();
+                if (cacheEntry.IsNew) {
+                    cacheEntry.IsNew = false;
+                    cacheEntry.Value = await LoadValue(key, loader ?? defaultLoader).ConfigureAwait(false);
+                    cacheEntry.LastWritten.Start();
+                    cacheEntry.RefreshTimer?.Start();
+                }
             } catch (KeyNotFoundException) {
                 cache.TryRemove(key, out _);
                 cacheEntry.Dispose();
                 throw;
-            }
-        } else if (IsExpired(cacheEntry)) {
-            await cacheEntry.ValueLock.WaitAsync().ConfigureAwait(false);
-            if (IsExpired(cacheEntry)) {
-                cacheEntry.RefreshTimer?.Stop();
-                try {
-                    V oldValue = cacheEntry.Value;
-                    cacheEntry.Value = await LoadValue(key, loader ?? defaultLoader).ConfigureAwait(false);
-                    cacheEntry.LastWritten.Restart();
-                    Removal?.Invoke(this, key, oldValue, RemovalCause.Expired);
-                } finally {
-                    cacheEntry.RefreshTimer?.Start();
+            } finally {
+                if (!cacheEntry.IsDisposed) {
                     cacheEntry.ValueLock.Release();
                 }
+            }
+        } else if (IsExpired(cacheEntry)) {
+            V? oldValue = default;
+            await cacheEntry.ValueLock.WaitAsync().ConfigureAwait(false);
+            try {
+                if (IsExpired(cacheEntry)) {
+                    cacheEntry.RefreshTimer?.Stop();
+                    try {
+                        oldValue         = cacheEntry.Value;
+                        cacheEntry.Value = await LoadValue(key, loader ?? defaultLoader).ConfigureAwait(false);
+                        cacheEntry.LastWritten.Restart();
+                    } finally {
+                        cacheEntry.RefreshTimer?.Start();
+                    }
+                }
+            } finally {
+                cacheEntry.ValueLock.Release();
+            }
+
+            if (oldValue is not null) {
+                Removal?.Invoke(this, key, oldValue, RemovalCause.Expired);
             }
         }
 
@@ -72,45 +85,56 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
     /// <inheritdoc />
     public async Task Put(K key, V value) {
         CacheEntry<V> cacheEntry = cache.GetOrAdd(key, ValueFactory);
+        await cacheEntry.ValueLock.WaitAsync().ConfigureAwait(false);
+        V? removedValue = default;
         try {
             cacheEntry.RefreshTimer?.Stop();
             if (cacheEntry.IsNew) {
                 cacheEntry.IsNew = false;
-                cacheEntry.Value = value;
             } else {
-                await cacheEntry.ValueLock.WaitAsync().ConfigureAwait(false);
-                V oldValue = cacheEntry.Value;
-                cacheEntry.Value = value;
-                Removal?.Invoke(this, key, oldValue, RemovalCause.Replaced);
+                removedValue = cacheEntry.Value;
             }
 
+            cacheEntry.Value = value;
             cacheEntry.LastWritten.Restart();
             cacheEntry.RefreshTimer?.Start();
         } finally {
             cacheEntry.ValueLock.Release();
+        }
+
+        if (removedValue is not null) {
+            Removal?.Invoke(this, key, removedValue, RemovalCause.Replaced);
         }
     }
 
     private CacheEntry<V> ValueFactory(K key) {
         bool   hasLoader    = defaultLoader != null;
         Timer? refreshTimer = options.RefreshAfterWrite > TimeSpan.Zero && hasLoader ? new Timer(options.RefreshAfterWrite.TotalMilliseconds) { AutoReset = false, Enabled = false } : null;
-        var    newEntry     = new CacheEntry<V>(true, refreshTimer);
-        if (newEntry.RefreshTimer != null) {
-            newEntry.RefreshTimer.Elapsed += async (_, _) => {
-                await newEntry.ValueLock.WaitAsync().ConfigureAwait(false);
-                try {
-                    V oldValue = newEntry.Value;
-                    newEntry.Value = await defaultLoader!(key).ConfigureAwait(false);
+        var    entry        = new CacheEntry<V>(refreshTimer);
+
+        if (entry.RefreshTimer != null) {
+            async void RefreshEntry(object o, ElapsedEventArgs elapsedEventArgs) {
+                if (!entry.IsDisposed) {
+                    V oldValue;
+                    await entry.ValueLock.WaitAsync().ConfigureAwait(false);
+                    try {
+                        oldValue    = entry.Value;
+                        entry.Value = await defaultLoader!(key).ConfigureAwait(false);
+                        entry.LastWritten.Restart();
+                        entry.RefreshTimer.Start();
+                    } finally {
+                        entry.ValueLock.Release();
+                    }
                     Removal?.Invoke(this, key, oldValue, RemovalCause.Replaced);
-                    newEntry.LastWritten.Restart();
-                    newEntry.RefreshTimer.Start();
-                } finally {
-                    newEntry.ValueLock.Release();
+                } else {
+                    entry.RefreshTimer.Elapsed -= RefreshEntry;
                 }
-            };
+            }
+
+            entry.RefreshTimer.Elapsed += RefreshEntry;
         }
 
-        return newEntry;
+        return entry;
     }
 
     /// <exception cref="System.Collections.Generic.KeyNotFoundException">a value with the key <typeparamref name="K"/> was not found, and no <paramref name="loader"/> was not provided</exception>
@@ -173,7 +197,7 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
         KeyValuePair<K, CacheEntry<V>>[] toDispose = cache.ToArray();
         cache.Clear();
         foreach (KeyValuePair<K, CacheEntry<V>> entry in toDispose) {
-            if (!disposed) {
+            if (!isDisposed) {
                 Removal?.Invoke(this, entry.Key, entry.Value.Value, RemovalCause.Explicit);
             }
             entry.Value.Dispose();
@@ -182,8 +206,11 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
 
     protected virtual void Dispose(bool disposing) {
         if (disposing) {
-            disposed = true;
-            expirationTimer?.Dispose();
+            isDisposed = true;
+            if (expirationTimer != null) {
+                expirationTimer.Elapsed -= ScanForExpirations;
+                expirationTimer.Dispose();
+            }
             InvalidateAll();
         }
     }

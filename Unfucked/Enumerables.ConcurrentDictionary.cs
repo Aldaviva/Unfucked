@@ -26,9 +26,9 @@ public static partial class Enumerables {
     [Pure]
     public static ConcurrentDictionary<TKey, ValueHolder<TValue>> CreateConcurrentDictionary<TKey, TValue>(
         IEnumerable<KeyValuePair<TKey, TValue>>? initialElements = null,
-        int                                      concurrency     = -1,
-        int?                                     capacity        = null,
-        IEqualityComparer<TKey>?                 keyComparer     = null)
+        int concurrency = -1,
+        int? capacity = null,
+        IEqualityComparer<TKey>? keyComparer = null)
         where TKey: notnull {
 #if NETSTANDARD
         keyComparer ??= EqualityComparer<TKey>.Default;
@@ -59,9 +59,9 @@ public static partial class Enumerables {
     [Pure]
     public static ConcurrentDictionary<TKey, BooleanValueHolder> CreateConcurrentDictionary<TKey, TValue>(
         IEnumerable<KeyValuePair<TKey, bool>>? initialElements = null,
-        int                                    concurrency     = -1,
-        int?                                   capacity        = null,
-        IEqualityComparer<TKey>?               keyComparer     = null)
+        int concurrency = -1,
+        int? capacity = null,
+        IEqualityComparer<TKey>? keyComparer = null)
         where TKey: notnull where TValue: IEquatable<bool> {
 #if NETSTANDARD
         keyComparer ??= EqualityComparer<TKey>.Default;
@@ -90,9 +90,9 @@ public static partial class Enumerables {
     [Pure]
     public static ConcurrentDictionary<TKey, BooleanValueHolder> CreateConcurrentBooleanDictionary<TKey>(
         IEnumerable<KeyValuePair<TKey, bool>>? initialElements = null,
-        int                                    concurrency     = -1,
-        int?                                   capacity        = null,
-        IEqualityComparer<TKey>?               keyComparer     = null)
+        int concurrency = -1,
+        int? capacity = null,
+        IEqualityComparer<TKey>? keyComparer = null)
         where TKey: notnull {
         return CreateConcurrentDictionary<TKey, bool>(initialElements, concurrency, capacity, keyComparer);
     }
@@ -113,9 +113,9 @@ public static partial class Enumerables {
     [Pure]
     public static ConcurrentDictionary<TKey, EnumValueHolder<TEnumValue, TIntegralValue>> CreateConcurrentEnumDictionary<TKey, TEnumValue, TIntegralValue>(
         IEnumerable<KeyValuePair<TKey, TEnumValue>>? initialElements = null,
-        int                                          concurrency     = -1,
-        int?                                         capacity        = null,
-        IEqualityComparer<TKey>?                     keyComparer     = null)
+        int concurrency = -1,
+        int? capacity = null,
+        IEqualityComparer<TKey>? keyComparer = null)
         where TKey: notnull where TIntegralValue: struct where TEnumValue: struct, Enum {
         if (Enum.GetUnderlyingType(typeof(TEnumValue)) is var expectedUnderlyingType && typeof(TIntegralValue) is var actualUnderlyingType && expectedUnderlyingType != actualUnderlyingType) {
             throw new InvalidCastException(
@@ -498,15 +498,14 @@ public static partial class Enumerables {
     public static TValue GetOrAddWithDisposal<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> valueFactory)
         where TKey: notnull where TValue: IDisposable {
 
-        TValue? toAdd   = default;
-        bool    created = false;
-        TValue result = dictionary.GetOrAdd(key, k => {
-            toAdd   = valueFactory(k);
-            created = true;
-            return toAdd;
-        });
+        TValue? toAdd = default;
 
-        if (created && !ReferenceEquals(toAdd, result)) {
+        TValue result = GetOrAdd(dictionary, key, k => {
+            toAdd = valueFactory(k);
+            return toAdd;
+        }, out bool added);
+
+        if (!added) {
             toAdd?.Dispose();
         }
 
@@ -532,6 +531,30 @@ public static partial class Enumerables {
     public static TValue GetOrAddWithDisposal<TKey, TArg, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument)
         where TKey: notnull where TValue: IDisposable {
         return GetOrAddWithDisposal(dictionary, key, k => valueFactory(k, factoryArgument));
+    }
+
+    public static TValue GetOrAdd<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, TValue value, out bool added) where TKey: notnull {
+        TValue result = dictionary.GetOrAdd(key, value);
+        added = ReferenceEquals(result, value);
+        return result;
+    }
+
+    public static TValue GetOrAdd<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> valueFactory, out bool added) where TKey: notnull {
+        TValue? toAdd   = default;
+        bool    created = false;
+        TValue result = dictionary.GetOrAdd(key, k => {
+            toAdd   = valueFactory(k);
+            created = true;
+            return toAdd;
+        });
+
+        added = created && ReferenceEquals(toAdd, result);
+        return result;
+    }
+
+    public static TValue GetOrAdd<TKey, TArg, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument, out bool added)
+        where TKey: notnull {
+        return GetOrAdd(dictionary, key, k => valueFactory(k, factoryArgument), out added);
     }
 
 }

@@ -53,7 +53,7 @@ public class ProcessesTest {
     /*
      * On Windows, this is a race to get the self process descendants before 4 pings are sent and received (about 3 seconds total).
      */
-    [Fact]
+    /*[Fact]
     public void GetDescendantProcesses() {
         using Process self  = Process.GetCurrentProcess();
         using Process child = Process.Start("ping", "127.0.0.1");
@@ -66,6 +66,6 @@ public class ProcessesTest {
         } finally {
             child.Kill();
         }
-    }
+    }*/
 
 }

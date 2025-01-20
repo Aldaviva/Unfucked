@@ -2,18 +2,18 @@
 
 // ReSharper disable AccessToDisposedClosure
 
-namespace Tests;
+namespace Tests.Caching;
 
 public class InMemoryCacheTest {
 
     private int loads;
 
-    private event EventHandler<string>? stringLengthLoaded;
+    private event EventHandler<string>? StringLengthLoaded;
 
     private Task<int> StringLengthLoader(string s) {
         Interlocked.Increment(ref loads);
         int length = s.Length;
-        stringLengthLoaded?.Invoke(this, s);
+        StringLengthLoaded?.Invoke(this, s);
         return Task.FromResult(length);
     }
 
@@ -181,7 +181,7 @@ public class InMemoryCacheTest {
     [Fact]
     public async Task AutoRefresh() {
         TaskCompletionSource allLoadsCompleted = new();
-        stringLengthLoaded += (_, _) => {
+        StringLengthLoaded += (_, _) => {
             if (loads >= 4) {
                 allLoadsCompleted.TrySetResult();
             }

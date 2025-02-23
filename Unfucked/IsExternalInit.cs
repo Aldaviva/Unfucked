@@ -1,3 +1,5 @@
+// Sadly, this conflicts with any other package that declares this class, such as System.Text.Json for net462.
+
 using System.ComponentModel;
 
 // ReSharper disable once CheckNamespace - this is the exact namespace required by this type to fix broken record compilation for .NET Standard 2.0

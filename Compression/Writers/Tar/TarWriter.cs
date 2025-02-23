@@ -1,4 +1,3 @@
-using SharpCompress;
 using SharpCompress.Writers;
 using SharpCompress.Writers.Tar;
 using Unfucked.Compression.Common.Tar.Headers;

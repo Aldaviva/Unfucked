@@ -156,4 +156,17 @@ public static class Tasks {
         }
     }
 
+    /// <summary>
+    /// When the user presses Ctrl+C, keep this console program running instead of immediately killing it, but also cancel the token from the given source.
+    /// </summary>
+    /// <param name="cts">A source of a <see cref="CancellationToken"/>.</param>
+    /// <returns>The same <see cref="CancellationTokenSource"/> instance as <paramref name="cts"/>, for chaining.</returns>
+    public static CancellationTokenSource CancelOnCtrlC(this CancellationTokenSource cts) {
+        Console.CancelKeyPress += (_, args) => {
+            cts.Cancel();
+            args.Cancel = true;
+        };
+        return cts;
+    }
+
 }

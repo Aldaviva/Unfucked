@@ -11,8 +11,6 @@ public static class DateTimeExtensions {
     /// <param name="input">a time span that may be positive, negative, or zero</param>
     /// <returns>the nonnegative magnitude of <paramref name="input"/></returns>
     [Pure]
-    public static TimeSpan Abs(this TimeSpan input) {
-        return input < TimeSpan.Zero ? input.Negate() : input;
-    }
+    public static TimeSpan Abs(this TimeSpan input) => input.Duration();
 
 }

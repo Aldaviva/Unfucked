@@ -7,7 +7,7 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <Authors>Ben Hutchison</Authors>
-        <Copyright>© 2024 $(Authors)</Copyright>
+        <Copyright>© 2025 $(Authors)</Copyright>
         <Company>$(Authors)</Company>
         <PackageProjectUrl>https://github.com/Aldaviva/Unfucked</PackageProjectUrl>
         <RepositoryUrl>https://github.com/Aldaviva/Unfucked.git</RepositoryUrl>
@@ -26,7 +26,7 @@
 
     <!-- Self version numbers -->
     <PropertyGroup>
-        <UnfuckedVersion>0.0.0-beta4</UnfuckedVersion>
+        <UnfuckedVersion>0.0.0-beta5</UnfuckedVersion>
         <UnfuckedCachingVersion>0.0.0-beta3</UnfuckedCachingVersion>
     </PropertyGroup>
 

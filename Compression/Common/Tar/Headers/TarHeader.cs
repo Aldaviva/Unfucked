@@ -1,4 +1,3 @@
-using SharpCompress;
 using SharpCompress.Common;
 using SharpCompress.Writers;
 using System.Buffers.Binary;

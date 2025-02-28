@@ -6,7 +6,7 @@ namespace Unfucked;
 /// <summary>
 /// Methods that make it easier to work with domain name lookups.
 /// </summary>
-public static class Dns {
+public static class DNS {
 
     /// <summary>
     /// Resolve the given domain name to an IP address using the default resolver.
@@ -18,7 +18,7 @@ public static class Dns {
         try {
             IEnumerable<IPAddress> response;
 #if NET6_0_OR_GREATER
-            response = await System.Net.Dns.GetHostAddressesAsync(host.Host, host.AddressFamily, cancellationToken).ConfigureAwait(false);
+            response = await Dns.GetHostAddressesAsync(host.Host, host.AddressFamily, cancellationToken).ConfigureAwait(false);
 #else
             response = await System.Net.Dns.GetHostAddressesAsync(host.Host).ConfigureAwait(false);
 #endif

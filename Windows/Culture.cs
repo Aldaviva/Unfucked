@@ -6,7 +6,7 @@ namespace Unfucked;
 /// <summary>
 /// Extra methods missing from <see cref="CultureInfo"/>.
 /// </summary>
-public static class CultureInfo2 {
+public static class Cultures {
 
     private const uint MuiLanguageName = 8;
 

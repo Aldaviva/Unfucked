@@ -2,7 +2,7 @@
 
 namespace Tests.Unfucked;
 
-public class UrisTest {
+public class URIsTest {
 
     [Fact]
     public void GetQuery() {
@@ -36,6 +36,14 @@ public class UrisTest {
     [InlineData("https://evilsite.com#aldaviva.com")]
     public void DoesNotBelongToDomain(string uri) {
         new Uri(uri).BelongsToDomain("aldaviva.com").Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("https://aldaviva.com", "https://aldaviva.com")]
+    [InlineData("https://aldaviva.com:443", "https://aldaviva.com")]
+    [InlineData("https://foo:bar@aldaviva.com:444/path?query#frag", "https://aldaviva.com:444")]
+    public void TheoryMethodName(string uri, string expected) {
+        new Uri(uri, UriKind.Absolute).Origin().Should().Be(expected);
     }
 
 }

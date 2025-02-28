@@ -9,7 +9,7 @@ namespace Unfucked;
 /// <summary>
 /// Methods that make it easier to work with Extensible Markup Language.
 /// </summary>
-public static class Xml {
+public static class XML {
 
     /// <summary>
     /// Parse an XML LINQ document (not mapping to an object or DOM) from an HTTP response body.

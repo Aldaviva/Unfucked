@@ -37,10 +37,7 @@
     <ItemGroup>
         <None Include="..\Unfucked\icon.png" Pack="true" PackagePath="\icon.png" />
         <None Include="..\Readme.md" Pack="true" PackagePath="\" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Remove="..\ExceptionAdjustments.txt" />
+        <None Include="..\*.props;..\*.ps1;..\.github\**" />
         <AdditionalFiles Include="..\ExceptionAdjustments.txt" />
     </ItemGroup>
 

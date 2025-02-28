@@ -126,6 +126,26 @@ public class StringsTest {
     [InlineData("", "")]
     [InlineData("a", "a")]
     [InlineData("aaa", "aaa")]
+    [InlineData("xaaa", "xaaa")]
+    [InlineData("yaaa", "yaaa")]
+    [InlineData("yxaaa", "yxaaa")]
+    [InlineData("xyaaa", "aaa")]
+    [InlineData("xyxyaaa", "xyaaa")]
+    [InlineData("xyxyaaaxy", "xyaaaxy")]
+    [InlineData("xyxyaaaxyxy", "xyaaaxyxy")]
+    [InlineData("xyaxyaaaxyxy", "axyaaaxyxy")]
+    [InlineData("mnaaa", "aaa")]
+    [InlineData("mnxyaaa", "xyaaa")]
+    [InlineData("xymnxyaaa", "mnxyaaa")]
+    [InlineData("mnxymnxyaaa", "xymnxyaaa")]
+    public void TrimStartLimited(string input, string expected) {
+        input.TrimStart(1, "mn", "xy").Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("", "")]
+    [InlineData("a", "a")]
+    [InlineData("aaa", "aaa")]
     [InlineData("aaax", "aaax")]
     [InlineData("aaay", "aaay")]
     [InlineData("aaayx", "aaayx")]
@@ -140,6 +160,26 @@ public class StringsTest {
     [InlineData("aaamnxymnxy", "aaa")]
     public void TrimEnd(string input, string expected) {
         input.TrimEnd("mn", "xy").Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("", "")]
+    [InlineData("a", "a")]
+    [InlineData("aaa", "aaa")]
+    [InlineData("aaax", "aaax")]
+    [InlineData("aaay", "aaay")]
+    [InlineData("aaayx", "aaayx")]
+    [InlineData("aaaxy", "aaa")]
+    [InlineData("aaaxyxy", "aaaxy")]
+    [InlineData("xyaaaxyxy", "xyaaaxy")]
+    [InlineData("xyxyaaaxyxy", "xyxyaaaxy")]
+    [InlineData("xyaxyaaaxyxy", "xyaxyaaaxy")]
+    [InlineData("aaamn", "aaa")]
+    [InlineData("aaamnxy", "aaamn")]
+    [InlineData("aaaxymnxy", "aaaxymn")]
+    [InlineData("aaamnxymnxy", "aaamnxymn")]
+    public void TrimEndLimited(string input, string expected) {
+        input.TrimEnd(1, "mn", "xy").Should().Be(expected);
     }
 
     [Theory]

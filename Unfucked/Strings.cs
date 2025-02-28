@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text;
 
+// ReSharper disable ReplaceSliceWithRangeIndexer - not in .NET Standard 2.0, which this project targets
+
 namespace Unfucked;
 
 /// <summary>
@@ -99,7 +101,6 @@ public static class Strings {
         string.IsNullOrEmpty(str) ? str : char.ToUpper(str![0], culture ?? CultureInfo.InvariantCulture) + str.Substring(1);
     // ReSharper restore ReplaceSubstringWithRangeIndexer
 
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
     /// <summary>
     /// Remove all occurrences of any of a given array of prefixes from the beginning of a string.
     /// </summary>
@@ -107,19 +108,39 @@ public static class Strings {
     /// <param name="prefixesToTrim">Array of prefixes, all of which will be removed from <paramref name="str"/>.</param>
     /// <returns>A substring of <paramref name="str"/> that does not start with any of the <paramref name="prefixesToTrim"/>.</returns>
     [Pure]
-    public static string TrimStart(this string str, params string[] prefixesToTrim) => TrimStart(str.AsSpan(), prefixesToTrim);
+    public static string TrimStart(this string str, params IEnumerable<string> prefixesToTrim) => TrimStart(str.AsSpan(), -1, prefixesToTrim);
 
-    /// <inheritdoc cref="TrimStart(string,string[])" />
+    /// <inheritdoc cref="TrimStart(string,int,IEnumerable{string})" />
     [Pure]
-    public static string TrimStart(this ReadOnlySpan<char> str, params string[] prefixesToTrim) {
-        int startIndex = 0;
-        while (true) {
+    public static string TrimStart(this string str, int limit = -1, params IEnumerable<string> prefixesToTrim) => TrimStart(str.AsSpan(), limit, prefixesToTrim);
+
+    [Pure]
+    public static string TrimStart(this string str, int limit = -1, params IEnumerable<char> prefixesToTrim) => TrimStart(str.AsSpan(), limit, prefixesToTrim.Select(c => c.ToString()));
+
+    /// <inheritdoc cref="TrimStart(string,IEnumerable{string})" />
+    [Pure]
+    public static string TrimStart(this ReadOnlySpan<char> str, params IEnumerable<string> prefixesToTrim) => TrimStart(str, -1, prefixesToTrim);
+
+    /// <summary>
+    /// Remove some occurrences of any of a given array of prefixes from the beginning of a string.
+    /// </summary>
+    /// <param name="str">The string to remove prefixes from.</param>
+    /// <param name="limit">The maximum number of occurrences to remove, or <c>-1</c> to remove all occurrences.</param>
+    /// <param name="prefixesToTrim">Array of prefixes, all of which will be removed from <paramref name="str"/>.</param>
+    /// <returns>A substring of <paramref name="str"/> that does not start with any of the <paramref name="prefixesToTrim"/>.</returns>
+    [Pure]
+    public static string TrimStart(this ReadOnlySpan<char> str, int limit = -1, params IEnumerable<string> prefixesToTrim) {
+        int          startIndex    = 0;
+        List<string> prefixToTrims = prefixesToTrim.ToList();
+        uint         occurrences   = 0;
+        while (limit == -1 || occurrences < limit) {
             bool found = false;
-            foreach (string prefixToTrim in prefixesToTrim) {
+            foreach (string prefixToTrim in prefixToTrims) {
                 int prefixLength = prefixToTrim.Length;
-                if (prefixLength != 0 && startIndex + prefixLength <= str.Length && str[startIndex..(startIndex + prefixLength)].SequenceEqual(prefixToTrim)) {
+                if (prefixLength != 0 && startIndex + prefixLength <= str.Length && str.Slice(startIndex, prefixLength).SequenceEqual(prefixToTrim.AsSpan())) {
                     startIndex += prefixLength;
-                    found = true;
+                    found      =  true;
+                    occurrences++;
                     break;
                 }
             }
@@ -129,29 +150,49 @@ public static class Strings {
             }
         }
 
-        return str[startIndex..].ToString();
+        return str.Slice(startIndex).ToString();
     }
 
     /// <summary>
     /// Remove all occurrences of any of a given array of suffixes from the end of a string.
     /// </summary>
     /// <param name="str">The string to remove suffixes from.</param>
-    /// <param name="suffixesToTrim">Array of suffixes, all of which will be removed from <paramref name="str"/>.</param>
+    /// <param name="suffixesToTrim">Sequence of suffixes, all of which will be removed from <paramref name="str"/>.</param>
     /// <returns>A substring of <paramref name="str"/> that does not end with any of the <paramref name="suffixesToTrim"/>.</returns>
     [Pure]
-    public static string TrimEnd(this string str, params string[] suffixesToTrim) => TrimEnd(str.AsSpan(), suffixesToTrim);
+    public static string TrimEnd(this string str, params IEnumerable<string> suffixesToTrim) => TrimEnd(str.AsSpan(), -1, suffixesToTrim);
 
-    /// <inheritdoc cref="TrimEnd(string,string[])" />
     [Pure]
-    public static string TrimEnd(this ReadOnlySpan<char> str, params string[] suffixesToTrim) {
-        int endIndex = str.Length;
-        while (true) {
+    public static string TrimEnd(this string str, params IEnumerable<char> suffixesToTrim) => TrimEnd(str.AsSpan(), -1, suffixesToTrim.Select(c => c.ToString()));
+
+    /// <inheritdoc cref="TrimEnd(string,int,IEnumerable{string})" />
+    [Pure]
+    public static string TrimEnd(this string str, int limit = -1, params IEnumerable<string> suffixesToTrim) => TrimEnd(str.AsSpan(), limit, suffixesToTrim);
+
+    /// <inheritdoc cref="TrimEnd(string,IEnumerable{string})" />
+    [Pure]
+    public static string TrimEnd(this ReadOnlySpan<char> str, params IEnumerable<string> suffixesToTrim) => TrimEnd(str, -1, suffixesToTrim);
+
+    /// <summary>
+    /// Remove some occurrences of any of a given array of suffixes from the end of a string.
+    /// </summary>
+    /// <param name="str">The string to remove suffixes from.</param>
+    /// <param name="limit">The maximum number of occurrences to remove, or <c>-1</c> to remove all occurrences.</param>
+    /// <param name="suffixesToTrim">Sequence of suffixes, all of which will be removed from <paramref name="str"/>.</param>
+    /// <returns>A substring of <paramref name="str"/> that does not end with any of the <paramref name="suffixesToTrim"/>.</returns>
+    [Pure]
+    public static string TrimEnd(this ReadOnlySpan<char> str, int limit = -1, params IEnumerable<string> suffixesToTrim) {
+        int          endIndex      = str.Length;
+        List<string> suffixToTrims = suffixesToTrim.ToList();
+        uint         occurrences   = 0;
+        while (limit == -1 || occurrences < limit) {
             bool found = false;
-            foreach (string suffixToTrim in suffixesToTrim) {
+            foreach (string suffixToTrim in suffixToTrims) {
                 int suffixLength = suffixToTrim.Length;
-                if (suffixLength != 0 && endIndex >= 0 && endIndex - suffixLength >= 0 && str[(endIndex - suffixLength)..endIndex].SequenceEqual(suffixToTrim)) {
+                if (suffixLength != 0 && endIndex >= 0 && endIndex - suffixLength >= 0 && str.Slice(endIndex - suffixLength, suffixLength).SequenceEqual(suffixToTrim.AsSpan())) {
                     endIndex -= suffixLength;
-                    found = true;
+                    found    =  true;
+                    occurrences++;
                     break;
                 }
             }
@@ -161,7 +202,7 @@ public static class Strings {
             }
         }
 
-        return str[..endIndex].ToString();
+        return str.Slice(0, endIndex).ToString();
     }
 
     /// <summary>
@@ -171,12 +212,14 @@ public static class Strings {
     /// <param name="affixesToTrim">Array of suffixes, all of which will be removed from <paramref name="str"/>.</param>
     /// <returns>A substring of <paramref name="str"/> that does neither starts nor ends with any of the <paramref name="affixesToTrim"/>.</returns>
     [Pure]
-    public static string Trim(this string str, params string[] affixesToTrim) => Trim(str.AsSpan(), affixesToTrim);
+    public static string Trim(this string str, params IEnumerable<string> affixesToTrim) => Trim(str.AsSpan(), affixesToTrim);
 
-    /// <inheritdoc cref="Trim(string,string[])" />
+    /// <inheritdoc cref="Trim(string,IEnumerable{string})" />
     [Pure]
-    public static string Trim(this ReadOnlySpan<char> str, params string[] affixesToTrim) => TrimEnd(TrimStart(str, affixesToTrim), affixesToTrim);
-#endif
+    public static string Trim(this ReadOnlySpan<char> str, params IEnumerable<string> affixesToTrim) {
+        List<string> prefixesToTrim = affixesToTrim.ToList();
+        return TrimEnd(TrimStart(str, prefixesToTrim), prefixesToTrim);
+    }
 
     /// <summary>
     /// Combine a sequence of objects into an English comma-separated list
@@ -281,5 +324,41 @@ public static class Strings {
                 return stringBuilder.ToString();
         }
     }
+
+#if NETSTANDARD2_0
+    public static StringBuilder AppendJoin(this StringBuilder builder, char separator, params IEnumerable<object> values) {
+        bool firstValue = true;
+        foreach (object value in values) {
+            if (firstValue) {
+                firstValue = false;
+            } else {
+                builder.Append(separator);
+            }
+            builder.Append(value);
+        }
+        return builder;
+    }
+
+    public static StringBuilder AppendJoin(this StringBuilder builder, string separator, params IEnumerable<object> values) {
+        bool firstValue = true;
+        foreach (object value in values) {
+            if (firstValue) {
+                firstValue = false;
+            } else {
+                builder.Append(separator);
+            }
+            builder.Append(value);
+        }
+        return builder;
+    }
+
+    public static bool StartsWith(this string str, char prefix) {
+        return str.StartsWith(prefix.ToString());
+    }
+
+    public static bool EndsWith(this string str, char suffix) {
+        return str.EndsWith(suffix.ToString());
+    }
+#endif
 
 }

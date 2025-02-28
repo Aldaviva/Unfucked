@@ -18,3 +18,5 @@
 # M:System.TimeSpan.Negate -T:System.OverflowException
 M:System.Array.CopyTo(System.Array,System.Int32) -T:System.ArrayTypeMismatchException
 M:System.Array.CopyTo(System.Array,System.Int32) -T:System.RankException
+M:System.String.Join(System.String,System.Collections.Generic.IEnumerable{System.String}) -T:System.OutOfMemoryException
+M:System.Text.RegularExpressions.Regex.Replace(System.String,System.Text.RegularExpressions.MatchEvaluator) -T:System.Text.RegularExpressions.RegexMatchTimeoutException

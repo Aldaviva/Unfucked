@@ -6,7 +6,8 @@ namespace Unfucked;
 /// <summary>
 /// Methods that make it easier to work with URIs and URLs.
 /// </summary>
-public static class Uris {
+// ReSharper disable once InconsistentNaming - it's the plural form of a known all-capitals abbreviation, so there is no problem here
+public static class URIs {
 
     /// <summary>
     /// Get the query parameters from a URI.
@@ -26,5 +27,14 @@ public static class Uris {
         return actualHostname.Equals(ancestorOrSelfDomain, StringComparison.InvariantCultureIgnoreCase)
             || actualHostname.EndsWith("." + ancestorOrSelfDomain, StringComparison.InvariantCultureIgnoreCase);
     }
+
+    [Pure]
+    public static string Origin(this Uri uri) => new UriBuilder(uri) {
+        UserName = string.Empty,
+        Password = string.Empty,
+        Path     = string.Empty,
+        Query    = string.Empty,
+        Fragment = string.Empty
+    }.Uri.ToString().TrimEnd('/');
 
 }

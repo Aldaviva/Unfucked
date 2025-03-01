@@ -237,7 +237,7 @@ public class URIBuilder: ICloneable {
     public static implicit operator Uri(URIBuilder builder) => builder.ToUri();
 
     [Pure]
-    public static implicit operator string(URIBuilder builder) => builder.ToString();
+    public static explicit operator string(URIBuilder builder) => builder.ToString();
 
     #endregion
 
@@ -250,26 +250,26 @@ public class URIBuilder: ICloneable {
     public URIBuilder UserInfo(string? userInfo) => new(this) { _userInfo = userInfo };
 
     [Pure]
-    public URIBuilder Path(string? segment, bool autoSplit = true) {
+    public URIBuilder Path(string? segments, bool autoSplit = true) {
         ImmutableList<string> newPath = _path;
-        if (segment is null) {
+        if (segments is null) {
             return new URIBuilder(this) { _path = ImmutableList<string>.Empty };
-        } else if (segment.StartsWith('/')) {
+        } else if (segments.StartsWith('/')) {
             newPath = ImmutableList<string>.Empty;
         }
 
         if (autoSplit) {
-            string[] paths = segment.Split(PathSeparators, StringSplitOptions.RemoveEmptyEntries);
+            string[] paths = segments.Split(PathSeparators, StringSplitOptions.RemoveEmptyEntries);
             newPath = newPath.AddRange(paths);
         } else {
-            newPath = newPath.Add(segment);
+            newPath = newPath.Add(segments);
         }
 
         return new URIBuilder(this) { _path = newPath };
     }
 
     [Pure]
-    public URIBuilder Path(object segment) => Path(segment.ToString());
+    public URIBuilder Path(object segments) => Path(segments.ToString());
 
     [Pure]
     public URIBuilder Path(params IEnumerable<string> segments) => segments.Aggregate(this, (builder, segment) => builder.Path(segment));
@@ -298,8 +298,11 @@ public class URIBuilder: ICloneable {
         new(this) { _queryParameters = _queryParameters.AddRange(values.Select(v => new KeyValuePair<string, object>(key, v.ToString() ?? string.Empty))) };
 
     [Pure]
-    public URIBuilder QueryParam(IEnumerable<KeyValuePair<string, object>> parameters) => new(this)
-        { _queryParameters = _queryParameters.AddRange(parameters.Select(p => new KeyValuePair<string, object>(p.Key, p.Value.ToString() ?? string.Empty))) };
+    public URIBuilder QueryParam(IEnumerable<KeyValuePair<string, object>>? parameters) => new(this) {
+        _queryParameters = parameters != null
+            ? _queryParameters.AddRange(parameters.Select(p => new KeyValuePair<string, object>(p.Key, p.Value.ToString() ?? string.Empty)))
+            : ImmutableList<KeyValuePair<string, object>>.Empty
+    };
 
     [Pure]
     public URIBuilder Fragment(string? fragment) => new(this) { _fragment = fragment };
@@ -341,7 +344,6 @@ public class URIBuilder: ICloneable {
 
 internal static class UriEncoder {
 
-    private static readonly Encoding        Utf8               = new UTF8Encoding(false, true);
     private static readonly ArrayPool<byte> EscapingUtfBuffers = ArrayPool<byte>.Create(4, 50);
 
     public static string Encode(string raw, UriPart part) {
@@ -364,9 +366,9 @@ internal static class UriEncoder {
 
         int utf8BytesUsed;
 #if NET6_0_OR_GREATER
-        utf8BytesUsed = Utf8.GetBytes(match.ValueSpan, utf8Buffer);
+        utf8BytesUsed = Strings.Utf8.GetBytes(match.ValueSpan, utf8Buffer);
 #else
-        utf8BytesUsed = Utf8.GetBytes(match.Value, 0, match.Length, utf8Buffer, 0);
+        utf8BytesUsed = Strings.Utf8.GetBytes(match.Value, 0, match.Length, utf8Buffer, 0);
 #endif
 
         string escaped = string.Join(null, utf8Buffer.Take(utf8BytesUsed).Select(b => $"%{b:X2}"));
@@ -406,3 +408,109 @@ internal static class UriEncoder {
     }
 
 }
+
+/*public static class UriBuilderExtensions {
+
+    public static Task<HttpResponseMessage> DeleteAsync(this HttpClient client, URIBuilder uriBuilder, CancellationToken cancellationToken = default) {
+        return client.DeleteAsync(uriBuilder.ToUri(), cancellationToken);
+    }
+
+    public static Task<HttpResponseMessage> GetAsync(this HttpClient client, URIBuilder uriBuilder, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead,
+                                                     CancellationToken cancellationToken = default) {
+        return client.GetAsync(uriBuilder.ToUri(), completionOption, cancellationToken);
+    }
+
+    public static Task<byte[]> GetByteArrayAsync(this HttpClient client, URIBuilder uriBuilder) {
+        return client.GetByteArrayAsync(uriBuilder.ToUri());
+    }
+
+#if NET6_0_OR_GREATER
+    public static Task<byte[]> GetByteArrayAsync(this HttpClient client, URIBuilder uriBuilder, CancellationToken cancellationToken) {
+        return client.GetByteArrayAsync(uriBuilder.ToUri(), cancellationToken);
+    }
+#endif
+
+    public static Task<Stream> GetStreamAsync(this HttpClient client, URIBuilder uriBuilder) {
+        return client.GetStreamAsync(uriBuilder.ToUri());
+    }
+
+#if NET6_0_OR_GREATER
+    public static Task<Stream> GetStreamAsync(this HttpClient client, URIBuilder uriBuilder, CancellationToken cancellationToken) {
+        return client.GetStreamAsync(uriBuilder.ToUri(), cancellationToken);
+    }
+#endif
+
+    public static Task<string> GetStringAsync(this HttpClient client, URIBuilder uriBuilder) {
+        return client.GetStringAsync(uriBuilder.ToUri());
+    }
+
+#if NET6_0_OR_GREATER
+    public static Task<string> GetStringAsync(this HttpClient client, URIBuilder uriBuilder, CancellationToken cancellationToken) {
+        return client.GetStringAsync(uriBuilder.ToUri(), cancellationToken);
+    }
+#endif
+
+    public static Task<HttpResponseMessage> PatchAsync(this HttpClient client, URIBuilder uriBuilder, HttpContent? content) {
+        return client.PatchAsync(uriBuilder.ToUri(), content);
+    }
+
+#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+    public static Task<HttpResponseMessage> PatchAsync(this HttpClient client, URIBuilder uriBuilder, HttpContent? content, CancellationToken cancellationToken) {
+        return client.PatchAsync(uriBuilder.ToUri(), content, cancellationToken);
+    }
+#endif
+
+    public static Task<HttpResponseMessage> PostAsync(this HttpClient client, URIBuilder uriBuilder, HttpContent? content, CancellationToken cancellationToken) {
+        return client.PostAsync(uriBuilder.ToUri(), content, cancellationToken);
+    }
+
+    public static Task<HttpResponseMessage> PutAsync(this HttpClient client, URIBuilder uriBuilder, HttpContent? content, CancellationToken cancellationToken) {
+        return client.PutAsync(uriBuilder.ToUri(), content, cancellationToken);
+    }
+
+#if NET6_0_OR_GREATER
+    public static Task<HttpResponseMessage> PostAsJsonAsync<T>(this HttpClient client, URIBuilder uriBuilder, T value, JsonSerializerOptions? jsonSerializerOptions = null,
+                                                               CancellationToken cancellationToken = default) {
+        return HttpClientJsonExtensions.PostAsJsonAsync(client, uriBuilder.ToUri(), value, jsonSerializerOptions, cancellationToken);
+    }
+
+    public static Task<HttpResponseMessage> PutAsJsonAsync<T>(this HttpClient client, URIBuilder uriBuilder, T value, JsonSerializerOptions? jsonSerializerOptions = null,
+                                                              CancellationToken cancellationToken = default) {
+        return HttpClientJsonExtensions.PutAsJsonAsync(client, uriBuilder.ToUri(), value, jsonSerializerOptions, cancellationToken);
+    }
+
+    public static Task<T?> GetFromJsonAsync<T>(this HttpClient client, URIBuilder uriBuilder, JsonSerializerOptions? jsonSerializerOptions = null, CancellationToken cancellationToken = default) {
+        return HttpClientJsonExtensions.GetFromJsonAsync<T>(client, uriBuilder.ToUri(), jsonSerializerOptions, cancellationToken);
+    }
+
+    public static Task<object?> GetFromJsonAsync(this HttpClient client, URIBuilder uriBuilder, Type type, JsonSerializerOptions? jsonSerializerOptions = null,
+                                                 CancellationToken cancellationToken = default) {
+        return HttpClientJsonExtensions.GetFromJsonAsync(client, uriBuilder.ToUri(), type, jsonSerializerOptions, cancellationToken);
+    }
+
+#endif
+
+#if NET8_0_OR_GREATER
+    public static Task<HttpResponseMessage> PatchAsJsonAsync<T>(this HttpClient client, URIBuilder uriBuilder, T value, JsonSerializerOptions? jsonSerializerOptions = null,
+                                                                CancellationToken cancellationToken = default) {
+        return HttpClientJsonExtensions.PatchAsJsonAsync(client, uriBuilder.ToUri(), value, jsonSerializerOptions, cancellationToken);
+    }
+
+    public static Task<T?> DeleteFromJsonAsync<T>(this HttpClient client, URIBuilder uriBuilder, JsonSerializerOptions? jsonSerializerOptions = null,
+                                                  CancellationToken cancellationToken = default) {
+        return HttpClientJsonExtensions.DeleteFromJsonAsync<T>(client, uriBuilder.ToUri(), jsonSerializerOptions, cancellationToken);
+    }
+
+    public static Task<object?> DeleteFromJsonAsync(this HttpClient client, URIBuilder uriBuilder, Type type, JsonSerializerOptions? jsonSerializerOptions = null,
+                                                    CancellationToken cancellationToken = default) {
+        return HttpClientJsonExtensions.DeleteFromJsonAsync(client, uriBuilder.ToUri(), type, jsonSerializerOptions, cancellationToken);
+    }
+
+    public static IAsyncEnumerable<T?> GetFromJsonAsAsyncEnumerable<T>(this HttpClient client, URIBuilder uriBuilder, JsonSerializerOptions? jsonSerializerOptions = null,
+                                                                       CancellationToken cancellationToken = default) {
+        return HttpClientJsonExtensions.GetFromJsonAsAsyncEnumerable<T>(client, uriBuilder.ToUri(), jsonSerializerOptions, cancellationToken);
+    }
+
+#endif
+
+}*/

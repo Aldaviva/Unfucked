@@ -47,7 +47,7 @@ public class XmlTest {
     public async Task ReadXmlLinqFromHttpResponse() {
         using HttpContent httpContent = new ByteArrayContent(Xml.ToByteArray());
 
-        XDocument doc = await httpContent.ReadLinqFromXmlAsync();
+        XDocument doc = await httpContent.ReadLinqFromXmlAsync(TODO);
         doc.Root!.Attribute("name")!.Value.Should().Be("a");
     }
 

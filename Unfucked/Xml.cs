@@ -15,10 +15,14 @@ public static class XML {
     /// Parse an XML LINQ document (not mapping to an object or DOM) from an HTTP response body.
     /// </summary>
     /// <param name="content">HTTP response body.</param>
+    /// <param name="encoding">Character encoding of the HTTP response body.</param>
+    /// <param name="xmlReaderSettings">Settings for the <see cref="XmlReader"/>.</param>
     /// <param name="xmlLoadOptions">Optional XML parsing configuration.</param>
     /// <param name="cancellationToken">If you want to cancel the operation before it completes.</param>
     /// <returns>An XML LINQ document parsed from the HTTP response.</returns>
-    public static async Task<XDocument> ReadLinqFromXmlAsync(this HttpContent content, LoadOptions xmlLoadOptions = LoadOptions.None, CancellationToken cancellationToken = default) {
+    public static async Task<XDocument> ReadLinqFromXmlAsync(this HttpContent content, Encoding? encoding = null, XmlReaderSettings? xmlReaderSettings = null,
+                                                             LoadOptions xmlLoadOptions = LoadOptions.None,
+                                                             CancellationToken cancellationToken = default) {
 #if NET6_0_OR_GREATER
         await using Stream contentStream = await content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
 #elif NETSTANDARD2_1_OR_GREATER
@@ -27,10 +31,12 @@ public static class XML {
         using Stream contentStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
 #endif
 
+        using StreamReader streamReader = new(contentStream, encoding ?? Strings.Utf8, encoding == null);
+        using XmlReader    xmlReader    = XmlReader.Create(streamReader, xmlReaderSettings);
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-        return await XDocument.LoadAsync(contentStream, xmlLoadOptions, cancellationToken).ConfigureAwait(false);
+        return await XDocument.LoadAsync(xmlReader, xmlLoadOptions, cancellationToken).ConfigureAwait(false);
 #else
-        return XDocument.Load(contentStream, xmlLoadOptions);
+        return XDocument.Load(xmlReader, xmlLoadOptions);
 #endif
     }
 
@@ -53,7 +59,7 @@ public static class XML {
 #else
         readStreamTask = content.ReadAsStreamAsync();
 #endif
-        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Encoding.UTF8);
+        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.Utf8, encoding == null);
         return (T) xmlSerializer.Deserialize(textReader)!;
     }
 
@@ -72,7 +78,7 @@ public static class XML {
 #else
         readStreamTask = content.ReadAsStreamAsync();
 #endif
-        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Encoding.UTF8);
+        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.Utf8, encoding == null);
         doc.Load(textReader);
         return doc;
     }
@@ -91,7 +97,7 @@ public static class XML {
 #else
         readStreamTask = content.ReadAsStreamAsync();
 #endif
-        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Encoding.UTF8);
+        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.Utf8, encoding == null);
         return new XPathDocument(textReader).CreateNavigator();
     }
 

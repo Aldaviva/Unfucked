@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Mime;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Xml;
@@ -16,7 +17,7 @@ using System.Text.Json.Nodes;
 
 namespace Unfucked.HTTP;
 
-public class WebTarget {
+public class WebTarget: IWebTarget, IHttpConfiguration<WebTarget> {
 
     private const string ApplicationXmlMediaType = "application/xml";
 
@@ -28,50 +29,70 @@ public class WebTarget {
 
     private ImmutableList<KeyValuePair<string, string>> Headers { get; init; } = ImmutableList<KeyValuePair<string, string>>.Empty;
 
-    private readonly URIBuilder uriBuilder;
-    private readonly HttpClient client;
+    private readonly UrlBuilder                  urlBuilder;
+    private readonly HttpClient                  client;
+    private readonly FilteringHttpClientHandler? clientHandler;
+    private readonly HttpConfiguration?          filters;
 
     #region Construction
 
-    public WebTarget(HttpClient client, URIBuilder uriBuilder) {
-        this.client     = client;
-        this.uriBuilder = uriBuilder;
+    private WebTarget(HttpClient client, UrlBuilder urlBuilder, FilteringHttpClientHandler? clientHandler, HttpConfiguration? filters) {
+        this.client        = client;
+        this.urlBuilder    = urlBuilder;
+        this.clientHandler = clientHandler;
+        this.filters       = filters;
     }
 
-    public WebTarget(HttpClient client, Uri uri): this(client, new URIBuilder(uri)) { }
-    public WebTarget(HttpClient client, string uri): this(client, new URIBuilder(uri)) { }
-    public WebTarget(HttpClient client, UriBuilder uriBuilder): this(client, new URIBuilder(uriBuilder)) { }
+    private WebTarget(HttpClient client, UrlBuilder urlBuilder, FilteringHttpClientHandler? clientHandler):
+        this(client, urlBuilder, clientHandler, clientHandler?.Filters) { }
+
+    public WebTarget(HttpClient client, UrlBuilder urlBuilder): this(client, urlBuilder, FindClientHandler(client)) { }
+    public WebTarget(HttpClient client, Uri uri): this(client, new UrlBuilder(uri)) { }
+    public WebTarget(HttpClient client, string uri): this(client, new UrlBuilder(uri)) { }
+    public WebTarget(HttpClient client, UriBuilder uriBuilder): this(client, new UrlBuilder(uriBuilder)) { }
+
+    private static FilteringHttpClientHandler? FindClientHandler(HttpClient httpClient) {
+        return FindDescendantHandler((HttpMessageHandler?) httpClient.GetType().GetFields(BindingFlags.NonPublic).FirstOrDefault(field => field.FieldType == typeof(HttpMessageHandler))
+            ?.GetValue(httpClient));
+
+        static FilteringHttpClientHandler? FindDescendantHandler(HttpMessageHandler? parent) => parent switch {
+            null                         => null,
+            FilteringHttpClientHandler f => f,
+            DelegatingHandler d          => FindDescendantHandler(d.InnerHandler),
+            _                            => null
+        };
+    }
 
     #endregion
 
     #region URIs
 
-    private WebTarget With(URIBuilder newUriBuilder) => new(client, newUriBuilder) { Headers = Headers };
-    public Uri Uri => uriBuilder.ToUri();
+    private WebTarget With(UrlBuilder newUrlBuilder) => new(client, newUrlBuilder, clientHandler, filters) { Headers = Headers };
+    public Uri Url => urlBuilder.ToUrl();
 
-    public WebTarget UserInfo(string? userInfo) => With(uriBuilder.UserInfo(userInfo));
-    public WebTarget Path(string? segments, bool autoSplit = true) => With(uriBuilder.Path(segments, autoSplit));
-    public WebTarget Path(object segments) => With(uriBuilder.Path(segments));
-    public WebTarget Path(params IEnumerable<string> segments) => With(uriBuilder.Path(segments));
-    public WebTarget Port(ushort? port) => With(uriBuilder.Port(port));
-    public WebTarget Hostname(string hostname) => With(uriBuilder.Hostname(hostname));
-    public WebTarget Scheme(string scheme) => With(uriBuilder.Scheme(scheme));
-    public WebTarget QueryParam(string key, object? value) => With(uriBuilder.QueryParam(key, value));
-    public WebTarget QueryParam(string key, IEnumerable<object> values) => With(uriBuilder.QueryParam(key, values));
-    public WebTarget QueryParam(IEnumerable<KeyValuePair<string, object>>? parameters) => With(uriBuilder.QueryParam(parameters));
-    public WebTarget Fragment(string? fragment) => With(uriBuilder.Fragment(fragment));
+    public WebTarget UserInfo(string? userInfo) => With(urlBuilder.UserInfo(userInfo));
+    public WebTarget Path(string? segments, bool autoSplit = true) => With(urlBuilder.Path(segments, autoSplit));
+    public WebTarget Path(object segments) => With(urlBuilder.Path(segments));
+    public WebTarget Path(params IEnumerable<string> segments) => With(urlBuilder.Path(segments));
+    public WebTarget Port(ushort? port) => With(urlBuilder.Port(port));
+    public WebTarget Hostname(string hostname) => With(urlBuilder.Hostname(hostname));
+    public WebTarget Scheme(string scheme) => With(urlBuilder.Scheme(scheme));
+    public WebTarget QueryParam(string key, object? value) => With(urlBuilder.QueryParam(key, value));
+    public WebTarget QueryParam(string key, IEnumerable<object> values) => With(urlBuilder.QueryParam(key, values));
+    public WebTarget QueryParam(IEnumerable<KeyValuePair<string, object>>? parameters) => With(urlBuilder.QueryParam(parameters));
+    public WebTarget Fragment(string? fragment) => With(urlBuilder.Fragment(fragment));
 
     #endregion
 
     #region Headers
 
-    public WebTarget Header(string key, object? value) => new(client, uriBuilder) {
+    public WebTarget Header(string key, object? value) => new(client, urlBuilder, clientHandler, filters) {
         Headers = value is null
             ? Headers.RemoveAll(pair => pair.Key == key)
             : Headers.Add(new KeyValuePair<string, string>(key, value.ToString() ?? string.Empty))
     };
 
-    public WebTarget Header(string key, params IEnumerable<object> values) => new(client, uriBuilder) {
+    public WebTarget Header(string key, params IEnumerable<object> values) => new(client, urlBuilder, clientHandler, filters) {
         Headers = Headers.AddRange(values.Select(value => new KeyValuePair<string, string>(key, value.ToString() ?? string.Empty)))
     };
 
@@ -106,7 +127,7 @@ public class WebTarget {
     #region Sending
 
     public async Task<HttpResponseMessage> Send(HttpMethod verb, HttpContent? requestBody = null, CancellationToken cancellationToken = default) {
-        using HttpRequestMessage request = new(verb, uriBuilder.ToUri()) { Content = requestBody };
+        using HttpRequestMessage request = new(verb, urlBuilder.ToUrl()) { Content = requestBody };
 
         foreach (IGrouping<string, string> header in Headers.GroupBy(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase)) {
             request.Headers.Add(header.Key, header);
@@ -203,10 +224,29 @@ public class WebTarget {
 
 #if NET6_0_OR_GREATER
         async Task<T> ParseJson() {
-            return await response.Content.ReadFromJsonAsync<T>(JsonSerializerOptions, cancellationToken).ConfigureAwait(false)!;
+            return (await response.Content.ReadFromJsonAsync<T>(JsonSerializerOptions, cancellationToken).ConfigureAwait(false))!;
         }
 #endif
     }
+
+    #endregion
+
+    #region Filters
+
+    public IReadOnlyList<ClientRequestFilter> RequestFilters => filters?.RequestFilters ?? throw FiltersUnavailable;
+    public IReadOnlyList<ClientResponseFilter> ResponseFilters => filters?.ResponseFilters ?? throw FiltersUnavailable;
+
+    public WebTarget Register(ClientRequestFilter? filter, int position = HttpConfiguration.LastPosition) =>
+        filters is not null ? new WebTarget(client, urlBuilder, clientHandler, filters.Register(filter, position)) : throw FiltersUnavailable;
+
+    public WebTarget Register(ClientResponseFilter? filter, int position = HttpConfiguration.LastPosition) =>
+        filters is not null ? new WebTarget(client, urlBuilder, clientHandler, filters.Register(filter, position)) : throw FiltersUnavailable;
+
+    IWebTarget IHttpConfiguration<IWebTarget>.Register(ClientRequestFilter? filter, int position) => Register(filter, position);
+    IWebTarget IHttpConfiguration<IWebTarget>.Register(ClientResponseFilter? filter, int position) => Register(filter, position);
+
+    private static InvalidOperationException FiltersUnavailable => new(
+        $"Filters are not available on this {nameof(WebTarget)} because the underlying {nameof(HttpClient)} was constructed with a default {nameof(HttpMessageHandler)}, or an {nameof(HttpMessageHandler)} that is neither a {nameof(FilteringHttpClientHandler)} nor a {nameof(DelegatingHandler)} that delegates to an inner {nameof(FilteringHttpClientHandler)}. Try instantiating it by calling `new {nameof(HttpClient)}(new {nameof(FilteringHttpClientHandler)}())` instead.");
 
     #endregion
 

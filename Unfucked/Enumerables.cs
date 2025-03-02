@@ -405,4 +405,9 @@ public static partial class Enumerables {
         return (created, updated, deleted, unmodified);
     }
 
+#if !NET8_0_OR_GREATER
+    [Pure]
+    public static IReadOnlyList<T> AsReadOnly<T>(this IList<T> writableList) => new ReadOnlyCollection<T>(writableList);
+#endif
+
 }

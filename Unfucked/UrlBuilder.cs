@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 
 namespace Unfucked;
 
-public class URIBuilder: ICloneable {
+public class UrlBuilder: ICloneable {
 
     public static readonly object ValuelessQueryParam = new();
 
@@ -20,7 +20,8 @@ public class URIBuilder: ICloneable {
 
     // ReSharper disable InconsistentNaming - don't collide with method names
     private string? _scheme { get; init; }
-    private string? _schemeSpecificPart { get; init; }
+
+    // private string? _schemeSpecificPart { get; init; }
     private string? _userInfo { get; init; }
     private string? _hostname { get; init; }
     private ushort? _port { get; init; }
@@ -34,19 +35,19 @@ public class URIBuilder: ICloneable {
 
     #region Construction
 
-    public URIBuilder(string scheme, string schemeSpecificPart, string? fragment) {
-        _scheme             = scheme;
-        _schemeSpecificPart = schemeSpecificPart;
-        _fragment           = fragment?.TrimStart(1, '#');
-    }
+    /*public UrlBuilder(string scheme, string schemeSpecificPart, string? fragment) {
+        _scheme = scheme;
+         _schemeSpecificPart = schemeSpecificPart;
+        _fragment = fragment?.TrimStart(1, '#');
+    }*/
 
-    public URIBuilder(string scheme, string hostname, ushort? port = null) {
+    public UrlBuilder(string scheme, string hostname, ushort? port = null) {
         _scheme   = scheme.TrimEnd(':');
         _hostname = hostname.TrimStart("//");
         _port     = port;
     }
 
-    public URIBuilder(Uri uri) {
+    public UrlBuilder(Uri uri) {
         _scheme   = uri.Scheme.EmptyToNull();
         _userInfo = uri.UserInfo.EmptyToNull();
         _hostname = uri.Host.EmptyToNull();
@@ -58,7 +59,7 @@ public class URIBuilder: ICloneable {
         _fragment = uri.Fragment.TrimStart(1, '#').EmptyToNull();
     }
 
-    public URIBuilder(UriBuilder uriBuilder) {
+    public UrlBuilder(UriBuilder uriBuilder) {
         _scheme   = uriBuilder.Scheme.EmptyToNull();
         _userInfo = uriBuilder.UserName.HasLength() || uriBuilder.Password.HasLength() ? $"{uriBuilder.UserName}:{uriBuilder.Password}" : null;
         _hostname = uriBuilder.Host.EmptyToNull();
@@ -71,9 +72,9 @@ public class URIBuilder: ICloneable {
         _fragment = uriBuilder.Fragment.TrimStart(1, '#').EmptyToNull();
     }
 
-    private URIBuilder(URIBuilder other) {
-        _scheme                                = other._scheme;
-        _schemeSpecificPart                    = other._schemeSpecificPart;
+    private UrlBuilder(UrlBuilder other) {
+        _scheme = other._scheme;
+        // _schemeSpecificPart                    = other._schemeSpecificPart;
         _userInfo                              = other._userInfo;
         _hostname                              = other._hostname;
         _port                                  = other._port;
@@ -85,15 +86,15 @@ public class URIBuilder: ICloneable {
         _unusedTemplateQueryParameterRealNames = other._unusedTemplateQueryParameterRealNames;
     }
 
-    public URIBuilder(string uri): this(new Uri(uri, UriKind.Absolute)) { }
+    public UrlBuilder(string uri): this(new Uri(uri, UriKind.Absolute)) { }
 
-    public static implicit operator URIBuilder(Uri uri) => new(uri);
+    public static implicit operator UrlBuilder(Uri uri) => new(uri);
 
-    public static implicit operator URIBuilder(UriBuilder uri) => new(uri);
+    public static implicit operator UrlBuilder(UriBuilder uri) => new(uri);
 
-    public static explicit operator URIBuilder(string uri) => new(uri);
+    public static explicit operator UrlBuilder(string uri) => new(uri);
 
-    public static URIBuilder FromTemplate(string uriTemplate) {
+    public static UrlBuilder FromTemplate(string uriTemplate) {
         const string alphabet            = "abcdefghijklmnopqrstuvwxyz";
         Regex        templatePattern     = new(@"\{(?<prefix>[/?&]?)(?<names>[\w-,]+?)\}");
         Regex        fakeTemplatePattern = new("template[A-Za-z]{16}");
@@ -122,32 +123,32 @@ public class URIBuilder: ICloneable {
             }
         });
 
-        URIBuilder uriBuilder = new(templateWithFakePlaceholders) { _unusedTemplateQueryParameterRealNames = queryParameterRealNames.ToImmutableHashSet() };
-        if (RestoreRealName(uriBuilder._scheme) is { } realScheme) {
-            uriBuilder = uriBuilder.Scheme(realScheme);
+        UrlBuilder urlBuilder = new(templateWithFakePlaceholders) { _unusedTemplateQueryParameterRealNames = queryParameterRealNames.ToImmutableHashSet() };
+        if (RestoreRealName(urlBuilder._scheme) is { } realScheme) {
+            urlBuilder = urlBuilder.Scheme(realScheme);
         }
-        if (RestoreRealName(uriBuilder._schemeSpecificPart) is { } realSsp) {
-            uriBuilder = uriBuilder.SchemeSpecificPart(realSsp);
+        // if (RestoreRealName(urlBuilder._schemeSpecificPart) is { } realSsp) {
+        //     urlBuilder = urlBuilder.SchemeSpecificPart(realSsp);
+        // }
+        if (RestoreRealName(urlBuilder._hostname) is { } realHostname) {
+            urlBuilder = urlBuilder.Hostname(realHostname);
         }
-        if (RestoreRealName(uriBuilder._hostname) is { } realHostname) {
-            uriBuilder = uriBuilder.Hostname(realHostname);
-        }
-        for (int i = 0; i < uriBuilder._path.Count; i++) {
-            if (RestoreRealName(uriBuilder._path[i]) is { } realPathSegment) {
-                uriBuilder = new URIBuilder(uriBuilder) { _path = uriBuilder._path.SetItem(i, realPathSegment) };
+        for (int i = 0; i < urlBuilder._path.Count; i++) {
+            if (RestoreRealName(urlBuilder._path[i]) is { } realPathSegment) {
+                urlBuilder = new UrlBuilder(urlBuilder) { _path = urlBuilder._path.SetItem(i, realPathSegment) };
             }
         }
-        for (int i = 0; i < uriBuilder._queryParameters.Count; i++) {
-            if (uriBuilder._queryParameters[i].Value is string value && RestoreRealName(value) is { } realQueryParam) {
-                uriBuilder = new URIBuilder(uriBuilder)
-                    { _queryParameters = uriBuilder._queryParameters.SetItem(i, new KeyValuePair<string, object>(uriBuilder._queryParameters[i].Key, realQueryParam)) };
+        for (int i = 0; i < urlBuilder._queryParameters.Count; i++) {
+            if (urlBuilder._queryParameters[i].Value is string value && RestoreRealName(value) is { } realQueryParam) {
+                urlBuilder = new UrlBuilder(urlBuilder)
+                    { _queryParameters = urlBuilder._queryParameters.SetItem(i, new KeyValuePair<string, object>(urlBuilder._queryParameters[i].Key, realQueryParam)) };
             }
         }
-        if (RestoreRealName(uriBuilder._fragment) is { } realFragment) {
-            uriBuilder = uriBuilder.Fragment(realFragment);
+        if (RestoreRealName(urlBuilder._fragment) is { } realFragment) {
+            urlBuilder = urlBuilder.Fragment(realFragment);
         }
 
-        return uriBuilder;
+        return urlBuilder;
 
         string GenerateFakeName() {
             string fakeName;
@@ -170,60 +171,60 @@ public class URIBuilder: ICloneable {
     }
 
     [Pure]
-    public object Clone() => new URIBuilder(this);
+    public object Clone() => new UrlBuilder(this);
 
     #endregion
 
     #region Serialization
 
     [Pure]
-    public Uri ToUri() {
+    public Uri ToUrl() {
         StringBuilder built = new();
 
         if (_scheme != null) {
             built.Append(ReplacePlaceholders(_scheme)).Append(':');
         }
 
-        if (_schemeSpecificPart != null) {
-            built.Append(UriEncoder.Encode(ReplacePlaceholders(_schemeSpecificPart), UriEncoder.UriPart.SchemeSpecificPart));
-        } else {
-            if (_userInfo != null || _hostname != null || _port != null) {
-                built.Append("//");
-            }
+        /*if (_schemeSpecificPart != null) {
+            built.Append(UrlEncoder.Encode(ReplacePlaceholders(_schemeSpecificPart), UrlEncoder.UrlPart.SchemeSpecificPart));
+        } else {*/
+        if (_userInfo != null || _hostname != null || _port != null) {
+            built.Append("//");
+        }
 
-            if (_userInfo != null) {
-                built.Append(UriEncoder.Encode(ReplacePlaceholders(_userInfo), UriEncoder.UriPart.UserInfo)).Append('@');
-            }
+        if (_userInfo != null) {
+            built.Append(UrlEncoder.Encode(ReplacePlaceholders(_userInfo), UrlEncoder.Component.UserInfo)).Append('@');
+        }
 
-            if (_hostname is { } hostname) {
-                hostname = ReplacePlaceholders(hostname);
-                if (IPAddress.TryParse(hostname, out IPAddress? ipAddress) && ipAddress.AddressFamily == AddressFamily.InterNetworkV6) {
-                    built.Append('[').Append(hostname).Append(']');
-                } else {
-                    built.Append(hostname);
-                }
-            }
-
-            if (_port.HasValue) {
-                built.Append(':').Append(_port.Value);
-            }
-
-            if (!_path.IsEmpty) {
-                built.Append('/').AppendJoin('/',
-                    _path.Select(p => UriEncoder.Encode(ReplacePlaceholders(p.Trim('/')), UriEncoder.UriPart.PathSegment)));
-            }
-
-            IList<KeyValuePair<string, object>> queryParameters = _unusedTemplateQueryParameterRealNames != null
-                ? _queryParameters.Where(pair => !_unusedTemplateQueryParameterRealNames.Contains(pair.Key)).ToList() : _queryParameters;
-            if (queryParameters.Count != 0) {
-                built.Append('?').AppendJoin('&', queryParameters.Select(pair => ReferenceEquals(pair.Value, ValuelessQueryParam)
-                    ? UriEncoder.Encode(pair.Key, UriEncoder.UriPart.QueryParameter)
-                    : $"{UriEncoder.Encode(pair.Key, UriEncoder.UriPart.QueryParameter)}={UriEncoder.Encode(ReplacePlaceholders(pair.Value.ToString() ?? string.Empty), UriEncoder.UriPart.QueryParameter)}"));
+        if (_hostname is { } hostname) {
+            hostname = ReplacePlaceholders(hostname);
+            if (IPAddress.TryParse(hostname, out IPAddress? ipAddress) && ipAddress.AddressFamily == AddressFamily.InterNetworkV6) {
+                built.Append('[').Append(hostname).Append(']');
+            } else {
+                built.Append(hostname);
             }
         }
 
+        if (_port.HasValue) {
+            built.Append(':').Append(_port.Value);
+        }
+
+        if (!_path.IsEmpty) {
+            built.Append('/').AppendJoin('/',
+                _path.Select(p => UrlEncoder.Encode(ReplacePlaceholders(p.Trim('/')), UrlEncoder.Component.PathSegment)));
+        }
+
+        IList<KeyValuePair<string, object>> queryParameters = _unusedTemplateQueryParameterRealNames != null
+            ? _queryParameters.Where(pair => !_unusedTemplateQueryParameterRealNames.Contains(pair.Key)).ToList() : _queryParameters;
+        if (queryParameters.Count != 0) {
+            built.Append('?').AppendJoin('&', queryParameters.Select(pair => ReferenceEquals(pair.Value, ValuelessQueryParam)
+                ? UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QueryParameter)
+                : $"{UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QueryParameter)}={UrlEncoder.Encode(ReplacePlaceholders(pair.Value.ToString() ?? string.Empty), UrlEncoder.Component.QueryParameter)}"));
+        }
+        //}
+
         if (_fragment != null) {
-            built.Append('#').Append(UriEncoder.Encode(ReplacePlaceholders(_fragment), UriEncoder.UriPart.Fragment));
+            built.Append('#').Append(UrlEncoder.Encode(ReplacePlaceholders(_fragment), UrlEncoder.Component.Fragment));
         }
 
         string uriString = built.ToString();
@@ -231,29 +232,29 @@ public class URIBuilder: ICloneable {
     }
 
     [Pure]
-    public override string ToString() => ToUri().AbsoluteUri;
+    public override string ToString() => ToUrl().AbsoluteUri;
 
     [Pure]
-    public static implicit operator Uri(URIBuilder builder) => builder.ToUri();
+    public static implicit operator Uri(UrlBuilder builder) => builder.ToUrl();
 
     [Pure]
-    public static explicit operator string(URIBuilder builder) => builder.ToString();
+    public static explicit operator string(UrlBuilder builder) => builder.ToString();
 
     #endregion
 
     #region Building
 
     [Pure]
-    public URIBuilder EnableTemplates(bool enableTemplates) => new(this) { _enableTemplates = enableTemplates };
+    public UrlBuilder EnableTemplates(bool enableTemplates) => new(this) { _enableTemplates = enableTemplates };
 
     [Pure]
-    public URIBuilder UserInfo(string? userInfo) => new(this) { _userInfo = userInfo };
+    public UrlBuilder UserInfo(string? userInfo) => new(this) { _userInfo = userInfo };
 
     [Pure]
-    public URIBuilder Path(string? segments, bool autoSplit = true) {
+    public UrlBuilder Path(string? segments, bool autoSplit = true) {
         ImmutableList<string> newPath = _path;
         if (segments is null) {
-            return new URIBuilder(this) { _path = ImmutableList<string>.Empty };
+            return new UrlBuilder(this) { _path = ImmutableList<string>.Empty };
         } else if (segments.StartsWith('/')) {
             newPath = ImmutableList<string>.Empty;
         }
@@ -265,66 +266,64 @@ public class URIBuilder: ICloneable {
             newPath = newPath.Add(segments);
         }
 
-        return new URIBuilder(this) { _path = newPath };
+        return new UrlBuilder(this) { _path = newPath };
     }
 
     [Pure]
-    public URIBuilder Path(object segments) => Path(segments.ToString());
+    public UrlBuilder Path(object segments) => Path(segments.ToString(), false);
 
     [Pure]
-    public URIBuilder Path(params IEnumerable<string> segments) => segments.Aggregate(this, (builder, segment) => builder.Path(segment));
+    public UrlBuilder Path(params IEnumerable<string> segments) => segments.Aggregate(this, (builder, segment) => builder.Path(segment));
 
     [Pure]
-    public URIBuilder Port(ushort? port) => new(this) { _port = port };
+    public UrlBuilder Port(ushort? port) => new(this) { _port = port };
 
     [Pure]
-    public URIBuilder Hostname(string hostname) => new(this) { _hostname = hostname, _schemeSpecificPart = null };
+    public UrlBuilder Hostname(string hostname) => new(this) { _hostname = hostname /*, _schemeSpecificPart = null*/ };
 
     [Pure]
-    public URIBuilder Scheme(string scheme) => new(this) { _scheme = scheme };
+    public UrlBuilder Scheme(string scheme) => new(this) { _scheme = scheme };
+
+    // [Pure] public UrlBuilder SchemeSpecificPart(string ssp) => new(this) { _schemeSpecificPart = ssp, _hostname = null, _userInfo = null, _port = null };
 
     [Pure]
-    public URIBuilder SchemeSpecificPart(string ssp) => new(this) { _schemeSpecificPart = ssp, _hostname = null, _userInfo = null, _port = null };
-
-    [Pure]
-    public URIBuilder QueryParam(string key, object? value) => new(this) {
+    public UrlBuilder QueryParam(string key, object? value) => new(this) {
         _queryParameters = value != null
             ? _queryParameters.Add(new KeyValuePair<string, object>(key, value.ToString() ?? string.Empty))
             : _queryParameters.RemoveAll(pair => pair.Key == key)
     };
 
     [Pure]
-    public URIBuilder QueryParam(string key, IEnumerable<object> values) =>
+    public UrlBuilder QueryParam(string key, IEnumerable<object> values) =>
         new(this) { _queryParameters = _queryParameters.AddRange(values.Select(v => new KeyValuePair<string, object>(key, v.ToString() ?? string.Empty))) };
 
     [Pure]
-    public URIBuilder QueryParam(IEnumerable<KeyValuePair<string, object>>? parameters) => new(this) {
+    public UrlBuilder QueryParam(IEnumerable<KeyValuePair<string, object>>? parameters) => new(this) {
         _queryParameters = parameters != null
             ? _queryParameters.AddRange(parameters.Select(p => new KeyValuePair<string, object>(p.Key, p.Value.ToString() ?? string.Empty)))
             : ImmutableList<KeyValuePair<string, object>>.Empty
     };
 
     [Pure]
-    public URIBuilder Fragment(string? fragment) => new(this) { _fragment = fragment };
+    public UrlBuilder Fragment(string? fragment) => new(this) { _fragment = fragment };
 
-    // [Pure]
-    // public URIBuilder RemoveQueryParam(string? key) => new(this) { _queryParameters = _queryParameters.Where(pair => key == null || pair.Key != key).ToImmutableList() };
+    // [Pure] public URIBuilder RemoveQueryParam(string? key) => new(this) { _queryParameters = _queryParameters.Where(pair => key == null || pair.Key != key).ToImmutableList() };
 
     #endregion
 
     #region Templates
 
     [Pure]
-    public URIBuilder ResolveTemplate(string key, object? value) => new(this) {
+    public UrlBuilder ResolveTemplate(string key, object? value) => new(this) {
         _templateValues = _templateValues.SetItem(key, value),
         _unusedTemplateQueryParameterRealNames =
             _unusedTemplateQueryParameterRealNames != null && value != null ? _unusedTemplateQueryParameterRealNames.Remove(key) : _unusedTemplateQueryParameterRealNames
     };
 
     [Pure]
-    public URIBuilder ResolveTemplate(IEnumerable<KeyValuePair<string, object?>> values) {
+    public UrlBuilder ResolveTemplate(IEnumerable<KeyValuePair<string, object?>> values) {
         values = values.ToList();
-        return new URIBuilder(this) {
+        return new UrlBuilder(this) {
             _templateValues = _templateValues.SetItems(values),
             _unusedTemplateQueryParameterRealNames = _unusedTemplateQueryParameterRealNames != null ? _unusedTemplateQueryParameterRealNames.Except(values.ToImmutableDictionary().Keys)
                 : _unusedTemplateQueryParameterRealNames
@@ -342,24 +341,18 @@ public class URIBuilder: ICloneable {
 
 }
 
-internal static class UriEncoder {
+internal static class UrlEncoder {
 
     private static readonly ArrayPool<byte> EscapingUtfBuffers = ArrayPool<byte>.Create(4, 50);
 
-    public static string Encode(string raw, UriPart part) {
-        switch (part) {
-            case UriPart.UserInfo:
-                return CharCategories.UserInfoIllegal.Replace(raw, EscapeMatch);
-            case UriPart.PathSegment:
-                return CharCategories.PathSegmentIllegal.Replace(raw, EscapeMatch);
-            case UriPart.QueryParameter:
-                return CharCategories.QueryParameterIllegal.Replace(raw, EscapeMatch);
-            case UriPart.SchemeSpecificPart:
-            case UriPart.Fragment:
-            default:
-                return CharCategories.UriIllegal.Replace(raw, EscapeMatch);
-        }
-    }
+    public static string Encode(string raw, Component component) => component switch {
+        Component.UserInfo       => CharCategories.UserInfoIllegal.Replace(raw, EscapeMatch),
+        Component.PathSegment    => CharCategories.PathSegmentIllegal.Replace(raw, EscapeMatch),
+        Component.QueryParameter => CharCategories.QueryParameterIllegal.Replace(raw, EscapeMatch),
+        // case UrlPart.SchemeSpecificPart:
+        Component.Fragment => CharCategories.UriIllegal.Replace(raw, EscapeMatch),
+        _                  => CharCategories.UriIllegal.Replace(raw, EscapeMatch)
+    };
 
     private static string EscapeMatch(Match match) {
         byte[] utf8Buffer = EscapingUtfBuffers.Rent(4);
@@ -397,9 +390,9 @@ internal static class UriEncoder {
 
     }
 
-    public enum UriPart {
+    public enum Component {
 
-        SchemeSpecificPart,
+        // SchemeSpecificPart,
         UserInfo,
         PathSegment,
         QueryParameter,

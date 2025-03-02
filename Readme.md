@@ -56,6 +56,10 @@
     - Atomic swap on `ConcurrentDictionary` to upsert new value and get old value
     - Get or add to `ConcurrentDictionary` and dispose of created but unadded values
     - Get or add to `ConcurrentDictionary` and determine whether a new value was added or an existing value was returned
+    - Polyfill for `IList<T>.AsReadOnly` for .NET versions before 8, including .NET Standard
+- HTTP
+    - Builder pattern for HTTP request URLs and headers
+    - HTTP request and response filtering
 - Paths
     - Trim trailing slashes
     - Create new empty temporary subdirectory in specific parent directory
@@ -79,6 +83,9 @@
     - Fluent conversion method to byte stream
     - Convert DOS CRLF line breaks to Unix LF line breaks
     - Repeat a string a certain number of times
+    - Polyfill for `StringBuilder.AppendJoin` in .NET Standard 2.0
+    - Polyfill for `string.StartsWith(char)` and `string.EndsWith(char)` in .NET Standard 2.0
+    - Polyfill for `string.Contains(string, StringComparison)` in .NET Standard 2.0
 - Tasks
     - Unbounded delay time (.NET 6 tops out at 49.7 days)
     - Await multiple tasks and proceed when any of them both completes and the return value passes a predicate, or they all fail to complete or the predicate
@@ -88,6 +95,7 @@
 - URIs
     - Fluent method to get URI query parameters
     - Check if a URI host belongs to a given domain (site locking)
+    - Builder pattern for URLs
 - XML
     - Fluent methods to read an XML document from an HTTP response body as a mapped object, DOM, LINQ, or XPath
     - Find all descendant elements of a parent node which have a given tag name

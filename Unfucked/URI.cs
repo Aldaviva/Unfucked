@@ -6,8 +6,7 @@ namespace Unfucked;
 /// <summary>
 /// Methods that make it easier to work with URIs and URLs.
 /// </summary>
-// ReSharper disable once InconsistentNaming - it's the plural form of a known all-capitals abbreviation, so there is no problem here
-public static class URIs {
+public static class URI {
 
     /// <summary>
     /// Get the query parameters from a URI.

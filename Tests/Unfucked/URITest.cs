@@ -2,7 +2,7 @@
 
 namespace Tests.Unfucked;
 
-public class URIsTest {
+public class URITest {
 
     [Fact]
     public void GetQuery() {

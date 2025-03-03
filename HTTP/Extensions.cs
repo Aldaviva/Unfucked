@@ -1,9 +1,10 @@
-﻿using Unfucked.HTTP;
+﻿using Unfucked.HTTP.Config;
+using Unfucked.HTTP.Filters;
+using Unfucked.HTTP.Serialization;
 
-// ReSharper disable once CheckNamespace - putting it in a child namespace makes it harder for users to find it with autocomplete, because it won't be imported by "using Unfucked;"
-namespace Unfucked;
+namespace Unfucked.HTTP;
 
-public static class HttpExtensions {
+public static class Extensions {
 
     public static IWebTarget Target(this HttpClient httpClient, Uri uri) => new WebTarget(httpClient, uri);
     public static IWebTarget Target(this HttpClient httpClient, string uri) => new WebTarget(httpClient, uri);
@@ -17,6 +18,11 @@ public static class HttpExtensions {
 
     public static HttpClient Register(this HttpClient httpClient, ClientResponseFilter filter, int position = HttpConfiguration.LastPosition) {
         _ = UnfuckedHttpHandler.FindHandler(httpClient)?.Register(filter, position) ?? throw WebTarget.ConfigUnavailable;
+        return httpClient;
+    }
+
+    public static HttpClient Register(this HttpClient httpClient, MessageBodyReader reader) {
+        _ = UnfuckedHttpHandler.FindHandler(httpClient)?.Register(reader) ?? throw WebTarget.ConfigUnavailable;
         return httpClient;
     }
 

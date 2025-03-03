@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
+using Unfucked.HTTP.Config;
 
 namespace Unfucked.HTTP;
 

@@ -53,11 +53,11 @@ public static class XML {
     /// <returns>An object that was mapped from the XML document.</returns>
     public static async Task<T> ReadObjectFromXmlAsync<T>(this HttpContent content, Encoding? encoding = null, string? defaultNamespace = null, CancellationToken cancellationToken = default) {
         XmlSerializer xmlSerializer = XmlSerializerCache.GetOrAdd(typeof(T), () => new XmlSerializer(typeof(T), defaultNamespace), out _);
-        Task<Stream>  readStreamTask;
+        Task<Stream> readStreamTask = // stream is disposed automatically by StreamReader
 #if NET6_0_OR_GREATER
-        readStreamTask = content.ReadAsStreamAsync(cancellationToken);
+            content.ReadAsStreamAsync(cancellationToken);
 #else
-        readStreamTask = content.ReadAsStreamAsync();
+            content.ReadAsStreamAsync();
 #endif
         using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.Utf8, encoding == null);
         return (T) xmlSerializer.Deserialize(textReader)!;
@@ -71,12 +71,12 @@ public static class XML {
     /// <param name="cancellationToken">If you want to cancel the operation before it completes.</param>
     /// <returns>An XML DOM document parsed from the HTTP response.</returns>
     public static async Task<XmlDocument> ReadDomFromXmlAsync(this HttpContent content, Encoding? encoding = null, CancellationToken cancellationToken = default) {
-        XmlDocument  doc = new();
-        Task<Stream> readStreamTask;
+        XmlDocument doc = new();
+        Task<Stream> readStreamTask =
 #if NET6_0_OR_GREATER
-        readStreamTask = content.ReadAsStreamAsync(cancellationToken);
+            content.ReadAsStreamAsync(cancellationToken);
 #else
-        readStreamTask = content.ReadAsStreamAsync();
+            content.ReadAsStreamAsync();
 #endif
         using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.Utf8, encoding == null);
         doc.Load(textReader);
@@ -91,11 +91,11 @@ public static class XML {
     /// <param name="cancellationToken">If you want to cancel the operation before it completes.</param>
     /// <returns>An XPath navigator on an XML document parsed from the HTTP response.</returns>
     public static async Task<XPathNavigator> ReadXPathFromXmlAsync(this HttpContent content, Encoding? encoding = null, CancellationToken cancellationToken = default) {
-        Task<Stream> readStreamTask;
+        Task<Stream> readStreamTask =
 #if NET6_0_OR_GREATER
-        readStreamTask = content.ReadAsStreamAsync(cancellationToken);
+            content.ReadAsStreamAsync(cancellationToken);
 #else
-        readStreamTask = content.ReadAsStreamAsync();
+            content.ReadAsStreamAsync();
 #endif
         using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.Utf8, encoding == null);
         return new XPathDocument(textReader).CreateNavigator();

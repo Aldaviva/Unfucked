@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text;
 
 namespace Unfucked.HTTP;
 
@@ -43,7 +44,7 @@ public partial class WebTarget {
 
     public WebTarget Authorization(string credentials) => Header(HttpHeaders.Authorization, credentials);
 
-    public WebTarget Authorization(string username, string password) => Authorization(Convert.ToBase64String(Strings.Utf8.GetBytes($"{username}:{password}"), Base64FormattingOptions.None));
+    public WebTarget Authorization(string username, string password) => Authorization(Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"), Base64FormattingOptions.None));
 
     public WebTarget Authorization(NetworkCredential credentials) => Authorization(credentials.UserName, credentials.Password);
 

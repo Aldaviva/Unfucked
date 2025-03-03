@@ -1,4 +1,8 @@
-﻿namespace Unfucked.HTTP;
+﻿using Unfucked.HTTP.Config;
+using Unfucked.HTTP.Filters;
+using Unfucked.HTTP.Serialization;
+
+namespace Unfucked.HTTP;
 
 public partial class WebTarget {
 
@@ -6,15 +10,21 @@ public partial class WebTarget {
 
     public IReadOnlyList<ClientResponseFilter> ResponseFilters => clientConfig?.ResponseFilters ?? throw ConfigUnavailable;
 
+    public IEnumerable<MessageBodyReader> MessageBodyReaders => clientConfig?.MessageBodyReaders ?? throw ConfigUnavailable;
+
     public WebTarget Register(ClientRequestFilter? filter, int position = HttpConfiguration.LastPosition) =>
         clientConfig is not null ? new WebTarget(client, urlBuilder, clientHandler, clientConfig.Register(filter, position)) : throw ConfigUnavailable;
 
     public WebTarget Register(ClientResponseFilter? filter, int position = HttpConfiguration.LastPosition) =>
         clientConfig is not null ? new WebTarget(client, urlBuilder, clientHandler, clientConfig.Register(filter, position)) : throw ConfigUnavailable;
 
+    public WebTarget Register(MessageBodyReader reader) => clientConfig is not null ? new WebTarget(client, urlBuilder, clientHandler, clientConfig.Register(reader)) : throw ConfigUnavailable;
+
     IWebTarget IHttpConfiguration<IWebTarget>.Register(ClientRequestFilter? filter, int position) => Register(filter, position);
 
     IWebTarget IHttpConfiguration<IWebTarget>.Register(ClientResponseFilter? filter, int position) => Register(filter, position);
+
+    IWebTarget IHttpConfiguration<IWebTarget>.Register(MessageBodyReader reader) => Register(reader);
 
     public WebTarget Property<T>(PropertyKey<T> key, T? value) where T: notnull =>
         clientConfig is not null ? new WebTarget(client, urlBuilder, clientHandler, clientConfig.Property(key, value)) : throw ConfigUnavailable;

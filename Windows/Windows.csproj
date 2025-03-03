@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>net462;net6.0-windows</TargetFrameworks>
+        <TargetFrameworks>net462;net6.0-windows;net8.0-windows</TargetFrameworks>
         <Version>0.0.0-beta4</Version>
         <RootNamespace>Unfucked</RootNamespace>
         <UseWindowsForms>true</UseWindowsForms>
@@ -12,7 +12,7 @@
         <PackageReference Include="mwinapi" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)' == 'net6.0-windows'">
+    <ItemGroup Condition="'$(TargetFramework)' != 'net462'">
         <FrameworkReference Include="Microsoft.WindowsDesktop.App" /> <!-- UseWindowsForms is insufficient to refer to UIAutomationClient -->
     </ItemGroup>
     

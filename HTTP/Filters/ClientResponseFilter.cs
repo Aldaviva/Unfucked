@@ -1,4 +1,4 @@
-﻿namespace Unfucked.HTTP;
+﻿namespace Unfucked.HTTP.Filters;
 
 public interface ClientResponseFilter {
 

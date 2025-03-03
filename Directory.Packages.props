@@ -16,9 +16,9 @@
     <PackageVersion Include="SharpCompress" Version="0.39.0" />
     <PackageVersion Include="Stun.Net" Version="8.0.2" />
     <PackageVersion Include="System.Collections.Immutable" Version="9.0.2" />
+    <PackageVersion Include="System.Net.Http.Json" Version="9.0.2" />
     <PackageVersion Include="System.Text.Encodings.Web" Version="9.0.2" />
     <PackageVersion Include="TwitchApi.Net" Version="3.2.0" />
-    <PackageVersion Include="UriBuilder.Fluent" Version="3.0.0" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="Unfucked" Version="$(UnfuckedVersion)" />

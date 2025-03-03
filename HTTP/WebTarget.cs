@@ -1,4 +1,6 @@
-﻿namespace Unfucked.HTTP;
+﻿using Unfucked.HTTP.Config;
+
+namespace Unfucked.HTTP;
 
 public partial class WebTarget: IWebTarget, IHttpConfiguration<WebTarget> {
 

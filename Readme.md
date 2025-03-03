@@ -14,6 +14,7 @@
     - [DateTime](#datetime)
     - [DI](#di)
     - [DNS](#dns)
+    - [HTTP](#http)
     - [ICS](#ics)
     - [OBS](#obs)
     - [PGP](#pgp)
@@ -57,9 +58,6 @@
     - Get or add to `ConcurrentDictionary` and dispose of created but unadded values
     - Get or add to `ConcurrentDictionary` and determine whether a new value was added or an existing value was returned
     - Polyfill for `IList<T>.AsReadOnly` for .NET versions before 8, including .NET Standard
-- HTTP
-    - Builder pattern for HTTP request URLs and headers
-    - HTTP request and response filtering
 - Paths
     - Trim trailing slashes
     - Create new empty temporary subdirectory in specific parent directory
@@ -133,6 +131,12 @@
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.DNS?logo=nuget&label=Unfucked.DNS%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.DNS)
 - For use with [G6.GandiLiveDns](https://www.nuget.org/packages/G6.GandiLiveDns)
 - Interface for Gandi LiveDNS HTTP API client to allow mocked testing isolation
+
+### HTTP
+[![NuGet](https://img.shields.io/nuget/v/Unfucked.HTTP?logo=nuget&label=Unfucked.HTTP%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.HTTP)
+- Builder pattern for HTTP request URLs, headers, verbs, and response representations
+- Request and response filtering
+- Automatic response deserialization to given types from XML, JSON, and pluggable custom representations
 
 ### ICS
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.ICS?logo=nuget&label=Unfucked.ICS%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.ICS)

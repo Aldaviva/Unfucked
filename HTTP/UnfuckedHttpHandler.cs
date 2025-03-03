@@ -1,4 +1,7 @@
 ﻿using System.Reflection;
+using Unfucked.HTTP.Config;
+using Unfucked.HTTP.Filters;
+using Unfucked.HTTP.Serialization;
 
 namespace Unfucked.HTTP;
 
@@ -19,6 +22,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IFilteringHttpClientHandler
 
     public IReadOnlyList<ClientRequestFilter> RequestFilters => ClientConfig.RequestFilters;
     public IReadOnlyList<ClientResponseFilter> ResponseFilters => ClientConfig.ResponseFilters;
+    public IEnumerable<MessageBodyReader> MessageBodyReaders => ClientConfig.MessageBodyReaders;
 
     // HttpClientHandler automatically uses SocketsHttpHandler on .NET Core ≥ 2.1, or HttpClientHandler otherwise
     public UnfuckedHttpHandler(HttpMessageHandler? innerHandler = null): base(innerHandler ?? new HttpClientHandler()) { }
@@ -75,8 +79,11 @@ public class UnfuckedHttpHandler: DelegatingHandler, IFilteringHttpClientHandler
     public UnfuckedHttpHandler Register(ClientResponseFilter? filter, int position = HttpConfiguration.LastPosition) =>
         With(ClientConfig.Register(filter, position));
 
+    public UnfuckedHttpHandler Register(MessageBodyReader reader) => With(ClientConfig.Register(reader));
+
     IFilteringHttpClientHandler IHttpConfiguration<IFilteringHttpClientHandler>.Register(ClientResponseFilter? filter, int position) => Register(filter, position);
     IFilteringHttpClientHandler IHttpConfiguration<IFilteringHttpClientHandler>.Register(ClientRequestFilter? filter, int position) => Register(filter, position);
+    IFilteringHttpClientHandler IHttpConfiguration<IFilteringHttpClientHandler>.Register(MessageBodyReader reader) => Register(reader);
 
     public UnfuckedHttpHandler Property<T>(PropertyKey<T> key, T? value) where T: notnull => With(ClientConfig.Property(key, value));
 

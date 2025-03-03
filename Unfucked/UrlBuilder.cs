@@ -330,6 +330,10 @@ public class UrlBuilder: ICloneable {
         };
     }
 
+    [Pure]
+    public UrlBuilder ResolveTemplate(object anonymousType) =>
+        ResolveTemplate(anonymousType.GetType().GetProperties().Select(property => new KeyValuePair<string, object?>(property.Name, property.GetValue(anonymousType))));
+
     private string ReplacePlaceholders(string inputWithPlaceholders) =>
         _templateValues.IsEmpty || !_enableTemplates ? inputWithPlaceholders : PlaceholderPattern.Replace(inputWithPlaceholders, match => {
             string key = match.Groups["key"].Value;

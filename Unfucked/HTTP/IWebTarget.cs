@@ -30,6 +30,12 @@ public interface IWebTarget: IHttpConfiguration<IWebTarget> {
 
     WebTarget Fragment(string? fragment);
 
+    WebTarget ResolveTemplate(string key, object? value);
+
+    WebTarget ResolveTemplate(IEnumerable<KeyValuePair<string, object?>> values);
+
+    WebTarget ResolveTemplate(object anonymousType);
+
     WebTarget Header(string key, object? value);
 
     WebTarget Header(string key, params IEnumerable<object> values);

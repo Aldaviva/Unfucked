@@ -4,5 +4,5 @@
         <TargetFramework>netstandard2.0</TargetFramework>
         <Version>$(UnfuckedCachingVersion)</Version>
     </PropertyGroup>
-
+    
 </Project>

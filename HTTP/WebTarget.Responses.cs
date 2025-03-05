@@ -9,11 +9,16 @@ namespace Unfucked.HTTP;
 public partial class WebTarget {
 
     private static readonly IReadOnlyList<MessageBodyReader> DefaultMessageBodyReaders = [
-        new JsonReader(),
-        new XmlReader.XmlDocumentReader(),
-        new XmlReader.XDocumentReader(),
-        new XmlReader.XPathReader(),
-        new XmlReader()
+        new StreamBodyReader(),
+        new ByteArrayBodyReader(),
+        new ByteArrayBodyReader.MemoryBodyReader(),
+        new ByteArrayBodyReader.ReadOnlyMemoryBodyReader(),
+        new StringBodyReader(),
+        new JsonBodyReader(),
+        new XmlBodyReader.XDocumentReader(),
+        new XmlBodyReader.XmlDocumentReader(),
+        new XmlBodyReader.XPathReader(),
+        new XmlBodyReader()
     ];
 
     private async Task<T> ParseResponseBody<T>(HttpResponseMessage response, CancellationToken cancellationToken) {

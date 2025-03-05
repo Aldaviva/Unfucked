@@ -26,6 +26,11 @@ public partial class WebTarget {
 
     public Task<HttpResponseMessage> Delete(HttpContent? requestBody = null, CancellationToken cancellationToken = default) => Send(HttpMethod.Delete, requestBody, cancellationToken);
 
+    public async Task<T> Send<T>(HttpMethod verb, HttpContent? requestBody, CancellationToken cancellationToken = default) {
+        using HttpResponseMessage response = await Send(verb, requestBody, cancellationToken).ConfigureAwait(false);
+        return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<T> Get<T>(CancellationToken cancellationToken = default) {
         using HttpResponseMessage response = await Get(cancellationToken).ConfigureAwait(false);
         return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);

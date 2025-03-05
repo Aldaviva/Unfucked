@@ -1,4 +1,5 @@
-﻿using Unfucked.HTTP.Config;
+﻿using System.Diagnostics.Contracts;
+using Unfucked.HTTP.Config;
 using Unfucked.HTTP.Filters;
 using Unfucked.HTTP.Serialization;
 
@@ -6,17 +7,24 @@ namespace Unfucked.HTTP;
 
 public static class Extensions {
 
+    [Pure]
     public static IWebTarget Target(this HttpClient httpClient, Uri uri) => new WebTarget(httpClient, uri);
+
+    [Pure]
     public static IWebTarget Target(this HttpClient httpClient, string uri) => new WebTarget(httpClient, uri);
+
+    [Pure]
     public static IWebTarget Target(this HttpClient httpClient, UrlBuilder urlBuilder) => new WebTarget(httpClient, urlBuilder);
+
+    [Pure]
     public static IWebTarget Target(this HttpClient httpClient, UriBuilder uriBuilder) => new WebTarget(httpClient, uriBuilder);
 
-    public static HttpClient Register(this HttpClient httpClient, ClientRequestFilter filter, int position = HttpConfiguration.LastPosition) {
+    public static HttpClient Register(this HttpClient httpClient, ClientRequestFilter filter, int position = HttpConfiguration.LastFilterPosition) {
         _ = UnfuckedHttpHandler.FindHandler(httpClient)?.Register(filter, position) ?? throw WebTarget.ConfigUnavailable;
         return httpClient;
     }
 
-    public static HttpClient Register(this HttpClient httpClient, ClientResponseFilter filter, int position = HttpConfiguration.LastPosition) {
+    public static HttpClient Register(this HttpClient httpClient, ClientResponseFilter filter, int position = HttpConfiguration.LastFilterPosition) {
         _ = UnfuckedHttpHandler.FindHandler(httpClient)?.Register(filter, position) ?? throw WebTarget.ConfigUnavailable;
         return httpClient;
     }
@@ -31,6 +39,7 @@ public static class Extensions {
         return httpClient;
     }
 
+    [Pure]
     public static bool Property<T>(this HttpClient httpClient, PropertyKey<T> key, out T? existingValue) where T: notnull =>
         UnfuckedHttpHandler.FindHandler(httpClient) is { } handler ? handler.Property(key, out existingValue) : throw WebTarget.ConfigUnavailable;
 

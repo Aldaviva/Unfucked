@@ -35,10 +35,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="..\Unfucked\icon.png" Pack="true" PackagePath="\icon.png" />
-        <None Include="..\Readme.md" Pack="true" PackagePath="\" />
-        <None Include="..\*.props;..\*.ps1;..\.github\**" />
-        <AdditionalFiles Include="..\ExceptionAdjustments.txt" />
+        <None Include="..\Unfucked\icon.png;..\Readme.md" Pack="true" PackagePath="\" Visible="false" />
+        <None Include=".\*.csproj.DotSettings" Visible="false" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' or '$(Configuration)' == 'Release'">

@@ -1,8 +1,11 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Net;
+using System.Net.Http.Headers;
 using System.Runtime.Serialization;
 using System.Text;
 using Unfucked.HTTP.Config;
+using Unfucked.HTTP.Exceptions;
 using Unfucked.HTTP.Serialization;
+using NotSupportedException = Unfucked.HTTP.Exceptions.NotSupportedException;
 
 namespace Unfucked.HTTP;
 
@@ -22,8 +25,28 @@ public partial class WebTarget {
     ];
 
     private async Task<T> ParseResponseBody<T>(HttpResponseMessage response, CancellationToken cancellationToken) {
-        if (!Property(PropertyKey.ThrowOnUnsuccessfulStatusCode, out bool value) || value) {
-            response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode && (!Property(PropertyKey.ThrowOnUnsuccessfulStatusCode, out bool value) || value)) {
+            string         reason     = response.ReasonPhrase!;
+            HttpStatusCode statusCode = response.StatusCode;
+            WebApplicationException exception = statusCode switch {
+                HttpStatusCode.BadRequest           => new BadRequestException(reason),
+                HttpStatusCode.Unauthorized         => new NotAuthorizedException(reason),
+                HttpStatusCode.Forbidden            => new ForbiddenException(reason),
+                HttpStatusCode.NotFound             => new NotFoundException(reason),
+                HttpStatusCode.MethodNotAllowed     => new NotAllowedException(reason),
+                HttpStatusCode.NotAcceptable        => new NotAcceptableException(reason),
+                HttpStatusCode.UnsupportedMediaType => new NotSupportedException(reason),
+                HttpStatusCode.InternalServerError  => new InternalServerErrorException(reason),
+                HttpStatusCode.ServiceUnavailable   => new ServiceUnavailableException(reason),
+
+                >= HttpStatusCode.MultipleChoices and < HttpStatusCode.BadRequest     => new RedirectionException(statusCode, response.Headers.Location, reason),
+                >= HttpStatusCode.BadRequest and < HttpStatusCode.InternalServerError => new ClientErrorException(statusCode, reason),
+                >= HttpStatusCode.InternalServerError and < (HttpStatusCode) 600      => new ServerErrorException(statusCode, reason),
+
+                _ => new WebApplicationException(statusCode, reason)
+            };
+            exception.Data[WebApplicationException.RequestUrlDataKey] = response.RequestMessage!.RequestUri;
+            throw exception;
         }
 
         MediaTypeHeaderValue? responseContentType = response.Content.Headers.ContentType;
@@ -39,7 +62,9 @@ public partial class WebTarget {
             if (reader.CanRead<T>(responseContentType?.MediaType, null) && !cancellationToken.IsCancellationRequested) {
                 try {
                     return await reader.Read<T>(response.Content, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
-                } catch (MessageBodyReader.FailedToRead) { }
+                } catch (Exception e) when (e is not OutOfMemoryException) {
+                    throw new ProcessingException(e) { Data = { { WebApplicationException.RequestUrlDataKey, response.RequestMessage!.RequestUri } } };
+                }
             }
         }
 
@@ -67,12 +92,14 @@ public partial class WebTarget {
             if (reader.CanRead<T>(responseContentType?.MediaType, bodyPrefix) && !cancellationToken.IsCancellationRequested) {
                 try {
                     return await reader.Read<T>(response.Content, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
-                } catch (MessageBodyReader.FailedToRead) { }
+                } catch (Exception e) when (e is not OutOfMemoryException) {
+                    throw new ProcessingException(e) { Data = { { WebApplicationException.RequestUrlDataKey, response.RequestMessage!.RequestUri } } };
+                }
             }
         }
 
-        throw new SerializationException(
-            $"Could not determine content type of response body to deserialize (URI: {response.RequestMessage?.RequestUri}, Content-Type: {responseContentType}, .NET type: {typeof(T)})");
+        throw new ProcessingException(new SerializationException(
+            $"Could not determine content type of response body to deserialize (URI: {response.RequestMessage?.RequestUri}, Content-Type: {responseContentType}, .NET type: {typeof(T)})"));
     }
 
 }

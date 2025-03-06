@@ -9,6 +9,4 @@ public interface MessageBodyReader {
 
     public Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, IHttpConfiguration? clientConfig, CancellationToken cancellationToken);
 
-    public class FailedToRead(Exception? cause): Exception("Failed to deserialize response body", cause);
-
 }

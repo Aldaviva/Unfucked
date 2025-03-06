@@ -34,14 +34,8 @@ public class JsonBodyReader: MessageBodyReader {
             bodyPrefix.Contains("\"$schema\"")));
 
     public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, IHttpConfiguration? clientConfig, CancellationToken cancellationToken) {
-        try {
-            JsonSerializerOptions jsonOptions = clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions;
-            return (await responseBody.ReadFromJsonAsync<T>(jsonOptions, cancellationToken).ConfigureAwait(false))!;
-        } catch (JsonException e) {
-            throw new MessageBodyReader.FailedToRead(e);
-        } catch (NotSupportedException e) {
-            throw new MessageBodyReader.FailedToRead(e);
-        }
+        JsonSerializerOptions jsonOptions = clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions;
+        return (await responseBody.ReadFromJsonAsync<T>(jsonOptions, cancellationToken).ConfigureAwait(false))!;
     }
 
 }

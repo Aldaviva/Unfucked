@@ -28,11 +28,7 @@ public class XmlBodyReader: MessageBodyReader {
             bodyPrefix.Contains("<!doctype", StringComparison.OrdinalIgnoreCase)));
 
     public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, IHttpConfiguration? clientConfig, CancellationToken cancellationToken) {
-        try {
-            return await responseBody.ReadObjectFromXmlAsync<T>(responseEncoding, cancellationToken: cancellationToken).ConfigureAwait(false);
-        } catch (InvalidOperationException e) {
-            throw new MessageBodyReader.FailedToRead(e);
-        }
+        return await responseBody.ReadObjectFromXmlAsync<T>(responseEncoding, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     public class XmlDocumentReader: MessageBodyReader {
@@ -40,11 +36,7 @@ public class XmlBodyReader: MessageBodyReader {
         public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(XmlDocument);
 
         public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, IHttpConfiguration? clientConfig, CancellationToken cancellationToken) {
-            try {
-                return (T) (object) await responseBody.ReadDomFromXmlAsync(responseEncoding, cancellationToken).ConfigureAwait(false);
-            } catch (XmlException e) {
-                throw new MessageBodyReader.FailedToRead(e);
-            }
+            return (T) (object) await responseBody.ReadDomFromXmlAsync(responseEncoding, cancellationToken).ConfigureAwait(false);
         }
 
     }
@@ -54,11 +46,7 @@ public class XmlBodyReader: MessageBodyReader {
         public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(XDocument);
 
         public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, IHttpConfiguration? clientConfig, CancellationToken cancellationToken) {
-            try {
-                return (T) (object) await responseBody.ReadLinqFromXmlAsync(responseEncoding, cancellationToken: cancellationToken).ConfigureAwait(false);
-            } catch (InvalidOperationException e) {
-                throw new MessageBodyReader.FailedToRead(e);
-            }
+            return (T) (object) await responseBody.ReadLinqFromXmlAsync(responseEncoding, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
     }
@@ -68,11 +56,7 @@ public class XmlBodyReader: MessageBodyReader {
         public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(XPathNavigator);
 
         public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, IHttpConfiguration? clientConfig, CancellationToken cancellationToken) {
-            try {
-                return (T) (object) await responseBody.ReadXPathFromXmlAsync(responseEncoding, cancellationToken).ConfigureAwait(false);
-            } catch (XmlException e) {
-                throw new MessageBodyReader.FailedToRead(e);
-            }
+            return (T) (object) await responseBody.ReadXPathFromXmlAsync(responseEncoding, cancellationToken).ConfigureAwait(false);
         }
 
     }

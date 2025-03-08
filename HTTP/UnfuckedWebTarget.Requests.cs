@@ -1,11 +1,16 @@
 ﻿namespace Unfucked.HTTP;
 
-public partial class WebTarget {
+public partial class UnfuckedWebTarget {
 
     private static readonly HttpMethod PatchVerb = new("PATCH");
 
-    public async Task<HttpResponseMessage> Send(HttpMethod verb, HttpContent? requestBody = null, CancellationToken cancellationToken = default) {
-        using HttpRequestMessage request = new(verb, urlBuilder.ToUrl()) { Content = requestBody };
+    public virtual async Task<HttpResponseMessage> Send(HttpMethod verb, HttpContent? requestBody = null, CancellationToken cancellationToken = default) {
+        Uri url = urlBuilder.ToUrl();
+        if (client is IUnfuckedHttpClient u) {
+            return await u.SendAsync(new HttpRequest(verb, url, Headers, requestBody), cancellationToken).ConfigureAwait(false);
+        }
+
+        using HttpRequestMessage request = new(verb, url) { Content = requestBody };
 
         foreach (IGrouping<string, string> header in Headers.GroupBy(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase)) {
             request.Headers.Add(header.Key, header);

@@ -29,7 +29,7 @@ public static class Strings {
     /// <seealso cref="string.IsNullOrWhiteSpace"/>
     [Pure]
     public static bool HasText(
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         [NotNullWhen(true)]
 #endif
         this string? str) => !string.IsNullOrWhiteSpace(str);
@@ -42,7 +42,7 @@ public static class Strings {
     /// <seealso cref="string.IsNullOrEmpty"/>
     [Pure]
     public static bool HasLength(
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         [NotNullWhen(true)]
 #endif
         this string? str) => !string.IsNullOrEmpty(str);
@@ -66,7 +66,7 @@ public static class Strings {
     /// <seealso cref="string.Join(string?,IEnumerable{string?})"/>
     [Pure]
     public static string Join(this IEnumerable<string?> strings, char separator) {
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         return string.Join(separator, strings);
 #else
         return string.Join(Convert.ToString(separator), strings);
@@ -81,7 +81,7 @@ public static class Strings {
     /// <param name="culture">The language information to use for case conversion</param>
     /// <returns>A string with the same characters as <paramref name="str"/> except the first character is lowercase, or <c>null</c> if <paramref name="str"/> is <c>null</c></returns>
     [Pure]
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
     [return: NotNullIfNotNull(nameof(str))]
 #endif
     public static string? ToLowerFirstLetter(this string? str, CultureInfo? culture = null) =>
@@ -94,7 +94,7 @@ public static class Strings {
     /// <param name="culture">The language information to use for case conversion</param>
     /// <returns>A string with the same characters as <paramref name="str"/> except the first character is uppercase, or <c>null</c> if <paramref name="str"/> is <c>null</c></returns>
     [Pure]
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
     [return: NotNullIfNotNull(nameof(str))]
 #endif
     public static string? ToUpperFirstLetter(this string? str, CultureInfo? culture = null) =>
@@ -291,7 +291,7 @@ public static class Strings {
     /// <param name="dosString">String that may contain <c>\r\n</c></param>
     /// <returns>A copy of <paramref name="dosString"/> that has all of its occurrences of <c>\r\n</c> replaced with <c>\n</c></returns>
     [Pure]
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
     [return: NotNullIfNotNull(nameof(dosString))]
 #endif
     public static string? Dos2Unix(this string? dosString) => dosString?.Replace("\r\n", "\n");
@@ -325,8 +325,10 @@ public static class Strings {
         }
     }
 
-#if NETSTANDARD2_0
     public static StringBuilder AppendJoin(this StringBuilder builder, char separator, params IEnumerable<object> values) {
+#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+        return builder.AppendJoin(separator, values);
+#else
         bool firstValue = true;
         foreach (object value in values) {
             if (firstValue) {
@@ -337,9 +339,13 @@ public static class Strings {
             builder.Append(value);
         }
         return builder;
+#endif
     }
 
     public static StringBuilder AppendJoin(this StringBuilder builder, string separator, params IEnumerable<object> values) {
+#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+        return builder.AppendJoin(separator, values);
+#else
         bool firstValue = true;
         foreach (object value in values) {
             if (firstValue) {
@@ -350,17 +356,61 @@ public static class Strings {
             builder.Append(value);
         }
         return builder;
-    }
-
-    public static bool StartsWith(this string str, char prefix) {
-        return str.StartsWith(prefix.ToString());
-    }
-
-    public static bool EndsWith(this string str, char suffix) {
-        return str.EndsWith(suffix.ToString());
-    }
-
-    public static bool Contains(this string str, string value, StringComparison comparisonType) => str.IndexOf(value, comparisonType) != -1;
 #endif
+    }
+
+    public static bool StartsWith(this string str, char prefix) =>
+#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+        str.StartsWith(prefix);
+#else
+        str.StartsWith(prefix.ToString());
+#endif
+
+    public static bool EndsWith(this string str, char suffix) =>
+#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+        str.EndsWith(suffix);
+#else
+        str.EndsWith(suffix.ToString());
+#endif
+
+    public static bool Contains(this string str, string value, StringComparison comparisonType) =>
+#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+        str.Contains(value, comparisonType);
+#else
+        str.IndexOf(value, comparisonType) != -1;
+#endif
+
+    public static string ToString(this Version version, int fieldCount, bool trimEndingZeros) {
+        switch (fieldCount) {
+            case > 4:
+                throw new ArgumentOutOfRangeException(nameof(fieldCount), fieldCount, "Version objects have at most 4 fields");
+            case < 1:
+                throw new ArgumentOutOfRangeException(nameof(fieldCount), fieldCount, "Must format at least one number");
+        }
+
+        Version normalizedVersion =
+            (fieldCount == 4 && version.Revision == -1) ||
+            (fieldCount >= 3 && version.Build == -1)
+                ? new Version(
+                    version.Major,
+                    version.Minor,
+                    version.Build == -1 ? 0 : version.Build,
+                    version.Revision == -1 ? 0 : version.Revision
+                )
+                : version;
+
+        if (trimEndingZeros) {
+            if (fieldCount == 4 && normalizedVersion.Revision == 0) {
+                fieldCount--;
+            }
+            if (fieldCount == 3 && normalizedVersion.Build == 0) {
+                fieldCount--;
+            }
+            if (fieldCount == 2 && normalizedVersion.Minor == 0) {
+                fieldCount--;
+            }
+        }
+        return normalizedVersion.ToString(fieldCount);
+    }
 
 }

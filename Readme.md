@@ -13,7 +13,6 @@
     - [Compression](#compression)
     - [DateTime](#datetime)
     - [DI](#di)
-    - [DNS](#dns)
     - [HTTP](#http)
     - [ICS](#ics)
     - [OBS](#obs)
@@ -126,11 +125,6 @@
 - Add a colored console with column formatted data
 - Search for JSON configuration files in executable directory, not just current working directory
 - Allow provider functions to be injected, so long-lived consumers can depend on short-lived dependencies and control their lifecycle
-
-### DNS
-[![NuGet](https://img.shields.io/nuget/v/Unfucked.DNS?logo=nuget&label=Unfucked.DNS%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.DNS)
-- For use with [G6.GandiLiveDns](https://www.nuget.org/packages/G6.GandiLiveDns)
-- Interface for Gandi LiveDNS HTTP API client to allow mocked testing isolation
 
 ### HTTP
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.HTTP?logo=nuget&label=Unfucked.HTTP%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.HTTP)

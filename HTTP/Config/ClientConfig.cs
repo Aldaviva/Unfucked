@@ -5,38 +5,9 @@ using Unfucked.HTTP.Serialization;
 
 namespace Unfucked.HTTP.Config;
 
-public interface IHttpConfiguration {
+public interface IClientConfig: Configurable<IClientConfig>, ICloneable;
 
-    internal IReadOnlyList<ClientRequestFilter> RequestFilters { get; }
-    internal IReadOnlyList<ClientResponseFilter> ResponseFilters { get; }
-    internal IEnumerable<MessageBodyReader> MessageBodyReaders { get; }
-
-    [Pure]
-    bool Property<T>(PropertyKey<T> key,
-#if !NETSTANDARD2_0
-                     [NotNullWhen(true)]
-#endif
-                     out T? existingValue) where T: notnull;
-
-}
-
-public interface IHttpConfiguration<out TContainer>: IHttpConfiguration {
-
-    [Pure]
-    TContainer Register(ClientRequestFilter? filter, int position = HttpConfiguration.LastFilterPosition);
-
-    [Pure]
-    TContainer Register(ClientResponseFilter? filter, int position = HttpConfiguration.LastFilterPosition);
-
-    [Pure]
-    TContainer Register(MessageBodyReader reader);
-
-    [Pure]
-    TContainer Property<T>(PropertyKey<T> key, T? value) where T: notnull;
-
-}
-
-internal class HttpConfiguration: IHttpConfiguration<HttpConfiguration>, ICloneable {
+public class ClientConfig: IClientConfig {
 
     public const int FirstFilterPosition = 0;
     public const int LastFilterPosition  = int.MaxValue;
@@ -55,14 +26,14 @@ internal class HttpConfiguration: IHttpConfiguration<HttpConfiguration>, IClonea
     [Pure]
     public IEnumerable<MessageBodyReader> MessageBodyReaders => Readers.AsEnumerable();
 
-    internal HttpConfiguration() {
+    internal ClientConfig() {
         ReqFilters = ImmutableList<ClientRequestFilter>.Empty;
         ResFilters = ImmutableList<ClientResponseFilter>.Empty;
         Readers    = ImmutableHashSet<MessageBodyReader>.Empty;
         Properties = ImmutableDictionary<PropertyKey, object>.Empty;
     }
 
-    private HttpConfiguration(HttpConfiguration other) {
+    private ClientConfig(ClientConfig other) {
         ReqFilters = other.ReqFilters;
         ResFilters = other.ResFilters;
         Readers    = other.Readers;
@@ -70,16 +41,16 @@ internal class HttpConfiguration: IHttpConfiguration<HttpConfiguration>, IClonea
     }
 
     [Pure]
-    public object Clone() => new HttpConfiguration(this);
+    public object Clone() => new ClientConfig(this);
 
     [Pure]
-    public HttpConfiguration Register(ClientRequestFilter? filter, int position = LastFilterPosition) => new(this) { ReqFilters = Register(ReqFilters, filter, position) };
+    public IClientConfig Register(ClientRequestFilter? filter, int position = LastFilterPosition) => new ClientConfig(this) { ReqFilters = Register(ReqFilters, filter, position) };
 
     [Pure]
-    public HttpConfiguration Register(ClientResponseFilter? filter, int position = LastFilterPosition) => new(this) { ResFilters = Register(ResFilters, filter, position) };
+    public IClientConfig Register(ClientResponseFilter? filter, int position = LastFilterPosition) => new ClientConfig(this) { ResFilters = Register(ResFilters, filter, position) };
 
     [Pure]
-    public HttpConfiguration Register(MessageBodyReader reader) => new(this) { Readers = Readers.Add(reader) };
+    public IClientConfig Register(MessageBodyReader reader) => new ClientConfig(this) { Readers = Readers.Add(reader) };
 
     private static ImmutableList<T> Register<T>(ImmutableList<T> list, T? newItem, int position) {
         int  oldCount  = list.Count;
@@ -94,7 +65,8 @@ internal class HttpConfiguration: IHttpConfiguration<HttpConfiguration>, IClonea
     }
 
     [Pure]
-    public HttpConfiguration Property<T>(PropertyKey<T> key, T? value) where T: notnull => new(this) { Properties = value is not null ? Properties.SetItem(key, value) : Properties.Remove(key) };
+    public IClientConfig Property<T>(PropertyKey<T> key, T? value) where T: notnull =>
+        new ClientConfig(this) { Properties = value is not null ? Properties.SetItem(key, value) : Properties.Remove(key) };
 
     [Pure]
     public bool Property<T>(PropertyKey<T> key,

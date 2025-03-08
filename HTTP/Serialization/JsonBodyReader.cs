@@ -33,8 +33,8 @@ public class JsonBodyReader: MessageBodyReader {
             bodyPrefix.StartsWith('[') ||
             bodyPrefix.Contains("\"$schema\"")));
 
-    public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, IHttpConfiguration? clientConfig, CancellationToken cancellationToken) {
-        JsonSerializerOptions jsonOptions = clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions;
+    public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+        JsonSerializerOptions jsonOptions = (clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions)!;
         return (await responseBody.ReadFromJsonAsync<T>(jsonOptions, cancellationToken).ConfigureAwait(false))!;
     }
 

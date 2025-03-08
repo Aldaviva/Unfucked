@@ -6,8 +6,13 @@ public class PropertyKey(string id) {
 
     private static readonly string Namespace = typeof(UnfuckedHttpClient).Namespace!;
 
+    #region Well-known properties
+
     public static PropertyKey<JsonSerializerOptions> JsonSerializerOptions { get; } = new($"{Namespace}.{nameof(JsonSerializerOptions)}");
+
     public static PropertyKey<bool> ThrowOnUnsuccessfulStatusCode { get; } = new($"{Namespace}.{nameof(ThrowOnUnsuccessfulStatusCode)}");
+
+    #endregion
 
     private readonly string id = id;
 

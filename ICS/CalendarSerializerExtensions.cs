@@ -32,11 +32,7 @@ public static class CalendarSerializerExtensions {
     // ExceptionAdjustment: M:System.Reflection.MethodBase.Invoke(System.Object,System.Object[]) -T:System.Reflection.TargetParameterCountException
     // ExceptionAdjustment: M:System.Reflection.MethodBase.Invoke(System.Object,System.Object[]) -T:System.MethodAccessException
     public static async Task SerializeAsync(this SerializerBase serializer, object dataToSerialize, Stream destinationStream, Encoding streamEncoding) {
-#if NETSTANDARD2_1_OR_GREATER
-        await using StreamWriter streamWriter = new(destinationStream, streamEncoding, BufferSize, true);
-#else
         using StreamWriter streamWriter = new(destinationStream, streamEncoding, BufferSize, true);
-#endif
 
         serializer.SerializationContext.Push(dataToSerialize);
         object encodingStack = serializer.GetService(EncodingStackType);

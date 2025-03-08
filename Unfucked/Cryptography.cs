@@ -11,7 +11,7 @@ namespace Unfucked;
 /// </summary>
 public static class Cryptography {
 
-#if NETSTANDARD2_0
+#if !(NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER)
     private static readonly RandomNumberGenerator Rng = new RNGCryptoServiceProvider();
 #endif
 
@@ -34,7 +34,7 @@ public static class Cryptography {
         }
     }
 
-#if NET8_0_OR_GREATER
+#if NET7_0_OR_GREATER
     /// <summary>
     /// Get a named sub-value value of a certificate's <c>Subject</c> or <c>Issuer</c>, such as the Common Name (<c>CN</c>).
     /// </summary>
@@ -65,7 +65,7 @@ public static class Cryptography {
         char[] distinctAlphabet       = alphabet.Distinct().ToArray();
         int    distinctAlphabetLength = distinctAlphabet.Length;
 
-#if NET6_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         char[] result = new char[length];
         for (int i = 0; i < length; i++) {
             result[i] = distinctAlphabet[RandomNumberGenerator.GetInt32(distinctAlphabetLength)];

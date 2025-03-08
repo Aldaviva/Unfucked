@@ -12,7 +12,7 @@ public static class Paths {
     /// <param name="path">Path to remove trailing slashes from.</param>
     /// <param name="forceTrimBackslashes">On non-Windows operating systems, also trim trailing backslashes from paths, not just trailing forward slashes. Has no effect on Windows, where trailing backslashes are always trimmed, regardless of this argument.</param>
     /// <returns>The same path as the <paramref name="path"/> argument, but without any trailing slashes.</returns>
-#if NET6_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
     [return: NotNullIfNotNull(nameof(path))]
 #endif
     [Pure]
@@ -42,7 +42,7 @@ public static class Paths {
     /// </summary>
     /// <param name="dosPath">A file path that may contain backslashes.</param>
     /// <returns>A copy of <paramref name="dosPath"/> with all backslashes replaced with forward slashes.</returns>
-#if NET6_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
     [return: NotNullIfNotNull(nameof(dosPath))]
 #endif
     [Pure]
@@ -56,7 +56,7 @@ public static class Paths {
     /// <returns><c>true</c> if the file extension is in <paramref name="allowedExtensions"/>, <c>false</c> otherwise</returns>
     [Pure]
     public static bool MatchesExtensions(string filename,
-#if NET6_0_OR_GREATER
+#if NET5_0_OR_GREATER
                                          IReadOnlySet<string> allowedExtensions
 #else
                                          ISet<string> allowedExtensions

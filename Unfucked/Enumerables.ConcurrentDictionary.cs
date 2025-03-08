@@ -414,7 +414,7 @@ public static partial class Enumerables {
         public override bool Equals(object? obj) => obj is not null && (ReferenceEquals(this, obj) || (obj.GetType() == typeof(ValueHolder<T>) && Equals((ValueHolder<T>) obj)));
 
         /// <inheritdoc />
-        public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode(Value);
+        public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode(Value!);
 
         public static bool operator ==(ValueHolder<T>? left, ValueHolder<T>? right) => Equals(left, right);
 

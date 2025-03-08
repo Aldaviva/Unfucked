@@ -31,6 +31,7 @@
         <ProjectReference Include="..\Caching\Caching.csproj" />
         <ProjectReference Include="..\DateTime\DateTime.csproj" />
         <ProjectReference Include="..\DI\DI.csproj" />
+        <ProjectReference Include="..\HTTP\HTTP.csproj" />
         <ProjectReference Include="..\ICS\ICS.csproj" />
         <ProjectReference Include="..\Unfucked\Unfucked.csproj" />
         <ProjectReference Include="..\Windows\Windows.csproj" />

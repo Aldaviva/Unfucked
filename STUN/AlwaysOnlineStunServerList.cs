@@ -24,12 +24,12 @@ public class AlwaysOnlineStunServerList: StunServerList {
 
     private static readonly DnsEndPoint[] FallbackServers = ((Func<DnsEndPoint[]>) (() => {
         DnsEndPoint[] fallbackServers = [
-            new("stun.ekiga.net", 3478),
-            new("stun.freeswitch.org", 3478),
-            new("stun1.l.google.com", 19302),
-            new("stun2.l.google.com", 19302),
-            new("stun3.l.google.com", 19302),
-            new("stun4.l.google.com", 19302)
+            new("stun.ekiga.net", 3478, AddressFamily.InterNetwork),
+            new("stun.freeswitch.org", 3478, AddressFamily.InterNetwork),
+            new("stun1.l.google.com", 19302, AddressFamily.InterNetwork),
+            new("stun2.l.google.com", 19302, AddressFamily.InterNetwork),
+            new("stun3.l.google.com", 19302, AddressFamily.InterNetwork),
+            new("stun4.l.google.com", 19302, AddressFamily.InterNetwork)
         ];
         Random.Shuffle(fallbackServers);
         return fallbackServers;

@@ -32,13 +32,19 @@ public static class CalendarSerializerExtensions {
     // ExceptionAdjustment: M:System.Reflection.MethodBase.Invoke(System.Object,System.Object[]) -T:System.Reflection.TargetParameterCountException
     // ExceptionAdjustment: M:System.Reflection.MethodBase.Invoke(System.Object,System.Object[]) -T:System.MethodAccessException
     public static async Task SerializeAsync(this SerializerBase serializer, object dataToSerialize, Stream destinationStream, Encoding streamEncoding) {
-        using StreamWriter streamWriter = new(destinationStream, streamEncoding, BufferSize, true);
-
         serializer.SerializationContext.Push(dataToSerialize);
         object encodingStack = serializer.GetService(EncodingStackType);
         EncodingStackPush.Invoke(encodingStack, [streamEncoding]);
 
-        await streamWriter.WriteAsync(serializer.SerializeToString(dataToSerialize)).ConfigureAwait(false);
+        string serializedCalendar = serializer.SerializeToString(dataToSerialize);
+
+#if NETSTANDARD2_1_OR_GREATER
+        await using StreamWriter streamWriter = new(destinationStream, streamEncoding, BufferSize, true);
+        await streamWriter.WriteAsync(serializedCalendar).ConfigureAwait(false);
+#else
+        byte[] encodedCalendar = streamEncoding.GetBytes(serializedCalendar);
+        await destinationStream.WriteAsync(encodedCalendar, 0, encodedCalendar.Length).ConfigureAwait(false);
+#endif
 
         EncodingStackPop.Invoke(encodingStack, []);
         serializer.SerializationContext.Pop();

@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netstandard2.0</TargetFramework>
-        <Version>0.0.0-beta3</Version>
+        <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+        <Version>0.0.0-beta4</Version>
         <RootNamespace>Unfucked</RootNamespace>
     </PropertyGroup>
 

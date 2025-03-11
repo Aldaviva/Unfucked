@@ -43,4 +43,6 @@ public static class Extensions {
     public static bool Property<T>(this HttpClient httpClient, PropertyKey<T> key, out T? existingValue) where T: notnull =>
         UnfuckedHttpHandler.FindHandler(httpClient) is { } handler ? handler.Property(key, out existingValue) : throw UnfuckedWebTarget.ConfigUnavailable;
 
+    public static Task ThrowIfUnsuccessful(this HttpResponseMessage response, CancellationToken cancellationToken = default) => UnfuckedWebTarget.ThrowIfUnsuccessful(response, cancellationToken);
+
 }

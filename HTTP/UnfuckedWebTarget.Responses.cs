@@ -25,7 +25,9 @@ public partial class UnfuckedWebTarget {
     ];
 
     private async Task<T> ParseResponseBody<T>(HttpResponseMessage response, CancellationToken cancellationToken) {
-        await ThrowIfUnsuccessful(response, cancellationToken).ConfigureAwait(false);
+        if (!Property(PropertyKey.ThrowOnUnsuccessfulStatusCode, out bool value) || value) {
+            await ThrowIfUnsuccessful(response, cancellationToken).ConfigureAwait(false);
+        }
 
         MediaTypeHeaderValue? responseContentType = response.Content.Headers.ContentType;
         Encoding?             responseEncoding    = null;
@@ -82,8 +84,8 @@ public partial class UnfuckedWebTarget {
             new SerializationException($"Could not determine content type of response body to deserialize (URI: {p2.RequestUrl}, Content-Type: {responseContentType}, .NET type: {typeof(T)})"), p2);
     }
 
-    private async Task ThrowIfUnsuccessful(HttpResponseMessage response, CancellationToken cancellationToken) {
-        if (!response.IsSuccessStatusCode && (!Property(PropertyKey.ThrowOnUnsuccessfulStatusCode, out bool value) || value)) {
+    internal static async Task ThrowIfUnsuccessful(HttpResponseMessage response, CancellationToken cancellationToken) {
+        if (!response.IsSuccessStatusCode) {
             HttpStatusCode      statusCode = response.StatusCode;
             string              reason     = response.ReasonPhrase ?? statusCode.ToString();
             HttpExceptionParams p          = await CreateHttpExceptionParams(response, cancellationToken).ConfigureAwait(false);

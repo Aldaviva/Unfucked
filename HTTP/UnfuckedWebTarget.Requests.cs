@@ -32,33 +32,63 @@ public partial class UnfuckedWebTarget {
     public Task<HttpResponseMessage> Delete(HttpContent? requestBody = null, CancellationToken cancellationToken = default) => Send(HttpMethod.Delete, requestBody, cancellationToken);
 
     public async Task<T> Send<T>(HttpMethod verb, HttpContent? requestBody, CancellationToken cancellationToken = default) {
-        using HttpResponseMessage response = await Send(verb, requestBody, cancellationToken).ConfigureAwait(false);
-        return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
+        HttpResponseMessage response = await Send(verb, requestBody, cancellationToken).ConfigureAwait(false);
+        try {
+            return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
+        } finally {
+            DisposeIfNotStream<T>(response);
+        }
     }
 
     public async Task<T> Get<T>(CancellationToken cancellationToken = default) {
-        using HttpResponseMessage response = await Get(cancellationToken).ConfigureAwait(false);
-        return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
+        HttpResponseMessage response = await Get(cancellationToken).ConfigureAwait(false);
+        try {
+            return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
+        } finally {
+            DisposeIfNotStream<T>(response);
+        }
     }
 
     public async Task<T> Post<T>(HttpContent? requestBody, CancellationToken cancellationToken = default) {
-        using HttpResponseMessage response = await Post(requestBody, cancellationToken).ConfigureAwait(false);
-        return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
+        HttpResponseMessage response = await Post(requestBody, cancellationToken).ConfigureAwait(false);
+        try {
+            return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
+        } finally {
+            DisposeIfNotStream<T>(response);
+        }
     }
 
     public async Task<T> Put<T>(HttpContent? requestBody, CancellationToken cancellationToken = default) {
-        using HttpResponseMessage response = await Put(requestBody, cancellationToken).ConfigureAwait(false);
-        return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
+        HttpResponseMessage response = await Put(requestBody, cancellationToken).ConfigureAwait(false);
+        try {
+            return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
+        } finally {
+            DisposeIfNotStream<T>(response);
+        }
     }
 
     public async Task<T> Patch<T>(HttpContent? requestBody, CancellationToken cancellationToken = default) {
-        using HttpResponseMessage response = await Patch(requestBody, cancellationToken).ConfigureAwait(false);
-        return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
+        HttpResponseMessage response = await Patch(requestBody, cancellationToken).ConfigureAwait(false);
+        try {
+            return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
+        } finally {
+            DisposeIfNotStream<T>(response);
+        }
     }
 
     public async Task<T> Delete<T>(HttpContent? requestBody = null, CancellationToken cancellationToken = default) {
-        using HttpResponseMessage response = await Delete(requestBody, cancellationToken).ConfigureAwait(false);
-        return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
+        HttpResponseMessage response = await Delete(requestBody, cancellationToken).ConfigureAwait(false);
+        try {
+            return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
+        } finally {
+            DisposeIfNotStream<T>(response);
+        }
+    }
+
+    private static void DisposeIfNotStream<T>(IDisposable response) {
+        if (typeof(T) != typeof(Stream)) {
+            response.Dispose();
+        }
     }
 
 }

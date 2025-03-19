@@ -20,6 +20,24 @@ public class StreamBodyReader: MessageBodyReader {
 
     internal class ResponseDisposingStream(Stream actualStream, IDisposable alsoDispose): Stream {
 
+        public override bool CanRead => actualStream.CanRead;
+        public override bool CanSeek => actualStream.CanSeek;
+        public override bool CanWrite => actualStream.CanWrite;
+        public override long Length => actualStream.Length;
+        public override bool CanTimeout => actualStream.CanTimeout;
+        public override long Position {
+            get => actualStream.Position;
+            set => actualStream.Position = value;
+        }
+        public override int ReadTimeout {
+            get => actualStream.ReadTimeout;
+            set => actualStream.ReadTimeout = value;
+        }
+        public override int WriteTimeout {
+            get => actualStream.WriteTimeout;
+            set => actualStream.WriteTimeout = value;
+        }
+
         public override void Flush() => actualStream.Flush();
 
         public override int Read(byte[] buffer, int offset, int count) => actualStream.Read(buffer, offset, count);
@@ -30,20 +48,9 @@ public class StreamBodyReader: MessageBodyReader {
 
         public override void Write(byte[] buffer, int offset, int count) => actualStream.Write(buffer, offset, count);
 
-        public override bool CanRead => actualStream.CanRead;
-        public override bool CanSeek => actualStream.CanSeek;
-        public override bool CanWrite => actualStream.CanWrite;
-        public override long Length => actualStream.Length;
-        public override long Position {
-            get => actualStream.Position;
-            set => actualStream.Position = value;
-        }
-
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) => actualStream.BeginRead(buffer, offset, count, callback, state);
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) => actualStream.BeginWrite(buffer, offset, count, callback, state);
-
-        public override bool CanTimeout => actualStream.CanTimeout;
 
         public override void Close() => actualStream.Close();
 
@@ -59,19 +66,9 @@ public class StreamBodyReader: MessageBodyReader {
 
         public override int ReadByte() => actualStream.ReadByte();
 
-        public override int ReadTimeout {
-            get => actualStream.ReadTimeout;
-            set => actualStream.ReadTimeout = value;
-        }
-
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => actualStream.WriteAsync(buffer, offset, count, cancellationToken);
 
         public override void WriteByte(byte value) => actualStream.WriteByte(value);
-
-        public override int WriteTimeout {
-            get => actualStream.WriteTimeout;
-            set => actualStream.WriteTimeout = value;
-        }
 
         protected override void Dispose(bool disposing) {
             if (disposing) {
@@ -80,6 +77,7 @@ public class StreamBodyReader: MessageBodyReader {
             }
             base.Dispose(disposing);
         }
+
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
         public override void CopyTo(Stream destination, int bufferSize) => actualStream.CopyTo(destination, bufferSize);
 #endif

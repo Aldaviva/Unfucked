@@ -44,13 +44,19 @@ public class ClientConfig: IClientConfig {
     public object Clone() => new ClientConfig(this);
 
     [Pure]
-    public IClientConfig Register(ClientRequestFilter? filter, int position = LastFilterPosition) => new ClientConfig(this) { ReqFilters = Register(ReqFilters, filter, position) };
+    public IClientConfig Register(Registrable registrable) => registrable switch {
+        MessageBodyReader m    => new ClientConfig(this) { Readers = Readers.Add(m) },
+        ClientRequestFilter r  => Register(r, LastFilterPosition),
+        ClientResponseFilter r => Register(r, LastFilterPosition),
+        _                      => throw new ArgumentException($"This {nameof(ClientConfig)} class does not have a way to register a {registrable.GetType()}", nameof(registrable))
+    };
 
     [Pure]
-    public IClientConfig Register(ClientResponseFilter? filter, int position = LastFilterPosition) => new ClientConfig(this) { ResFilters = Register(ResFilters, filter, position) };
-
-    [Pure]
-    public IClientConfig Register(MessageBodyReader reader) => new ClientConfig(this) { Readers = Readers.Add(reader) };
+    public IClientConfig Register<Option>(Registrable<Option> registrable, Option registrationOption) => registrable switch {
+        ClientRequestFilter r when registrationOption is int o => new ClientConfig(this) { ReqFilters = Register(ReqFilters, r, o) },
+        ClientResponseFilter r when registrationOption is int o => new ClientConfig(this) { ResFilters = Register(ResFilters, r, o) },
+        _ => throw new ArgumentException($"This {nameof(ClientConfig)} class does not have a way to register a {registrable.GetType()}", nameof(registrable))
+    };
 
     private static ImmutableList<T> Register<T>(ImmutableList<T> list, T? newItem, int position) {
         int  oldCount  = list.Count;

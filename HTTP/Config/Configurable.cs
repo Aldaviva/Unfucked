@@ -22,13 +22,10 @@ public interface Configurable {
 public interface Configurable<out TContainer>: Configurable {
 
     [Pure]
-    TContainer Register(ClientRequestFilter? filter, int position = ClientConfig.LastFilterPosition);
+    TContainer Register(Registrable registrable);
 
     [Pure]
-    TContainer Register(ClientResponseFilter? filter, int position = ClientConfig.LastFilterPosition);
-
-    [Pure]
-    TContainer Register(MessageBodyReader reader);
+    TContainer Register<Option>(Registrable<Option> registrable, Option registrationOption);
 
     [Pure]
     TContainer Property<T>(PropertyKey<T> key, T? value) where T: notnull;

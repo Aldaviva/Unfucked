@@ -3,7 +3,7 @@ using Unfucked.HTTP.Config;
 
 namespace Unfucked.HTTP.Serialization;
 
-public interface MessageBodyReader {
+public interface MessageBodyReader: Registrable {
 
     public bool CanRead<T>(string? mimeType, string? bodyPrefix);
 

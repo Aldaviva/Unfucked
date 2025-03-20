@@ -1,6 +1,8 @@
-﻿namespace Unfucked.HTTP.Filters;
+﻿using Unfucked.HTTP.Config;
 
-public interface ClientResponseFilter {
+namespace Unfucked.HTTP.Filters;
+
+public interface ClientResponseFilter: Registrable<int> {
 
     ValueTask Filter(ref HttpResponseMessage response, CancellationToken cancellationToken);
 

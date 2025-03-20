@@ -17,25 +17,18 @@ public partial class UnfuckedWebTarget {
     public IEnumerable<MessageBodyReader> MessageBodyReaders => clientConfig?.MessageBodyReaders ?? throw ConfigUnavailable;
 
     [Pure]
-    public UnfuckedWebTarget Register(ClientRequestFilter? filter, int position = ClientConfig.LastFilterPosition) =>
-        clientConfig is not null ? new UnfuckedWebTarget(client, urlBuilder, clientHandler, clientConfig.Register(filter, position)) : throw ConfigUnavailable;
+    public UnfuckedWebTarget Register(Registrable registrable) =>
+        clientConfig is not null ? new UnfuckedWebTarget(client, urlBuilder, clientHandler, clientConfig.Register(registrable)) : throw ConfigUnavailable;
 
     [Pure]
-    public UnfuckedWebTarget Register(ClientResponseFilter? filter, int position = ClientConfig.LastFilterPosition) =>
-        clientConfig is not null ? new UnfuckedWebTarget(client, urlBuilder, clientHandler, clientConfig.Register(filter, position)) : throw ConfigUnavailable;
+    public UnfuckedWebTarget Register<Option>(Registrable<Option> registrable, Option registrationOption) =>
+        clientConfig is not null ? new UnfuckedWebTarget(client, urlBuilder, clientHandler, clientConfig.Register(registrable, registrationOption)) : throw ConfigUnavailable;
 
     [Pure]
-    public UnfuckedWebTarget Register(MessageBodyReader reader) =>
-        clientConfig is not null ? new UnfuckedWebTarget(client, urlBuilder, clientHandler, clientConfig.Register(reader)) : throw ConfigUnavailable;
+    WebTarget Configurable<WebTarget>.Register(Registrable registrable) => Register(registrable);
 
     [Pure]
-    WebTarget Configurable<WebTarget>.Register(ClientRequestFilter? filter, int position) => Register(filter, position);
-
-    [Pure]
-    WebTarget Configurable<WebTarget>.Register(ClientResponseFilter? filter, int position) => Register(filter, position);
-
-    [Pure]
-    WebTarget Configurable<WebTarget>.Register(MessageBodyReader reader) => Register(reader);
+    WebTarget Configurable<WebTarget>.Register<Option>(Registrable<Option> registrable, Option registrationOption) => Register(registrable, registrationOption);
 
     [Pure]
     public UnfuckedWebTarget Property<T>(PropertyKey<T> key, T? value) where T: notnull =>

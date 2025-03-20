@@ -45,10 +45,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
     // HttpClientHandler automatically uses SocketsHttpHandler on .NET Core ≥ 2.1, or HttpClientHandler otherwise
     public UnfuckedHttpHandler(HttpMessageHandler? innerHandler = null): base(innerHandler ??
 #if NETCOREAPP2_1_OR_GREATER
-        new SocketsHttpHandler {
-            PooledConnectionLifetime = TimeSpan.FromHours(1),
-            ConnectTimeout = TimeSpan.FromSeconds(10)
-        }
+        new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromHours(1), ConnectTimeout = TimeSpan.FromSeconds(10) }
 #else
         new HttpClientHandler()
 #endif
@@ -108,19 +105,9 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
         return this;
     }
 
-    public IUnfuckedHttpHandler Register(ClientRequestFilter? filter, int position = Config.ClientConfig.LastFilterPosition) =>
-        With(ClientConfig.Register(filter, position));
+    public IUnfuckedHttpHandler Register(Registrable registrable) => With(ClientConfig.Register(registrable));
 
-    public IUnfuckedHttpHandler Register(ClientResponseFilter? filter, int position = Config.ClientConfig.LastFilterPosition) =>
-        With(ClientConfig.Register(filter, position));
-
-    public IUnfuckedHttpHandler Register(MessageBodyReader reader) => With(ClientConfig.Register(reader));
-
-    IUnfuckedHttpHandler Configurable<IUnfuckedHttpHandler>.Register(ClientResponseFilter? filter, int position) => Register(filter, position);
-
-    IUnfuckedHttpHandler Configurable<IUnfuckedHttpHandler>.Register(ClientRequestFilter? filter, int position) => Register(filter, position);
-
-    IUnfuckedHttpHandler Configurable<IUnfuckedHttpHandler>.Register(MessageBodyReader reader) => Register(reader);
+    public IUnfuckedHttpHandler Register<Option>(Registrable<Option> registrable, Option registrationOption) => With(ClientConfig.Register(registrable, registrationOption));
 
     public IUnfuckedHttpHandler Property<T>(PropertyKey<T> key, T? value) where T: notnull => With(ClientConfig.Property(key, value));
 

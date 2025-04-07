@@ -1,5 +1,4 @@
-﻿using System.Net.Http.Json;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Unfucked.HTTP.Config;
@@ -33,9 +32,21 @@ public class JsonBodyReader: MessageBodyReader {
             bodyPrefix.StartsWith('[') ||
             bodyPrefix.Contains("\"$schema\"")));
 
+    /*
+     * Don't parse using the convenience extension methods from System.Net.Http.Json because that closes the response body stream even when an exception is thrown, so we can't read the body to create the exception.
+     * Instead, rely on UnfuckedWebTarget.DisposeIfNotStream<T> to close the stream when the entire response processing is done.
+     */
     public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
-        JsonSerializerOptions jsonOptions = (clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions)!;
-        return (await responseBody.ReadFromJsonAsync<T>(jsonOptions, cancellationToken).ConfigureAwait(false))!;
+        JsonSerializerOptions jsonOptions = clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions;
+
+        Task<Stream> readAsStreamAsync =
+#if NET5_0_OR_GREATER
+            responseBody.ReadAsStreamAsync(cancellationToken);
+#else
+            responseBody.ReadAsStreamAsync();
+#endif
+
+        return await JsonSerializer.DeserializeAsync<T>(await readAsStreamAsync.ConfigureAwait(false), jsonOptions, cancellationToken);
     }
 
 }

@@ -2,11 +2,11 @@
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
-        <Version>0.0.0-beta9</Version>
+        <Version>0.0.0-beta10</Version>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="System.Net.Http.Json" />
+        <PackageReference Include="System.Text.Json" />
     </ItemGroup>
 
     <Choose>

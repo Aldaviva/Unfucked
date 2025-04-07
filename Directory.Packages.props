@@ -7,19 +7,17 @@
     <PackageVersion Include="Ical.Net" Version="4.3.1" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.3" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.3" />
-    <!-- Do not update Microsoft.Extensions.Hosting to 9 or later, because it yells about not being tested on older runtimes like net6.0, and dont' use version ranges like [8,9) because that prevents library consumers from using 9 -->
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
     <PackageVersion Include="mwinapi" Version="0.3.0.5" />
-    <PackageVersion Include="NodaTime" Version="3.2.1" />
+    <PackageVersion Include="NodaTime" Version="3.2.2" />
     <PackageVersion Include="OBSClient" Version="2.1.1" />
     <PackageVersion Include="PgpCore" Version="6.5.1" />
     <PackageVersion Include="SharpCompress" Version="0.39.0" />
     <PackageVersion Include="Stun.Net" Version="8.0.2" />
     <PackageVersion Include="System.Collections.Immutable" Version="9.0.3" />
-    <!-- Do not update System.Net.Http.Json to 9 or later, because it yells about not being tested on older runtimes like net6.0, and dont' use version ranges like [8,9) because that prevents library consumers from using 9 -->
-    <PackageVersion Include="System.Net.Http.Json" Version="8.0.1" />
     <PackageVersion Include="System.Text.Encodings.Web" Version="9.0.3" />
+    <PackageVersion Include="System.Text.Json" Version="8.0.5" />
     <PackageVersion Include="TwitchApi.Net" Version="3.2.0" />
   </ItemGroup>
   <ItemGroup>

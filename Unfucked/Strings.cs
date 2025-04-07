@@ -73,6 +73,32 @@ public static class Strings {
 #endif
     }
 
+    /// <summary>
+    /// Concatenate multiple objects together, with a separator between each one.
+    /// </summary>
+    /// <param name="objects">Objects to convert to strings and combine</param>
+    /// <param name="separator">Optional string to appear between each pair of items in <paramref name="objects"/></param>
+    /// <returns>A string that consists of each item in <paramref name="objects"/> converted to strings and concatenated together, with <paramref name="separator"/> between them.</returns>
+    /// <seealso cref="string.Join{T}(string?,IEnumerable{T?})"/>
+    [Pure]
+    public static string Join<T>(this IEnumerable<T?> objects, string? separator = null) => string.Join(separator, objects);
+
+    /// <summary>
+    /// Concatenate multiple strings together, with a separator between each one.
+    /// </summary>
+    /// <param name="objects">Objects to convert to strings to combine</param>
+    /// <param name="separator">Character to appear between each pair of items in <paramref name="objects"/></param>
+    /// <returns>A string that consists of each item in <paramref name="objects"/> converted to strings and concatenated together, with <paramref name="separator"/> between them.</returns>
+    /// <seealso cref="string.Join{T}(char,IEnumerable{T?})"/>
+    [Pure]
+    public static string Join<T>(this IEnumerable<T?> objects, char separator) {
+#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+        return string.Join(separator, objects);
+#else
+        return string.Join(Convert.ToString(separator), objects);
+#endif
+    }
+
     // ReSharper disable ReplaceSubstringWithRangeIndexer
     /// <summary>
     /// Converts the first character of a string to lowercase.

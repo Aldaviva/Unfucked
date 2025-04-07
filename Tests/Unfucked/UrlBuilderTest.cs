@@ -109,4 +109,24 @@ public class UrlBuilderTest {
         baseUrl.Path("service2").ToString().Should().Be("https://aldaviva.com/api/service2", "it is immutable and therefore thread-safe");
     }
 
+    [Theory]
+    [MemberData(nameof(PreserveTrailingPathSlashesData))]
+    public void PreserveTrailingPathSlashes(UrlBuilder input, string expected) {
+        input.ToString().Should().Be(expected);
+        ((string) input).Should().Be(expected);
+    }
+
+    public static TheoryData<UrlBuilder, string> PreserveTrailingPathSlashesData => new() {
+        { new UrlBuilder("https", "aldaviva.com"), "https://aldaviva.com/" },
+        { new UrlBuilder("https", "aldaviva.com").Path((string?) null), "https://aldaviva.com/" },
+        { new UrlBuilder("https", "aldaviva.com").Path("/"), "https://aldaviva.com/" },
+        { new UrlBuilder("https", "aldaviva.com").Path("docs"), "https://aldaviva.com/docs" },
+        { new UrlBuilder("https", "aldaviva.com").Path("docs/"), "https://aldaviva.com/docs/" },
+        { new UrlBuilder("https", "aldaviva.com").Path("docs//"), "https://aldaviva.com/docs/" },
+        { new UrlBuilder("https", "aldaviva.com").Path("a", "b", "c"), "https://aldaviva.com/a/b/c" },
+        { new UrlBuilder("https", "aldaviva.com").Path("a", "b", "c/"), "https://aldaviva.com/a/b/c/" },
+        { new UrlBuilder("https", "aldaviva.com").Path("a/b/c"), "https://aldaviva.com/a/b/c" },
+        { new UrlBuilder("https", "aldaviva.com").Path("a/b/c/"), "https://aldaviva.com/a/b/c/" }
+    };
+
 }

@@ -20,12 +20,11 @@ public class UrlBuilder: ICloneable {
 
     // ReSharper disable InconsistentNaming - don't collide with method names
     private string? _scheme { get; init; }
-
-    // private string? _schemeSpecificPart { get; init; }
     private string? _userInfo { get; init; }
     private string? _hostname { get; init; }
     private ushort? _port { get; init; }
     private ImmutableList<string> _path { get; init; } = ImmutableList<string>.Empty;
+    private bool _trailingSlash { get; init; }
     private ImmutableList<KeyValuePair<string, object>> _queryParameters { get; init; } = ImmutableList<KeyValuePair<string, object>>.Empty;
     private string? _fragment { get; init; }
     private ImmutableDictionary<string, object?> _templateValues { get; init; } = ImmutableDictionary<string, object?>.Empty;
@@ -35,12 +34,6 @@ public class UrlBuilder: ICloneable {
 
     #region Construction
 
-    /*public UrlBuilder(string scheme, string schemeSpecificPart, string? fragment) {
-        _scheme = scheme;
-         _schemeSpecificPart = schemeSpecificPart;
-        _fragment = fragment?.TrimStart(1, '#');
-    }*/
-
     public UrlBuilder(string scheme, string hostname, ushort? port = null) {
         _scheme   = scheme.TrimEnd(':');
         _hostname = hostname.TrimStart("//");
@@ -48,11 +41,12 @@ public class UrlBuilder: ICloneable {
     }
 
     public UrlBuilder(Uri uri) {
-        _scheme   = uri.Scheme.EmptyToNull();
-        _userInfo = uri.UserInfo.EmptyToNull();
-        _hostname = uri.Host.EmptyToNull();
-        _port     = uri.Port == -1 ? null : (ushort?) uri.Port;
-        _path     = uri.Segments.SkipWhile(s => s == "/").Select(s => s.TrimEnd('/')).ToImmutableList();
+        _scheme        = uri.Scheme.EmptyToNull();
+        _userInfo      = uri.UserInfo.EmptyToNull();
+        _hostname      = uri.Host.EmptyToNull();
+        _port          = uri.Port == -1 ? null : (ushort?) uri.Port;
+        _path          = uri.Segments.SkipWhile(s => s == "/").Select(s => s.TrimEnd('/')).ToImmutableList();
+        _trailingSlash = uri.Segments.LastOrDefault()?.EndsWith('/') ?? false;
         _queryParameters = uri.GetQuery() is var originalQuery
             ? originalQuery.Keys.Cast<string>().Select(k => new KeyValuePair<string, object>(k, originalQuery[k] ?? ValuelessQueryParam)).ToImmutableList()
             : ImmutableList<KeyValuePair<string, object>>.Empty;
@@ -60,11 +54,12 @@ public class UrlBuilder: ICloneable {
     }
 
     public UrlBuilder(UriBuilder uriBuilder) {
-        _scheme   = uriBuilder.Scheme.EmptyToNull();
-        _userInfo = uriBuilder.UserName.HasLength() || uriBuilder.Password.HasLength() ? $"{uriBuilder.UserName}:{uriBuilder.Password}" : null;
-        _hostname = uriBuilder.Host.EmptyToNull();
-        _port     = uriBuilder.Port == -1 ? null : (ushort?) uriBuilder.Port;
-        _path     = uriBuilder.Path.TrimStart('/').Split(PathSeparators, StringSplitOptions.RemoveEmptyEntries).ToImmutableList();
+        _scheme        = uriBuilder.Scheme.EmptyToNull();
+        _userInfo      = uriBuilder.UserName.HasLength() || uriBuilder.Password.HasLength() ? $"{uriBuilder.UserName}:{uriBuilder.Password}" : null;
+        _hostname      = uriBuilder.Host.EmptyToNull();
+        _port          = uriBuilder.Port == -1 ? null : (ushort?) uriBuilder.Port;
+        _path          = uriBuilder.Path.TrimStart('/').Split(PathSeparators, StringSplitOptions.RemoveEmptyEntries).ToImmutableList();
+        _trailingSlash = uriBuilder.Path.EndsWith('/');
         _queryParameters = uriBuilder.Query.TrimStart('?').Split(QueryParamSeparators, StringSplitOptions.RemoveEmptyEntries).Select(p => {
             string[] split = p.Split(QueryParamKeyValueSeparators, 2);
             return new KeyValuePair<string, object>(split[0], split.ElementAtOrDefault(1) ?? ValuelessQueryParam);
@@ -73,12 +68,12 @@ public class UrlBuilder: ICloneable {
     }
 
     private UrlBuilder(UrlBuilder other) {
-        _scheme = other._scheme;
-        // _schemeSpecificPart                    = other._schemeSpecificPart;
+        _scheme                                = other._scheme;
         _userInfo                              = other._userInfo;
         _hostname                              = other._hostname;
         _port                                  = other._port;
         _path                                  = other._path;
+        _trailingSlash                         = other._trailingSlash;
         _queryParameters                       = other._queryParameters;
         _fragment                              = other._fragment;
         _templateValues                        = other._templateValues;
@@ -127,9 +122,6 @@ public class UrlBuilder: ICloneable {
         if (RestoreRealName(urlBuilder._scheme) is { } realScheme) {
             urlBuilder = urlBuilder.Scheme(realScheme);
         }
-        // if (RestoreRealName(urlBuilder._schemeSpecificPart) is { } realSsp) {
-        //     urlBuilder = urlBuilder.SchemeSpecificPart(realSsp);
-        // }
         if (RestoreRealName(urlBuilder._hostname) is { } realHostname) {
             urlBuilder = urlBuilder.Hostname(realHostname);
         }
@@ -185,9 +177,6 @@ public class UrlBuilder: ICloneable {
             built.Append(ReplacePlaceholders(_scheme)).Append(':');
         }
 
-        /*if (_schemeSpecificPart != null) {
-            built.Append(UrlEncoder.Encode(ReplacePlaceholders(_schemeSpecificPart), UrlEncoder.UrlPart.SchemeSpecificPart));
-        } else {*/
         if (_userInfo != null || _hostname != null || _port != null) {
             built.Append("//");
         }
@@ -212,6 +201,10 @@ public class UrlBuilder: ICloneable {
         if (!_path.IsEmpty) {
             built.Append('/').AppendJoin('/',
                 _path.Select(p => UrlEncoder.Encode(ReplacePlaceholders(p.Trim('/')), UrlEncoder.Component.PathSegment)));
+
+            if (_trailingSlash && built[built.Length - 1] != '/') {
+                built.Append('/');
+            }
         }
 
         IList<KeyValuePair<string, object>> queryParameters = _unusedTemplateQueryParameterRealNames != null
@@ -221,7 +214,6 @@ public class UrlBuilder: ICloneable {
                 ? UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QueryParameter)
                 : $"{UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QueryParameter)}={UrlEncoder.Encode(ReplacePlaceholders(pair.Value.ToString() ?? string.Empty), UrlEncoder.Component.QueryParameter)}"));
         }
-        //}
 
         if (_fragment != null) {
             built.Append('#').Append(UrlEncoder.Encode(ReplacePlaceholders(_fragment), UrlEncoder.Component.Fragment));
@@ -254,7 +246,7 @@ public class UrlBuilder: ICloneable {
     public UrlBuilder Path(string? segments, bool autoSplit = true) {
         ImmutableList<string> newPath = _path;
         if (segments is null) {
-            return new UrlBuilder(this) { _path = ImmutableList<string>.Empty };
+            return new UrlBuilder(this) { _path = ImmutableList<string>.Empty, _trailingSlash = false };
         } else if (segments.StartsWith('/')) {
             newPath = ImmutableList<string>.Empty;
         }
@@ -266,7 +258,7 @@ public class UrlBuilder: ICloneable {
             newPath = newPath.Add(segments);
         }
 
-        return new UrlBuilder(this) { _path = newPath };
+        return new UrlBuilder(this) { _path = newPath, _trailingSlash = segments.EndsWith('/') };
     }
 
     [Pure]
@@ -279,12 +271,10 @@ public class UrlBuilder: ICloneable {
     public UrlBuilder Port(ushort? port) => new(this) { _port = port };
 
     [Pure]
-    public UrlBuilder Hostname(string hostname) => new(this) { _hostname = hostname /*, _schemeSpecificPart = null*/ };
+    public UrlBuilder Hostname(string hostname) => new(this) { _hostname = hostname };
 
     [Pure]
     public UrlBuilder Scheme(string scheme) => new(this) { _scheme = scheme };
-
-    // [Pure] public UrlBuilder SchemeSpecificPart(string ssp) => new(this) { _schemeSpecificPart = ssp, _hostname = null, _userInfo = null, _port = null };
 
     [Pure]
     public UrlBuilder QueryParam(string key, object? value) => new(this) {
@@ -379,28 +369,15 @@ internal static class UrlEncoder {
 
     private static class CharCategories {
 
-        // public static readonly ISet<char> Alphabet     = Range('A', 'z');
-        // public static readonly ISet<char> Digit        = Range('0', '9');
-        // public static readonly ISet<char> AlphaNumeric = Union(Alphabet, Digit);
-        // public static readonly ISet<char> Unreserved   = Union(AlphaNumeric, Set("_-!.~'()*"));
-        // public static readonly ISet<char> Punctuation  = Set(",;:$&+=");
-        // public static readonly ISet<char> Reserved     = Union(Punctuation, Set("?/[]@"));
-
-        // public static readonly Regex UriLegal        = new(@"(?:[a-z0-9_\-!.~'()*,;:$&+=?/\[\]@]|(?:%[0-9a-f]{2})|\P{Zs}|\P{Cc})*", RegexOptions.IgnoreCase);
         public static readonly Regex UriIllegal            = new(@"[^a-z0-9_\-!.~'()*,;:$&+=?/\[\]@]", RegexOptions.IgnoreCase);
         public static readonly Regex UserInfoIllegal       = new(@"[^a-z0-9_\-!.~'()*,;:$&+=]", RegexOptions.IgnoreCase);
         public static readonly Regex PathSegmentIllegal    = new(@"[^a-z0-9_\-!.~'()*,;:$&+=@]", RegexOptions.IgnoreCase);
         public static readonly Regex QueryParameterIllegal = new(@"[^a-z0-9_\-!.~'()*,;:$+=/\[\]@]", RegexOptions.IgnoreCase);
 
-        // private static ISet<char> Set(string characters) => characters.ToFrozenSet();
-        // private static ISet<char> Range(char first, char last) => Enumerable.Range((byte) first, last - first + 1).Select(i => (char) i).ToFrozenSet();
-        // private static ISet<char> Union(params ISet<char>[] sets) => sets.Aggregate((IEnumerable<char>) [], (set1, set2) => set1.Union(set2), set => set.ToFrozenSet());
-
     }
 
     public enum Component {
 
-        // SchemeSpecificPart,
         UserInfo,
         PathSegment,
         QueryParameter,
@@ -409,109 +386,3 @@ internal static class UrlEncoder {
     }
 
 }
-
-/*public static class UriBuilderExtensions {
-
-    public static Task<HttpResponseMessage> DeleteAsync(this HttpClient client, URIBuilder uriBuilder, CancellationToken cancellationToken = default) {
-        return client.DeleteAsync(uriBuilder.ToUri(), cancellationToken);
-    }
-
-    public static Task<HttpResponseMessage> GetAsync(this HttpClient client, URIBuilder uriBuilder, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead,
-                                                     CancellationToken cancellationToken = default) {
-        return client.GetAsync(uriBuilder.ToUri(), completionOption, cancellationToken);
-    }
-
-    public static Task<byte[]> GetByteArrayAsync(this HttpClient client, URIBuilder uriBuilder) {
-        return client.GetByteArrayAsync(uriBuilder.ToUri());
-    }
-
-#if NET6_0_OR_GREATER
-    public static Task<byte[]> GetByteArrayAsync(this HttpClient client, URIBuilder uriBuilder, CancellationToken cancellationToken) {
-        return client.GetByteArrayAsync(uriBuilder.ToUri(), cancellationToken);
-    }
-#endif
-
-    public static Task<Stream> GetStreamAsync(this HttpClient client, URIBuilder uriBuilder) {
-        return client.GetStreamAsync(uriBuilder.ToUri());
-    }
-
-#if NET6_0_OR_GREATER
-    public static Task<Stream> GetStreamAsync(this HttpClient client, URIBuilder uriBuilder, CancellationToken cancellationToken) {
-        return client.GetStreamAsync(uriBuilder.ToUri(), cancellationToken);
-    }
-#endif
-
-    public static Task<string> GetStringAsync(this HttpClient client, URIBuilder uriBuilder) {
-        return client.GetStringAsync(uriBuilder.ToUri());
-    }
-
-#if NET6_0_OR_GREATER
-    public static Task<string> GetStringAsync(this HttpClient client, URIBuilder uriBuilder, CancellationToken cancellationToken) {
-        return client.GetStringAsync(uriBuilder.ToUri(), cancellationToken);
-    }
-#endif
-
-    public static Task<HttpResponseMessage> PatchAsync(this HttpClient client, URIBuilder uriBuilder, HttpContent? content) {
-        return client.PatchAsync(uriBuilder.ToUri(), content);
-    }
-
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-    public static Task<HttpResponseMessage> PatchAsync(this HttpClient client, URIBuilder uriBuilder, HttpContent? content, CancellationToken cancellationToken) {
-        return client.PatchAsync(uriBuilder.ToUri(), content, cancellationToken);
-    }
-#endif
-
-    public static Task<HttpResponseMessage> PostAsync(this HttpClient client, URIBuilder uriBuilder, HttpContent? content, CancellationToken cancellationToken) {
-        return client.PostAsync(uriBuilder.ToUri(), content, cancellationToken);
-    }
-
-    public static Task<HttpResponseMessage> PutAsync(this HttpClient client, URIBuilder uriBuilder, HttpContent? content, CancellationToken cancellationToken) {
-        return client.PutAsync(uriBuilder.ToUri(), content, cancellationToken);
-    }
-
-#if NET6_0_OR_GREATER
-    public static Task<HttpResponseMessage> PostAsJsonAsync<T>(this HttpClient client, URIBuilder uriBuilder, T value, JsonSerializerOptions? jsonSerializerOptions = null,
-                                                               CancellationToken cancellationToken = default) {
-        return HttpClientJsonExtensions.PostAsJsonAsync(client, uriBuilder.ToUri(), value, jsonSerializerOptions, cancellationToken);
-    }
-
-    public static Task<HttpResponseMessage> PutAsJsonAsync<T>(this HttpClient client, URIBuilder uriBuilder, T value, JsonSerializerOptions? jsonSerializerOptions = null,
-                                                              CancellationToken cancellationToken = default) {
-        return HttpClientJsonExtensions.PutAsJsonAsync(client, uriBuilder.ToUri(), value, jsonSerializerOptions, cancellationToken);
-    }
-
-    public static Task<T?> GetFromJsonAsync<T>(this HttpClient client, URIBuilder uriBuilder, JsonSerializerOptions? jsonSerializerOptions = null, CancellationToken cancellationToken = default) {
-        return HttpClientJsonExtensions.GetFromJsonAsync<T>(client, uriBuilder.ToUri(), jsonSerializerOptions, cancellationToken);
-    }
-
-    public static Task<object?> GetFromJsonAsync(this HttpClient client, URIBuilder uriBuilder, Type type, JsonSerializerOptions? jsonSerializerOptions = null,
-                                                 CancellationToken cancellationToken = default) {
-        return HttpClientJsonExtensions.GetFromJsonAsync(client, uriBuilder.ToUri(), type, jsonSerializerOptions, cancellationToken);
-    }
-
-#endif
-
-#if NET8_0_OR_GREATER
-    public static Task<HttpResponseMessage> PatchAsJsonAsync<T>(this HttpClient client, URIBuilder uriBuilder, T value, JsonSerializerOptions? jsonSerializerOptions = null,
-                                                                CancellationToken cancellationToken = default) {
-        return HttpClientJsonExtensions.PatchAsJsonAsync(client, uriBuilder.ToUri(), value, jsonSerializerOptions, cancellationToken);
-    }
-
-    public static Task<T?> DeleteFromJsonAsync<T>(this HttpClient client, URIBuilder uriBuilder, JsonSerializerOptions? jsonSerializerOptions = null,
-                                                  CancellationToken cancellationToken = default) {
-        return HttpClientJsonExtensions.DeleteFromJsonAsync<T>(client, uriBuilder.ToUri(), jsonSerializerOptions, cancellationToken);
-    }
-
-    public static Task<object?> DeleteFromJsonAsync(this HttpClient client, URIBuilder uriBuilder, Type type, JsonSerializerOptions? jsonSerializerOptions = null,
-                                                    CancellationToken cancellationToken = default) {
-        return HttpClientJsonExtensions.DeleteFromJsonAsync(client, uriBuilder.ToUri(), type, jsonSerializerOptions, cancellationToken);
-    }
-
-    public static IAsyncEnumerable<T?> GetFromJsonAsAsyncEnumerable<T>(this HttpClient client, URIBuilder uriBuilder, JsonSerializerOptions? jsonSerializerOptions = null,
-                                                                       CancellationToken cancellationToken = default) {
-        return HttpClientJsonExtensions.GetFromJsonAsAsyncEnumerable<T>(client, uriBuilder.ToUri(), jsonSerializerOptions, cancellationToken);
-    }
-
-#endif
-
-}*/

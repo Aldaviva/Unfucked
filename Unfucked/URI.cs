@@ -36,4 +36,7 @@ public static class URI {
         Fragment = string.Empty
     }.Uri.ToString().TrimEnd('/');
 
+    [Pure]
+    public static UrlBuilder ToBuilder(this Uri uri) => new(uri);
+
 }

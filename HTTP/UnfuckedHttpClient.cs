@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Reflection;
+using Unfucked.HTTP.Exceptions;
 
 namespace Unfucked.HTTP;
 
@@ -37,7 +38,18 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
             req.Headers.Add(header.Key, header.Value);
         }
 
-        return await SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        try {
+            return await SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        } catch (OperationCanceledException e) {
+            // Official documentation is wrong: .NET Framework throws a TaskCanceledException for an HTTP request timeout, not an HttpRequestException (https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpclient.sendasync)
+            TimeoutException cause = e.InnerException as TimeoutException ??
+                new TimeoutException($"The request was canceled due to the configured {nameof(HttpClient)}.{nameof(Timeout)} of {Timeout.TotalSeconds} seconds elapsing.");
+            throw new ProcessingException(cause, CreateHttpExceptionParams(req));
+        } catch (HttpRequestException e) {
+            throw new ProcessingException(e.InnerException ?? e, CreateHttpExceptionParams(req));
+        }
     }
+
+    private static HttpExceptionParams CreateHttpExceptionParams(HttpRequestMessage request) => new(request.Method, request.RequestUri, null, null);
 
 }

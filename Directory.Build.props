@@ -26,7 +26,7 @@
 
     <!-- Self version numbers -->
     <PropertyGroup>
-        <UnfuckedVersion>0.0.0-beta9</UnfuckedVersion>
+        <UnfuckedVersion>0.0.0-beta9</UnfuckedVersion> <!-- TODO NuGet doesn't do lexical comparisons, so multi-digit numbers need a '.' separator. Use 0.0.0-beta.10 instead of 0.0.0-beta10. -->
         <UnfuckedCachingVersion>0.0.0-beta3</UnfuckedCachingVersion>
     </PropertyGroup>
 

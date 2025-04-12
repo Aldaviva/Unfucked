@@ -19,12 +19,12 @@ public abstract class HttpException(HttpStatusCode? status, string message, Exce
 
 }
 
-public record HttpExceptionParams(HttpMethod Verb, Uri? RequestUrl, HttpResponseHeaders ResponseHeaders, ReadOnlyMemory<byte>? ResponseBody);
+public record HttpExceptionParams(HttpMethod Verb, Uri? RequestUrl, HttpResponseHeaders? ResponseHeaders, ReadOnlyMemory<byte>? ResponseBody);
 
 public class WebApplicationException(HttpStatusCode status, string reasonPhrase, HttpExceptionParams p): HttpException(status, $"{(int) status} {reasonPhrase} from {p.RequestUrl}", null, p) {
 
     public string ReasonPhrase => reasonPhrase;
-    public HttpResponseHeaders ResponseHeaders => HttpExceptionParams.ResponseHeaders;
+    public HttpResponseHeaders ResponseHeaders => HttpExceptionParams.ResponseHeaders!;
     public ReadOnlyMemory<byte>? ResponseBody => HttpExceptionParams.ResponseBody;
 
 #if !NET5_0_OR_GREATER

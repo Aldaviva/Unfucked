@@ -1,27 +1,32 @@
 <Project>
-  <PropertyGroup>
-    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageVersion Include="G6.GandiLiveDns" Version="1.0.0" />
-    <PackageVersion Include="Ical.Net" Version="4.3.1" />
-    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.3" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.3" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
-    <PackageVersion Include="mwinapi" Version="0.3.0.5" />
-    <PackageVersion Include="NodaTime" Version="3.2.2" />
-    <PackageVersion Include="OBSClient" Version="2.1.1" />
-    <PackageVersion Include="PgpCore" Version="6.5.1" />
-    <PackageVersion Include="SharpCompress" Version="0.39.0" />
-    <PackageVersion Include="Stun.Net" Version="8.0.2" />
-    <PackageVersion Include="System.Collections.Immutable" Version="9.0.3" />
-    <PackageVersion Include="System.Text.Encodings.Web" Version="9.0.3" />
-    <PackageVersion Include="System.Text.Json" Version="8.0.5" />
-    <PackageVersion Include="TwitchApi.Net" Version="3.2.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageVersion Include="Unfucked" Version="$(UnfuckedVersion)" />
-    <PackageVersion Include="Unfucked.Caching" Version="$(UnfuckedCachingVersion)" />
-  </ItemGroup>
+    <PropertyGroup>
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    </PropertyGroup>
+    <!-- 
+        Stuck packages that aren't compatible with .NET 6 if upgraded:
+            Microsoft.Extensions.Hosting
+            System.Text.Json
+    -->
+    <ItemGroup>
+        <PackageVersion Include="G6.GandiLiveDns" Version="1.0.0" />
+        <PackageVersion Include="Ical.Net" Version="4.3.1" />
+        <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.4" />
+        <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.4" />
+        <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+        <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+        <PackageVersion Include="mwinapi" Version="0.3.0.5" />
+        <PackageVersion Include="NodaTime" Version="3.2.2" />
+        <PackageVersion Include="OBSClient" Version="2.1.1" />
+        <PackageVersion Include="PgpCore" Version="6.5.1" />
+        <PackageVersion Include="SharpCompress" Version="0.39.0" />
+        <PackageVersion Include="Stun.Net" Version="8.0.2" />
+        <PackageVersion Include="System.Collections.Immutable" Version="9.0.4" />
+        <PackageVersion Include="System.Text.Encodings.Web" Version="9.0.4" />
+        <PackageVersion Include="System.Text.Json" Version="8.0.5" />
+        <PackageVersion Include="TwitchApi.Net" Version="3.2.0" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageVersion Include="Unfucked" Version="$(UnfuckedVersion)" />
+        <PackageVersion Include="Unfucked.Caching" Version="$(UnfuckedCachingVersion)" />
+    </ItemGroup>
 </Project>

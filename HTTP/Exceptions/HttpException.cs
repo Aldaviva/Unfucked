@@ -1,10 +1,11 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
+using System.Text;
 
 namespace Unfucked.HTTP.Exceptions;
 
 #pragma warning disable CS9113 // Parameter is unread. - the superclass constructor overload that reads it only exists in .NET 6, not .NET Standard 2.0
-public abstract class HttpException(HttpStatusCode? status, string message, Exception? cause, HttpExceptionParams p): HttpRequestException(message, cause
+public abstract class HttpException(HttpStatusCode? status, string message, Exception? cause, HttpExceptionParams p): HttpRequestException(MessageChain(message, cause), cause
 #if !NETSTANDARD2_0
     , status
 #endif
@@ -16,6 +17,15 @@ public abstract class HttpException(HttpStatusCode? status, string message, Exce
 
     public Uri? RequestUrl => HttpExceptionParams.RequestUrl;
     public HttpMethod Verb => HttpExceptionParams.Verb;
+
+    private static string MessageChain(string outerMessage, Exception? cause) {
+        StringBuilder chain = new(outerMessage);
+        while (cause != null) {
+            chain.Append(": ").Append(cause.Message);
+            cause = cause.InnerException is var inner && cause != inner ? inner : null;
+        }
+        return chain.ToString();
+    }
 
 }
 

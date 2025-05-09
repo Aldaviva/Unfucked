@@ -24,7 +24,7 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
         Handler = unfuckedHandler;
         Timeout = TimeSpan.FromSeconds(30);
         if (Assembly.GetEntryAssembly()?.GetName() is { Name: { } programName, Version: { } programVersion }) {
-            DefaultRequestHeaders.UserAgent.AddAll(new ProductInfoHeaderValue(programName, programVersion.ToString(4, true)));
+            DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(programName, programVersion.ToString(4, true)));
         }
         UnfuckedHttpHandler.CacheClientHandler(this, unfuckedHandler);
     }

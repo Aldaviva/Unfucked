@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFrameworks>net462;net6.0-windows</TargetFrameworks>
-        <Version>0.0.0-beta5</Version>
+        <Version>0.0.1-beta.1</Version>
         <RootNamespace>Unfucked</RootNamespace>
         <UseWindowsForms>true</UseWindowsForms>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

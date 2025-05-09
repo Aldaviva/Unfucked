@@ -85,13 +85,21 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
     /// <inheritdoc />
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
         foreach (ClientRequestFilter requestFilter in RequestFilters) {
-            await requestFilter.Filter(ref request, cancellationToken).ConfigureAwait(false);
+            HttpRequestMessage newRequest = await requestFilter.Filter(request, cancellationToken).ConfigureAwait(false);
+            if (request != newRequest) {
+                request.Dispose();
+                request = newRequest;
+            }
         }
 
         HttpResponseMessage response = await TestableSendAsync(request, cancellationToken).ConfigureAwait(false);
 
         foreach (ClientResponseFilter responseFilter in ResponseFilters) {
-            await responseFilter.Filter(ref response, cancellationToken).ConfigureAwait(false);
+            HttpResponseMessage newResponse = await responseFilter.Filter(response, cancellationToken).ConfigureAwait(false);
+            if (response != newResponse) {
+                response.Dispose();
+                response = newResponse;
+            }
         }
 
         return response;

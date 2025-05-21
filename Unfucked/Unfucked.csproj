@@ -5,8 +5,7 @@
         <Version>$(UnfuckedVersion)</Version> <!-- Defined in ..\Directory.Build.props -->
         <AssemblyName>$(MSBuildProjectName)</AssemblyName>
         <RootNamespace>$(MSBuildProjectName)</RootNamespace>
-        <Description>Fix egregiously broken or missing functionality in .NET libraries. Inspired by underscore, jQuery, Apache Commons, Spring, and Guava.</Description>
-        <PackageTags>boilerplate polyfill common utilities helpers toolbelt swiss-army-knife</PackageTags>
+        <Description>Fix egregiously broken or missing functionality in .NET libraries. Inspired by underscore, Apache Commons, Spring, Guava, jQuery, Prototype, Dojo, and mootools.</Description>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

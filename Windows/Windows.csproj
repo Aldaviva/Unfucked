@@ -4,6 +4,8 @@
         <TargetFrameworks>net462;net6.0-windows</TargetFrameworks>
         <Version>0.0.1-beta.1</Version>
         <RootNamespace>Unfucked</RootNamespace>
+        <Description>Fix egregiously broken or missing functionality in .NET libraries that integrate with Windows APIs.</Description>
+        <PackageTags>windows win32 winapi $(PackageTags)</PackageTags>
         <UseWindowsForms>true</UseWindowsForms>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>

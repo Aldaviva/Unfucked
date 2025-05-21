@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
 
     <PropertyGroup>
         <AssemblyName>Unfucked.$(MSBuildProjectName)</AssemblyName>
@@ -9,6 +9,7 @@
         <Authors>Ben Hutchison</Authors>
         <Copyright>© 2025 $(Authors)</Copyright>
         <Company>$(Authors)</Company>
+        <PackageTags>boilerplate polyfill common utilities helpers toolbelt swiss-army-knife</PackageTags>
         <PackageProjectUrl>https://github.com/Aldaviva/Unfucked</PackageProjectUrl>
         <RepositoryUrl>https://github.com/Aldaviva/Unfucked.git</RepositoryUrl>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -26,7 +27,7 @@
 
     <!-- Self version numbers -->
     <PropertyGroup>
-        <UnfuckedVersion>0.0.1-beta.2</UnfuckedVersion>
+        <UnfuckedVersion>0.0.1-beta.3</UnfuckedVersion>
         <UnfuckedCachingVersion>0.0.1-beta.1</UnfuckedCachingVersion>
     </PropertyGroup>
 

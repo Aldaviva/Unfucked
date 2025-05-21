@@ -73,12 +73,12 @@ public static class Cryptography {
 
         return new string(result);
 #else
-        StringBuilder result = new((int) length);
+        StringBuilder result       = new((int) length);
         byte[]        randomBuffer = new byte[length * 4];
         Rng.GetBytes(randomBuffer);
 
         for (int randomByteIndex = 0; randomByteIndex < length; randomByteIndex++) {
-            result.Append(alphabet[BitConverter.ToInt32(randomBuffer, randomByteIndex * 4) % distinctAlphabetLength]);
+            result.Append(distinctAlphabet[BitConverter.ToUInt32(randomBuffer, randomByteIndex * 4) % distinctAlphabetLength]);
         }
 
         return result.ToString();

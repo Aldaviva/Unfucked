@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Unfucked.HTTP.Config;
@@ -37,7 +37,7 @@ public class JsonBodyReader: MessageBodyReader {
      * Instead, rely on UnfuckedWebTarget.DisposeIfNotStream<T> to close the stream when the entire response processing is done.
      */
     public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
-        JsonSerializerOptions jsonOptions = clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions;
+        JsonSerializerOptions jsonOptions = (clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions)!;
 
         Task<Stream> readAsStreamAsync =
 #if NET5_0_OR_GREATER
@@ -46,7 +46,7 @@ public class JsonBodyReader: MessageBodyReader {
             responseBody.ReadAsStreamAsync();
 #endif
 
-        return await JsonSerializer.DeserializeAsync<T>(await readAsStreamAsync.ConfigureAwait(false), jsonOptions, cancellationToken);
+        return (await JsonSerializer.DeserializeAsync<T>(await readAsStreamAsync.ConfigureAwait(false), jsonOptions, cancellationToken))!;
     }
 
 }

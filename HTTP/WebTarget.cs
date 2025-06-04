@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.Contracts;
+using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
@@ -12,106 +12,106 @@ public interface WebTarget: Configurable<WebTarget> {
     Uri Url { get; }
 
     [Pure]
-    UnfuckedWebTarget UserInfo(string? userInfo);
+    WebTarget UserInfo(string? userInfo);
 
     [Pure]
-    UnfuckedWebTarget Path(string? segments, bool autoSplit = true);
+    WebTarget Path(string? segments, bool autoSplit = true);
 
     [Pure]
-    UnfuckedWebTarget Path(object segments);
+    WebTarget Path(object segments);
 
     [Pure]
-    UnfuckedWebTarget Path(params IEnumerable<string> segments);
+    WebTarget Path(params IEnumerable<string> segments);
 
     [Pure]
-    UnfuckedWebTarget Port(ushort? port);
+    WebTarget Port(ushort? port);
 
     [Pure]
-    UnfuckedWebTarget Hostname(string hostname);
+    WebTarget Hostname(string hostname);
 
     [Pure]
-    UnfuckedWebTarget Scheme(string scheme);
+    WebTarget Scheme(string scheme);
 
     [Pure]
-    UnfuckedWebTarget QueryParam(string key, object? value);
+    WebTarget QueryParam(string key, object? value);
 
     [Pure]
-    UnfuckedWebTarget QueryParam(string key, IEnumerable<object> values);
+    WebTarget QueryParam(string key, IEnumerable<object> values);
 
     [Pure]
-    UnfuckedWebTarget QueryParam(IEnumerable<KeyValuePair<string, string>>? parameters);
+    WebTarget QueryParam(IEnumerable<KeyValuePair<string, string>>? parameters);
 
     [Pure]
-    UnfuckedWebTarget QueryParam(IEnumerable<KeyValuePair<string, object>>? parameters);
+    WebTarget QueryParam(IEnumerable<KeyValuePair<string, object>>? parameters);
 
     [Pure]
-    UnfuckedWebTarget Fragment(string? fragment);
+    WebTarget Fragment(string? fragment);
 
     [Pure]
-    UnfuckedWebTarget ResolveTemplate(string key, object? value);
+    WebTarget ResolveTemplate(string key, object? value);
 
     [Pure]
-    UnfuckedWebTarget ResolveTemplate(IEnumerable<KeyValuePair<string, object?>> values);
+    WebTarget ResolveTemplate(IEnumerable<KeyValuePair<string, object?>> values);
 
     [Pure]
-    UnfuckedWebTarget ResolveTemplate(object anonymousType);
+    WebTarget ResolveTemplate(object anonymousType);
 
     [Pure]
-    UnfuckedWebTarget Header(string key, object? value);
+    WebTarget Header(string key, object? value);
 
     [Pure]
-    UnfuckedWebTarget Header(string key, params IEnumerable<object> values);
+    WebTarget Header(string key, params IEnumerable<object> values);
 
     [Pure]
-    UnfuckedWebTarget Accept(params IEnumerable<string> mediaTypes);
+    WebTarget Accept(params IEnumerable<string> mediaTypes);
 
     [Pure]
-    UnfuckedWebTarget Accept(params IEnumerable<MediaTypeHeaderValue> mediaTypes);
+    WebTarget Accept(params IEnumerable<MediaTypeHeaderValue> mediaTypes);
 
     [Pure]
-    UnfuckedWebTarget AcceptEncoding(params IEnumerable<string> encodings);
+    WebTarget AcceptEncoding(params IEnumerable<string> encodings);
 
     [Pure]
-    UnfuckedWebTarget AcceptLanguage(params IEnumerable<string> languages);
+    WebTarget AcceptLanguage(params IEnumerable<string> languages);
 
     [Pure]
-    UnfuckedWebTarget AcceptLanguage(params IEnumerable<CultureInfo> languages);
+    WebTarget AcceptLanguage(params IEnumerable<CultureInfo> languages);
 
     [Pure]
-    UnfuckedWebTarget CacheControl(string cacheControl);
+    WebTarget CacheControl(string cacheControl);
 
     [Pure]
-    UnfuckedWebTarget CacheControl(CacheControlHeaderValue cacheControl);
+    WebTarget CacheControl(CacheControlHeaderValue cacheControl);
 
     [Pure]
-    UnfuckedWebTarget Cookie(Cookie cookie);
+    WebTarget Cookie(Cookie cookie);
 
     [Pure]
-    UnfuckedWebTarget Cookie(string key, string value);
+    WebTarget Cookie(string key, string value);
 
     [Pure]
-    UnfuckedWebTarget UserAgent(string userAgentString);
+    WebTarget UserAgent(string userAgentString);
 
     [Pure]
-    UnfuckedWebTarget UserAgent(ProductInfoHeaderValue userAgentString);
+    WebTarget UserAgent(ProductInfoHeaderValue userAgentString);
 
     [Pure]
-    UnfuckedWebTarget Authorization(string credentials);
+    WebTarget Authorization(string credentials);
 
     [Pure]
-    UnfuckedWebTarget Authorization(string username, string password);
+    WebTarget Authorization(string username, string password);
 
     [Pure]
-    UnfuckedWebTarget Authorization(NetworkCredential credentials);
+    WebTarget Authorization(NetworkCredential credentials);
 
     [Pure]
-    UnfuckedWebTarget Referrer(string referrer);
+    WebTarget Referrer(string referrer);
 
     [Pure]
-    UnfuckedWebTarget Referrer(Uri referrer);
+    WebTarget Referrer(Uri referrer);
 
     [Pure]
-    UnfuckedWebTarget RequestedWith(string requester = "XMLHttpRequest");
+    WebTarget RequestedWith(string requester = "XMLHttpRequest");
 
     Task<HttpResponseMessage> Send(HttpMethod verb, HttpContent? requestBody = null, CancellationToken cancellationToken = default);
 

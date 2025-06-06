@@ -1,9 +1,11 @@
-﻿using System.Buffers;
+using System.Buffers;
 using System.Collections.Immutable;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
+
+// ReSharper disable UseIndexFromEndExpression - incompatible with .NET Standard 2.0, which this project obviously targets
 
 #pragma warning disable SYSLIB1045 // Generate regex at compile time - not possible with .NET Standard
 
@@ -219,10 +221,12 @@ public class UrlBuilder: ICloneable {
             built.Append('#').Append(UrlEncoder.Encode(ReplacePlaceholders(_fragment), UrlEncoder.Component.Fragment));
         }
 
-        string uriString = built.ToString();
-        return new Uri(uriString, UriKind.Absolute);
+        return new Uri(built.ToString(), UriKind.Absolute);
     }
 
+    /// <summary>
+    /// Converts the URL to a string
+    /// </summary>
     [Pure]
     public override string ToString() => ToUrl().AbsoluteUri;
 

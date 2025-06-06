@@ -1,6 +1,7 @@
-﻿using ManagedWinapi.Windows;
+using ManagedWinapi.Windows;
 using System.Diagnostics.Contracts;
 using System.Windows.Automation;
+using ThrottleDebounce;
 
 namespace Unfucked;
 
@@ -70,5 +71,79 @@ public static class UIAutomationExtensions {
             _ => and ? new AndCondition(propertyConditions) : new OrCondition(propertyConditions)
         };
     }
+
+    private static readonly Exception ElementNotFound = new ApplicationException("element not found");
+
+    private static readonly Retrier.Options WaitForFirstOptions = new() {
+        Delay          = Retrier.Delays.Power(TimeSpan.FromMilliseconds(8), max: TimeSpan.FromMilliseconds(500)),
+        IsRetryAllowed = exception => exception is not ArgumentException
+    };
+
+    private static Retrier.Options GetWaitForFirstOptions(TimeSpan maxWait, CancellationToken cancellationToken) => WaitForFirstOptions with {
+        MaxOverallDuration = maxWait > TimeSpan.Zero ? maxWait : null,
+        CancellationToken = cancellationToken
+    };
+
+    /// <summary>
+    /// Find the first matching child or descendant element of this UI Automation element, waiting for it to appear if it's not immediately available.
+    /// </summary>
+    /// <param name="parent">Parent or ancestor element on which to base the search.</param>
+    /// <param name="scope">Whether to find children (non-recursive) or descendants (recursive) of <paramref name="parent"/>. Other values of <see cref="TreeScope"/>, such as <see cref="TreeScope.Parent"/>, are not allowed.</param>
+    /// <param name="condition">Condition, such as a <see cref="PropertyCondition"/>, used to find matching elements.</param>
+    /// <param name="maxWait">How long to wait for a matching element to appear if one is not immediately available. If not specified, it will wait forever, or until a match is found or <paramref name="cancellationToken"/> is canceled.</param>
+    /// <param name="cancellationToken">Used to cancel a wait before it finishes.</param>
+    /// <returns>The first child or descendant element of <paramref name="parent"/> that matches <paramref name="condition"/>, or <c>null</c> if either <paramref name="maxWait"/> elapsed or <paramref name="cancellationToken"/> was canceled before a match could be found.</returns>
+    /// <exception cref="ArgumentException"><paramref name="scope"/> is neither <see cref="TreeScope.Children"/> nor <see cref="TreeScope.Descendants"/>.</exception>
+    /// <exception cref="TaskCanceledException"><paramref name="cancellationToken"/> was canceled</exception>
+    // ExceptionAdjustment: M:ThrottleDebounce.Retrier.Attempt``1(System.Func{System.Int32,``0},ThrottleDebounce.Retrier.Options) -T:System.Exception
+    [Pure]
+    public static AutomationElement? WaitForFirst(this AutomationElement parent, TreeScope scope, Condition condition, TimeSpan maxWait = default, CancellationToken cancellationToken = default) {
+        try {
+            return Retrier.Attempt(_ => parent.FindFirst(scope, condition) ?? throw ElementNotFound, GetWaitForFirstOptions(maxWait, cancellationToken));
+        } catch (Exception e) when (e is not OutOfMemoryException) {
+            return null;
+        }
+    }
+
+#pragma warning disable CS1573 // param validation is unaware of inheritdoc
+    /// <inheritdoc cref="WaitForFirst" />
+    /// <param name="resultTransformer">After finding the first matching child element, apply this function to it to produce the method's final return value, instead of just returning the matched element directly. If this function throws an exception, this method will retry, so it is safe to try to access an element that may not exist yet, because it will just wait until it's available.</param>
+    // ExceptionAdjustment: M:ThrottleDebounce.Retrier.Attempt``1(System.Func{System.Int32,``0},ThrottleDebounce.Retrier.Options) -T:System.Exception
+    [Pure]
+    public static TResult? WaitForFirst<TResult>(this AutomationElement parent, TreeScope scope, Condition condition, Func<AutomationElement, TResult> resultTransformer, TimeSpan maxWait = default,
+                                                 CancellationToken cancellationToken = default) where TResult: class {
+        try {
+            return Retrier.Attempt(_ => parent.FindFirst(scope, condition) is { } el ? resultTransformer(el) : throw ElementNotFound, GetWaitForFirstOptions(maxWait, cancellationToken));
+        } catch (Exception e) when (e is not OutOfMemoryException) {
+            return null;
+        }
+    }
+
+    /// <inheritdoc cref="WaitForFirst" />
+    // ExceptionAdjustment: M:ThrottleDebounce.Retrier.Attempt``1(System.Func{System.Int32,System.Threading.Tasks.Task{``0}},ThrottleDebounce.Retrier.Options) -T:System.Exception
+    [Pure]
+    public static async Task<AutomationElement?> WaitForFirstAsync(this AutomationElement parent, TreeScope scope, Condition condition, TimeSpan maxWait = default,
+                                                                   CancellationToken cancellationToken = default) {
+        try {
+            return await Retrier.Attempt(_ => parent.FindFirst(scope, condition) is { } el ? Task.FromResult(el) : Task.FromException<AutomationElement>(ElementNotFound),
+                GetWaitForFirstOptions(maxWait, cancellationToken)).ConfigureAwait(false);
+        } catch (Exception e) when (e is not OutOfMemoryException) {
+            return null;
+        }
+    }
+
+    /// <inheritdoc cref="WaitForFirst{T}" />
+    // ExceptionAdjustment: M:ThrottleDebounce.Retrier.Attempt``1(System.Func{System.Int32,System.Threading.Tasks.Task{``0}},ThrottleDebounce.Retrier.Options) -T:System.Exception
+    [Pure]
+    public static async Task<TResult?> WaitForFirstAsync<TResult>(this AutomationElement parent, TreeScope scope, Condition condition, Func<AutomationElement, Task<TResult>> resultTransformer,
+                                                                  TimeSpan maxWait = default, CancellationToken cancellationToken = default) where TResult: class {
+        try {
+            return await Retrier.Attempt(async _ => parent.FindFirst(scope, condition) is { } el ? await resultTransformer(el).ConfigureAwait(false) : throw ElementNotFound,
+                GetWaitForFirstOptions(maxWait, cancellationToken)).ConfigureAwait(false);
+        } catch (Exception e) when (e is not OutOfMemoryException) {
+            return null;
+        }
+    }
+#pragma warning restore CS1573
 
 }

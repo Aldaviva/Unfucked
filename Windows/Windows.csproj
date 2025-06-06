@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFrameworks>net462;net6.0-windows</TargetFrameworks>
-        <Version>0.0.1-beta.1</Version>
+        <Version>0.0.1-beta.2</Version>
         <RootNamespace>Unfucked</RootNamespace>
         <Description>Fix egregiously broken or missing functionality in .NET libraries that integrate with Windows APIs.</Description>
         <PackageTags>windows win32 winapi $(PackageTags)</PackageTags>
@@ -12,6 +12,7 @@
 
     <ItemGroup>
         <PackageReference Include="mwinapi" />
+        <PackageReference Include="ThrottleDebounce" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetFramework)' != 'net462'">

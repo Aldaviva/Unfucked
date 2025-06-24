@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.Contracts;
+using System.Diagnostics.Contracts;
 using Unfucked.HTTP.Config;
 using Unfucked.HTTP.Filters;
 using Unfucked.HTTP.Serialization;
@@ -30,6 +30,7 @@ public partial class UnfuckedWebTarget {
     [Pure]
     WebTarget Configurable<WebTarget>.Register<Option>(Registrable<Option> registrable, Option registrationOption) => Register(registrable, registrationOption);
 
+    /// <inheritdoc />
     [Pure]
     public UnfuckedWebTarget Property<T>(PropertyKey<T> key, T? value) where T: notnull =>
         clientConfig is not null ? new UnfuckedWebTarget(client, urlBuilder, clientHandler, clientConfig.Property(key, value)) : throw ConfigUnavailable;

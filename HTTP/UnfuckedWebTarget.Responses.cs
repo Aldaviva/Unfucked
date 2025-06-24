@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.Serialization;
 using System.Text;
@@ -111,14 +111,22 @@ public partial class UnfuckedWebTarget {
 
     private static async Task<HttpExceptionParams> CreateHttpExceptionParams(HttpResponseMessage response, CancellationToken cancellationToken) {
         HttpRequestMessage? request = response.RequestMessage;
-        Task<byte[]> readAsByteArrayAsync =
+
+        ReadOnlyMemory<byte>? responseBody = null;
+        try {
+            await response.Content.LoadIntoBufferAsync().ConfigureAwait(false);
+            Task<byte[]> readAsByteArrayAsync =
 #if NET5_0_OR_GREATER
-            response.Content.ReadAsByteArrayAsync(cancellationToken);
+                response.Content.ReadAsByteArrayAsync(cancellationToken);
 #else
             response.Content.ReadAsByteArrayAsync();
 #endif
+            responseBody = (await readAsByteArrayAsync.ConfigureAwait(false)).AsMemory();
+        } catch (InvalidOperationException) {
+            // leave responseBody null
+        }
 
-        return new HttpExceptionParams(request?.Method ?? HttpMethod.Get, request?.RequestUri, response.Headers, (await readAsByteArrayAsync.ConfigureAwait(false)).AsMemory());
+        return new HttpExceptionParams(request?.Method ?? HttpMethod.Get, request?.RequestUri, response.Headers, responseBody);
     }
 
 }

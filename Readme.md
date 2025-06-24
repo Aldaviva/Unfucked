@@ -30,10 +30,13 @@
 
 ### General
 [![NuGet](https://img.shields.io/nuget/v/Unfucked?logo=nuget&label=Unfucked%20on%20NuGet)](https://www.nuget.org/packages/Unfucked)
+- Comparables
+    - Clip a value to a specified range (also known as clamping, limiting, and truncating)
 - Console
     - Colored text and background in strings, not tightly coupled to `Console.Write`
     - Enable colored output on Windows 10 1511 and later
     - Clear screen and move to top-left corner
+    - Cancel a `CancellationToken` when the user presses <kbd>Ctrl</kbd>+<kbd>C</kbd>
 - Cryptography
     - Random string generation
     - Is certificate temporally valid
@@ -43,6 +46,7 @@
     - Delete without throwing an exception on missing directories
 - DNS
     - Fluent resolving method
+    - If you need to resolve anything other than an A or AAAA record, take a look at [DnsClient.NET](https://www.nuget.org/packages/DnsClient) instead
 - Enumerables
     - Filter out `null` values
     - Add multiple values at once
@@ -57,6 +61,7 @@
     - Get or add to `ConcurrentDictionary` and dispose of created but unadded values
     - Get or add to `ConcurrentDictionary` and determine whether a new value was added or an existing value was returned
     - Polyfill for `IList<T>.AsReadOnly` for .NET versions before 8, including .NET Standard
+    - Factories for singleton Dictionaries, Sets, and enumerables of key-value pairs
 - Paths
     - Trim trailing slashes
     - Create new empty temporary subdirectory in specific parent directory
@@ -93,6 +98,7 @@
     - Fluent method to get URI query parameters
     - Check if a URI host belongs to a given domain (site locking)
     - Builder pattern for URLs
+    - Truncate URIs to remove the fragment, query parameters, or path. Useful for getting the origin too.
 - XML
     - Fluent methods to read an XML document from an HTTP response body as a mapped object, DOM, LINQ, or XPath
     - Find all descendant elements of a parent node which have a given tag name
@@ -114,23 +120,133 @@
 ### DateTime
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.DateTime?logo=nuget&label=Unfucked.DateTime%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.DateTime)
 - For use with [NodaTime](https://www.nuget.org/packages/NodaTime)
-- Absolute value of a `Duration` or `TimeSpan`
+- Absolute value of a `Duration` (like `TimeSpan.Duration()`)
+    ```cs
+    ZonedDateTime a, b;
+    var abs = (a - b).Abs();
+    ```
 - Get midnight from a `ZonedDateTime` as a `ZonedDateTime`, `Period`, or `Duration`
+    ```cs
+    ZonedDateTime now = SystemClock.Instance.InTzdbSystemDefaultZone().GetCurrentZonedDateTime();
+    ZonedDateTime midnight = now.AtStartOfDay();
+    Duration sinceMidnight = now.LocalDateTime.TimeOfDay.ToDurationSinceStartOfDay();
+    Period sinceMidnight2 = now.LocalDateTime.TimeOfDay.ToPeriodSinceStartOfDay();
+    ```
 - Convert time zone offset to hours
+    ```cs
+    double hours = DateTimeZoneProviders.Tzdb["America/Los_Angeles"].GetUtcOffset(SystemClock.Instance.GetCurrentInstant()).ToHours();
+    ```
 - Compare two `OffsetDateTimes` to see which one happens first
+    ```cs
+    OffsetDateTime a, b;
+    bool isBefore = a.IsBefore(b);
+    isBefore = !b.IsAfter(a);
+    ```
+- More succinct and interchangeable way to define standard `TimeSpan`, `Period`, and `Duration` instances by force casting integral numbers to or constructing `Milliseconds`, `Seconds`, `Minutes`, `Hours`, and `Days`, all of which implicitly convert to `TimeSpan`, `Period`, and `Duration`
+    ```cs
+    TimeSpan t = (Seconds) 3;
+    ```
 
 ### DI
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.DI?logo=nuget&label=Unfucked.DI%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.DI)
 - For use with [Microsoft.Extensions.Hosting](https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection) dependency injection/inversion of control
 - Add a colored console with column formatted data
+    ```cs
+    HostApplicationBuilder builder = new();
+    builder.Logging.AddUnfuckedConsole();
+    ```
 - Search for JSON configuration files in executable directory, not just current working directory
+    ```cs
+    HostApplicationBuilder builder = new();
+    builder.Configuration.AlsoSearchForJsonFilesInExecutableDirectory();
+    ```
 - Allow provider functions to be injected, so long-lived consumers can depend on short-lived dependencies and control their lifecycle
+    ```cs
+    HostApplicationBuilder builder = new();
+    builder.Services
+        .AddInjectableProviders()
+        .AddSingleton<MyService>()
+        .AddTransient<MyDependency>();
+
+    class MyService(Provider<MyDependency> dependencyProvider){
+        void run(){
+            using MyDependency dependency = dependencyProvider.Get();
+        }
+    }
+    ```
+- Change the exit code with which the program exits when a background service crashes, instead of 0 which incorrectly indicates success.
+    ```cs
+    HostApplicationBuilder builder = new();
+    builder.Services.SetExitCodeOnBackgroundServiceException(1);
+    ```
+- Easily register a class in the DI context as both itself and as all of its interfaces automatically, so you can inject it as any of the interfaces without any casting in constructors or unmaintainable multiple registration clutter
+    ```cs
+    HostApplicationBuilder builder = new();
+    builder.Services.Add<MyService>(registerAllInterfaces: true);
+
+    class MyService: MyInterface;
+    class MyDependent(MyInterface dependency);
+    ```
 
 ### HTTP
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.HTTP?logo=nuget&label=Unfucked.HTTP%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.HTTP)
-- Builder pattern for HTTP request URLs, headers, verbs, and response representations
+- Inspired by [JAX-RS](https://projects.eclipse.org/projects/ee4j.rest) and [Jersey](https://projects.eclipse.org/projects/ee4j.jersey) for Java
+- Drop-in subclasses of `HttpClient` and `HttpMessageHandler` and extension methods
+    ```cs
+    HttpClient http = new UnfuckedHttpClient(); // set the subclass
+    http = new HttpClient(new UnfuckedHttpHandler()); // or set the handler
+    http = new UnfuckedHttpClient(new SocketsHttpHandler(){ AllowAutoRedirect = false }); // custom handlers are wrapped automatically
+    ```
+- Immutable builder pattern for HTTP request URLs, headers, verbs, and response representations that is fluent, composable, and avoids accidentally reusing stale state and sending to corrupted URLs
+    ```cs
+    JsonNode responseBody = await http.Target("https://httpbin.org")
+        .Path("get")
+        .Accept(MediaTypeNames.Application.Json)
+        .Get<JsonNode>();
+    ```
 - Request and response filtering
+    ```cs
+    PrintRequests filter = new PrintRequests();
+    http.Register((ClientRequestFilter) filter);
+    http.Register((ClientResponseFilter) filter);
+
+    class PrintRequests: ClientRequestFilter, ClientResponseFilter {
+        public async Task<HttpRequestMessage> Filter(HttpRequestMessage request, CancellationToken cancellationToken) {
+            Console.WriteLine(">> {0} {1}", request.Method, request.RequestUri);
+            return request;
+        }
+
+        public async Task<HttpResponseMessage> Filter(HttpResponseMessage response, CancellationToken cancellationToken) {
+            Console.WriteLine("<< {0} {1}", (int) response.StatusCode, response.RequestMessage?.RequestUri);
+            return response;
+        }
+    }
+    ```
+- Type-safe property registration
+    ```cs
+    // set on shared client or ClientConfig
+    http.Property(PropertyKey.JsonSerializerOptions, new JsonSerializerOptions()); 
+
+    // set on immutable request target
+    WebTarget target = http.Target("https://httpbin.org")
+        .Property(PropertyKey.ThrowOnUnsuccessfulStatusCode, false); 
+    ```
 - Automatic response deserialization to given types from XML, JSON, and pluggable custom representations
+    ```cs
+    // automatically mapped from JSON or XML depending on response content type, falling back to content sniffing
+    MyClass response = await http.Target(url).Get<MyClass>();
+    ```
+- Rich exception class hierarchy
+    ```cs
+    try {
+        string response = await http.Target(url).Get<string>();
+    } catch(NotFoundException) {       // 404
+    } catch(NotAuthorizedException) {  // 401
+    } catch(ServerErrorException) {    // 5xx
+    } catch(WebApplicationException) { // any unsuccessful status code
+    } catch(ProcessingException) { }   // network or deserialization error, like DNS, connection refused, timeout
+    ```
+- Mockable and verifiable in unit or layer tests
 
 ### ICS
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.ICS?logo=nuget&label=Unfucked.ICS%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.ICS)
@@ -170,6 +286,15 @@
 - Get parent process of a process
 - Get descendant processes recursively of a process
 - Get locale of the operating system, rather than the user
+- Convert between Win32 window handles, UI Automation elements, and mwinapi window instances
+- Easily get all children of a UI Automation element
+- Create a UI Automation property AND or OR condition that doesn't crash if there is only one sub-condition
+- Find a child or descendant UI Automation element and wait if it doesn't immediately exist, instead of returning null, to prevent UI rendering race conditions
+- Detach a console application from its console window if you want to prevent it from receiving `Ctrl`+`C`, because it's a child process of your console application, you're handling that signal in your parent process using [`Console.CancelKeyPress`](https://learn.microsoft.com/en-us/dotnet/api/system.console.cancelkeypress), and you don't want the console sidestepping your parent and killing your child.
+   ```cs
+   using Process child = Process.Start("child.exe", "args")!;
+   child.DetachFromConsole();
+   ```
 
 ## Related packages
 
@@ -181,7 +306,7 @@ Reconfigure the static shared `Encoding.UTF8` instance to not emit UTF-8 byte or
 #### DarkNet
 [![NuGet](https://img.shields.io/nuget/v/DarkNet?logo=nuget&label=DarkNet%20on%20NuGet)](https://www.nuget.org/packages/DarkNet)
 
-Turn native Windows title bars dark in WPF and Windows Forms windows.
+Turn the native Windows title bars dark in WPF and Windows Forms windows.
 
 #### DataSizeUnits
 [![NuGet](https://img.shields.io/nuget/v/DataSizeUnits?logo=nuget&label=DataSizeUnits%20on%20NuGet)](https://www.nuget.org/packages/DataSizeUnits)
@@ -196,7 +321,7 @@ Automatically connect and reconnect to USB HID peripherals.
 #### KoKo
 [![NuGet](https://img.shields.io/nuget/v/KoKo?logo=nuget&label=KoKo%20on%20NuGet)](https://www.nuget.org/packages/KoKo)
 
-Automatically implement `INotifyPropertyChanged` to allow you to create composable properties with no publisher or subscriber boilerplate.
+Automatically implement `INotifyPropertyChanged` to allow you to create composable properties with no publisher or subscriber boilerplate or circular references.
 
 #### SolCalc
 [![NuGet](https://img.shields.io/nuget/v/SolCalc?logo=nuget&label=SolCalc%20on%20NuGet)](https://www.nuget.org/packages/SolCalc)
@@ -206,7 +331,7 @@ Calculate a stream of solar time of day transitions for a given point on Earth, 
 #### ThrottleDebounce
 [![NuGet](https://img.shields.io/nuget/v/ThrottleDebounce?logo=nuget&label=ThrottleDebounce%20on%20NuGet)](https://www.nuget.org/packages/ThrottleDebounce)
 
-Throttle, debounce, and try functions and actions.
+Throttle, debounce, and retry functions and actions.
 
 #### UnionTypes
 [![NuGet](https://img.shields.io/nuget/v/UnionTypes?logo=nuget&label=UnionTypes%20on%20NuGet)](https://www.nuget.org/packages/UnionTypes)

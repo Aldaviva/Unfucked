@@ -1,3 +1,4 @@
+using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
@@ -17,7 +18,7 @@ public static class WindowsProcesses {
     /// <param name="commandLine">A command-line string, possibly consisting of multiple arguments, escaping, and quotation marks.</param>
     /// <returns>An enumerable of the individual arguments in <paramref name="commandLine"/>, unescaped and unquoted.</returns>
     /// <remarks>
-    /// By Mike Schwörer: <see href="https://stackoverflow.com/a/64236441/979493" />
+    /// By Mike SchwÃ¶rer: <see href="https://stackoverflow.com/a/64236441/979493" />
     /// </remarks>
     [ExcludeFromCodeCoverage]
     [Pure]
@@ -307,5 +308,62 @@ public static class WindowsProcesses {
         MaxProcessInfoClass                         = 0x64
 
     }
+
+    /// <summary>
+    /// <para>Call this on a child process if you want it to detach from the console and ignore Ctrl+C, because your parent console process will handle that signal.</para>
+    /// <para>Strangely, in Windows console applications, pressing Ctrl+C in the terminal will send the signal to every attached descendant in the terminal's process tree, not just the top-most child running directly in the terminal.</para>
+    /// <para>This is necessary if you have custom Ctrl+C handling in your parent (using <see cref="Console.CancelKeyPress"/>), and don't want the child to ignore that and exit on the first Ctrl+C anyway.</para>
+    /// <para>The best way to solve this is by the child not attaching to the console in the first place, or detaching with <c>FreeConsole()</c>, but this is not possible if you can't make code changes to the child program. The second-best way to solve this is by specifying a <c>dwCreationFlags</c> of <c>DETACHED_PROCESS (0x8)</c> when calling <c>CreateProcess</c>, but these flags are insufficiently customizable when wrapped by .NET's <see cref="ProcessStartInfo"/> (API cliff).</para>
+    /// <para>This technique injects a thread into the child process that calls <c>FreeConsole</c>, which is better than copying and reimplementing all of <see cref="Process.Start()"/> from the .NET BCL repository.</para>
+    /// </summary>
+    /// <param name="process"></param>
+    public static void DetachFromConsole(this Process process) {
+        int targetPid = process.Id;
+        int selfPid;
+#if NET5_0_OR_GREATER
+        selfPid = Environment.ProcessId;
+#else
+        using Process selfProcess = Process.GetCurrentProcess();
+        selfPid = selfProcess.Id;
+#endif
+
+        if (targetPid == selfPid) {
+            FreeConsole();
+        } else {
+            // https://codingvision.net/c-inject-a-dll-into-a-process-w-createremotethread
+            using SafeProcessHandle safeProcessHandle = OpenProcess(ProcessSecurityAndAccessRight.ProcessCreateThread, false, targetPid);
+
+            IntPtr methodAddr = GetProcAddress(GetModuleHandle("kernel32.dll"), "FreeConsole");
+            CreateRemoteThread(safeProcessHandle, IntPtr.Zero, 0, methodAddr, IntPtr.Zero, 0, IntPtr.Zero);
+        }
+    }
+
+    [Flags]
+    private enum ProcessSecurityAndAccessRight: uint {
+
+        ProcessCreateThread     = 0x2,
+        ProcessQueryInformation = 0x400,
+        ProcessVMOperation      = 0x8,
+        ProcessVMWrite          = 0x20,
+        ProcessVMRead           = 0x10
+
+    }
+
+    [DllImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool FreeConsole();
+
+    [DllImport("kernel32.dll")]
+    private static extern SafeProcessHandle OpenProcess(ProcessSecurityAndAccessRight dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+    private static extern IntPtr GetModuleHandle(string lpModuleName);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
+    private static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr CreateRemoteThread(SafeProcessHandle hProcess, IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags,
+                                                    IntPtr lpThreadId);
 
 }

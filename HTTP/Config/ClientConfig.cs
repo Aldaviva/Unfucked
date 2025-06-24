@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Diagnostics.Contracts;
 using Unfucked.HTTP.Filters;
 using Unfucked.HTTP.Serialization;
@@ -74,6 +74,7 @@ public class ClientConfig: IClientConfig {
     public IClientConfig Property<T>(PropertyKey<T> key, T? value) where T: notnull =>
         new ClientConfig(this) { Properties = value is not null ? Properties.SetItem(key, value) : Properties.Remove(key) };
 
+    /// <inheritdoc cref="Configurable.Property{T}" />
     [Pure]
     public bool Property<T>(PropertyKey<T> key,
 #if !NETSTANDARD2_0

@@ -6,10 +6,10 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Unfucked.DI;
 #if !NET6_0_OR_GREATER
 using System.Diagnostics;
-using System.Reflection;
 #endif
 
 namespace Unfucked;
@@ -79,7 +79,7 @@ public static class DependencyInjectionExtensions {
                     : []).ToList();
 
             int sourcesAdded = 0;
-            foreach ((int index, IConfigurationSource? source) in sourcesToAdd) {
+            foreach ((int index, IConfigurationSource source) in sourcesToAdd) {
                 builder.Sources.Insert(index + sourcesAdded++, source);
             }
         }
@@ -152,5 +152,74 @@ public static class DependencyInjectionExtensions {
         }
 
     }
+
+    #region Register all interfaces
+
+    /// <summary>
+    /// <para>Register a class in the dependency injection context, and also register it so it can be injected as any of its interfaces, like Spring does by default and Autofac optionally allows.</para>
+    /// <para>For example, if <c>MyClass</c> implements both <c>IMyInterface1</c> and <c>IMyInterface2</c>, this allows you to easily register <c>MyClass</c> in DI and inject either <c>IMyInterface1</c> or <c>IMyInterface2</c> into a service's constructor, without injection casting or duplicative unrefactorable registration clutter.</para>
+    /// </summary>
+    /// <typeparam name="TImpl">Type of the class to register</typeparam>
+    /// <param name="services"><see cref="IHostApplicationBuilder.Services"/> or similar</param>
+    /// <param name="registerAllInterfaces"><c>true</c> to also register the class as all of its implemented interfaces, in addition to its own class, or <c>false</c> to only register it as its own class (default <c>Microsoft.Extensions.DependencyInjection</c> behavior)</param>
+    /// <returns>The same collection of service registrations, for chained calls</returns>
+    public static IServiceCollection AddSingleton<TImpl>(this IServiceCollection services, bool registerAllInterfaces) where TImpl: class =>
+        Add<TImpl>(services, ServiceLifetime.Singleton, registerAllInterfaces);
+
+    /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,bool)" />
+    /// <param name="instance">One concrete singleton instance that will always be returned when these types are injected</param>
+    public static IServiceCollection AddSingleton<TImpl>(this IServiceCollection services, TImpl instance, bool registerAllInterfaces) where TImpl: class =>
+        Add(services, ServiceLifetime.Singleton, registerAllInterfaces, instance);
+
+    /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,bool)" />
+    /// <param name="factory">Function that creates instances of <typeparamref name="TImpl"/></param>
+    public static IServiceCollection AddSingleton<TImpl>(this IServiceCollection services, Func<IServiceProvider, TImpl> factory, bool registerAllInterfaces) where TImpl: class =>
+        Add(services, ServiceLifetime.Singleton, registerAllInterfaces, factory);
+
+    /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,bool)" />
+    public static IServiceCollection AddTransient<TImpl>(this IServiceCollection services, bool registerAllInterfaces) where TImpl: class =>
+        Add<TImpl>(services, ServiceLifetime.Transient, registerAllInterfaces);
+
+    /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,bool)" />
+    /// <param name="factory">Function that creates instances of <typeparamref name="TImpl"/></param>
+    public static IServiceCollection AddTransient<TImpl>(this IServiceCollection services, Func<IServiceProvider, TImpl> factory, bool registerAllInterfaces) where TImpl: class =>
+        Add(services, ServiceLifetime.Transient, registerAllInterfaces, factory);
+
+    /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,bool)" />
+    public static IServiceCollection AddScoped<TImpl>(this IServiceCollection services, bool registerAllInterfaces) where TImpl: class =>
+        Add<TImpl>(services, ServiceLifetime.Scoped, registerAllInterfaces);
+
+    /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,bool)" />
+    /// <param name="factory">Function that creates instances of <typeparamref name="TImpl"/></param>
+    public static IServiceCollection AddScoped<TImpl>(this IServiceCollection services, Func<IServiceProvider, TImpl> factory, bool registerAllInterfaces) where TImpl: class =>
+        Add(services, ServiceLifetime.Scoped, registerAllInterfaces, factory);
+
+    private static IServiceCollection Add<TImpl>(IServiceCollection services, ServiceLifetime scope, bool registerAllInterfaces) where TImpl: class => Add<TImpl>(services, registerAllInterfaces,
+        () => new ServiceDescriptor(typeof(TImpl), typeof(TImpl), scope),
+        @interface => scope == ServiceLifetime.Singleton ? new ServiceDescriptor(@interface, interfaceImplProvider<TImpl>, scope) : new ServiceDescriptor(@interface, typeof(TImpl), scope));
+
+    private static IServiceCollection Add<TImpl>(IServiceCollection services, ServiceLifetime scope, bool registerAllInterfaces, TImpl instance) where TImpl: class => Add<TImpl>(services,
+        registerAllInterfaces, () => new ServiceDescriptor(typeof(TImpl), instance, scope), @interface => new ServiceDescriptor(@interface, _ => instance, scope));
+
+    private static IServiceCollection Add<TImpl>(IServiceCollection services, ServiceLifetime scope, bool registerAllInterfaces, Func<IServiceProvider, TImpl> factory) where TImpl: class =>
+        Add<TImpl>(services,
+            registerAllInterfaces, () => new ServiceDescriptor(typeof(TImpl), factory, scope), @interface => new ServiceDescriptor(@interface, interfaceImplProvider<TImpl>, scope));
+
+    private static IServiceCollection Add<TImpl>(IServiceCollection services, bool registerAllInterfaces, Func<ServiceDescriptor> classRegistration,
+                                                 Func<Type, ServiceDescriptor> interfaceRegistration) where TImpl: class {
+        services.Add(classRegistration());
+        if (registerAllInterfaces) {
+            try {
+                services.AddAll(typeof(TImpl).GetInterfaces().Select(interfaceRegistration));
+            } catch (TargetInvocationException) {
+                // if an interface's static initializer is throwing an exception, it will become obvious anyway
+            }
+        }
+        return services;
+    }
+
+    private static object interfaceImplProvider<TImpl>(IServiceProvider services) => services.GetService<TImpl>()!;
+
+    #endregion
 
 }

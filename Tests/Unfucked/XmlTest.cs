@@ -1,4 +1,4 @@
-﻿using System.Xml;
+using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using System.Xml.XPath;
@@ -79,7 +79,7 @@ public class XmlTest {
     public class XmlObject {
 
         [XmlAttribute("name")]
-        public string name { get; set; }
+        public string? name { get; set; }
 
     }
 

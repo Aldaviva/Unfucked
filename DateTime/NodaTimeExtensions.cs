@@ -40,7 +40,7 @@ public static class NodaTimeExtensions {
     /// <param name="localTime">time of day</param>
     /// <returns>period of time between <paramref name="localTime"/> and midnight of the same date</returns>
     [Pure]
-    private static Period ToPeriodSinceStartOfDay(this LocalTime localTime) {
+    public static Period ToPeriodSinceStartOfDay(this LocalTime localTime) {
         return localTime.Minus(LocalTime.Midnight);
     }
 

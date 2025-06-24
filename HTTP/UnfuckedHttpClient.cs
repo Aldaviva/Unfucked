@@ -1,5 +1,6 @@
-﻿using System.Net.Http.Headers;
+using System.Net.Http.Headers;
 using System.Reflection;
+using Unfucked.HTTP.Config;
 using Unfucked.HTTP.Exceptions;
 
 namespace Unfucked.HTTP;
@@ -16,8 +17,8 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
 
     public IUnfuckedHttpHandler Handler { get; }
 
-    public UnfuckedHttpClient(HttpMessageHandler? handler = null, bool disposeHandler = true): this((IUnfuckedHttpHandler) (handler as UnfuckedHttpHandler ?? new UnfuckedHttpHandler(handler)),
-        disposeHandler) { }
+    public UnfuckedHttpClient(HttpMessageHandler? handler = null, bool disposeHandler = true, IClientConfig? configuration = null): this(
+        handler as UnfuckedHttpHandler ?? new UnfuckedHttpHandler(handler, configuration), disposeHandler) { }
 
     public UnfuckedHttpClient(IUnfuckedHttpHandler unfuckedHandler, bool disposeHandler = true): base(unfuckedHandler as HttpMessageHandler ?? new IUnfuckedHttpHandlerWrapper(unfuckedHandler),
         disposeHandler) {
@@ -29,6 +30,7 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
         UnfuckedHttpHandler.CacheClientHandler(this, unfuckedHandler);
     }
 
+    /// <exception cref="ProcessingException"></exception>
     public virtual async Task<HttpResponseMessage> SendAsync(HttpRequest request, CancellationToken cancellationToken = default) {
         using HttpRequestMessage req = new(request.Verb, request.Uri) {
             Content = request.Body

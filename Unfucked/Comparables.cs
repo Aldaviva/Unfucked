@@ -1,8 +1,12 @@
-﻿namespace Unfucked;
+namespace Unfucked;
 
 public static class Comparables {
 
     public static T Clip<T>(this T input, T min, T max) where T: IComparable<T> {
+        if (min.CompareTo(max) > 0) {
+            (min, max) = (max, min);
+        }
+
         if (input.CompareTo(max) > 0) {
             return max;
         } else if (input.CompareTo(min) < 0) {

@@ -2,10 +2,10 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
-        <Version>0.0.1-beta.2</Version>
+        <Version>0.0.1-beta.3</Version>
         <RootNamespace>Unfucked</RootNamespace>
         <Description>Fix egregiously broken or missing functionality in NodaTime.</Description>
-        <PackageTags>NodaTime $(PackageTags)</PackageTags>
+        <PackageTags>NodaTime date time $(PackageTags)</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

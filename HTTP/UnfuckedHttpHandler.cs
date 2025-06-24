@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.Contracts;
+using System.Diagnostics.Contracts;
 using System.Reflection;
 using Unfucked.HTTP.Config;
 using Unfucked.HTTP.Filters;
@@ -11,6 +11,9 @@ public interface IUnfuckedHttpHandler: Configurable<IUnfuckedHttpHandler> {
     /// <inheritdoc cref="DelegatingHandler.InnerHandler" />
     HttpMessageHandler? InnerHandler { get; }
 
+    /// <summary>
+    /// HTTP client configuration, including properties, request and response filters, and message body readers
+    /// </summary>
     IClientConfig ClientConfig { get; }
 
     /// <summary>
@@ -31,25 +34,31 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 
     private static FieldInfo? _handlerField;
 
-    public IClientConfig ClientConfig { get; private set; } = new ClientConfig();
+    /// <inheritdoc />
+    public IClientConfig ClientConfig { get; private set; }
 
+    /// <inheritdoc />
     [Pure]
     public IReadOnlyList<ClientRequestFilter> RequestFilters => ClientConfig.RequestFilters;
 
+    /// <inheritdoc />
     [Pure]
     public IReadOnlyList<ClientResponseFilter> ResponseFilters => ClientConfig.ResponseFilters;
 
+    /// <inheritdoc />
     [Pure]
     public IEnumerable<MessageBodyReader> MessageBodyReaders => ClientConfig.MessageBodyReaders;
 
     // HttpClientHandler automatically uses SocketsHttpHandler on .NET Core ≥ 2.1, or HttpClientHandler otherwise
-    public UnfuckedHttpHandler(HttpMessageHandler? innerHandler = null): base(innerHandler ??
+    public UnfuckedHttpHandler(HttpMessageHandler? innerHandler = null, IClientConfig? configuration = null): base(innerHandler ??
 #if NETCOREAPP2_1_OR_GREATER
         new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromHours(1), ConnectTimeout = TimeSpan.FromSeconds(10) }
 #else
         new HttpClientHandler()
 #endif
-    ) { }
+    ) {
+        ClientConfig = configuration ?? new ClientConfig();
+    }
 
     [Pure]
     public static HttpClient CreateClient(HttpMessageHandler? innerHandler = null) => new UnfuckedHttpClient(innerHandler);

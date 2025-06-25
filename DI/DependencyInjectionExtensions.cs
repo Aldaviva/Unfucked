@@ -222,4 +222,18 @@ public static class DependencyInjectionExtensions {
 
     #endregion
 
+    /// <inheritdoc cref="AmplifyingLoggerProvider" />
+    public static ILoggingBuilder AmplifyMessageLevels(this ILoggingBuilder loggingBuilder, Action<AmplifiedLogOptions> options) {
+        IDictionary<string, IDictionary<int, LogLevel>> categoryAndEventIdToAmplifiedLevels = new Dictionary<string, IDictionary<int, LogLevel>>();
+        options(new AmplifiedLogOptions(categoryAndEventIdToAmplifiedLevels));
+
+        loggingBuilder.Services.AddSingleton<ILoggerProvider>(provider => new AmplifyingLoggerProvider(provider, categoryAndEventIdToAmplifiedLevels));
+
+        foreach (string categoryToAmplify in categoryAndEventIdToAmplifiedLevels.Keys) {
+            loggingBuilder.AddFilter<AmplifyingLoggerProvider>(categoryToAmplify, LogLevel.Trace);
+        }
+
+        return loggingBuilder;
+    }
+
 }

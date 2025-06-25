@@ -179,13 +179,19 @@
     HostApplicationBuilder builder = new();
     builder.Services.SetExitCodeOnBackgroundServiceException(1);
     ```
-- Easily register a class in the DI context as both itself and as all of its interfaces automatically, so you can inject it as any of the interfaces without any casting in constructors or unmaintainable multiple registration clutter
+- Easily register a class in the DI context as both itself and as all of its interfaces automatically, so you can inject it as any of the interfaces without any casting in constructors or unmaintainable multiple registration clutter.
     ```cs
     HostApplicationBuilder builder = new();
     builder.Services.Add<MyService>(registerAllInterfaces: true);
 
     class MyService: MyInterface;
     class MyDependent(MyInterface dependency);
+    ```
+- Increase the log message level of specified categories/classes and event IDs, in case the author of the original class foolishly logged important messages with at most the same level as lots of unimportant messages, so you can't just decrease your logger level filter for that entire class.
+    ```cs
+    WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+    builder.Logging.AmplifyMessageLevels(options =>
+        options.Amplify("Microsoft.AspNetCore.SignalR.Internal.DefaultHubDispatcher", LogLevel.Warning, 2, 3, 5, 11, 13, 14, 15, 19, 21, 22, 23, 24));
     ```
 
 ### HTTP

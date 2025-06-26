@@ -258,18 +258,11 @@ public static partial class Enumerables {
     /// <returns>the first item in <paramref name="source"/>, or <c>null</c> if it is empty</returns>
     [Pure]
     public static TSource? FirstOrNull<TSource>(this IEnumerable<TSource> source) where TSource: struct {
-        if (source is IList<TSource> list) {
-            if (list.Count > 0) {
-                return list[0];
-            }
-        } else {
-            using IEnumerator<TSource> enumerator = source.GetEnumerator();
-            if (enumerator.MoveNext()) {
-                return enumerator.Current;
-            }
+        try {
+            return source.First();
+        } catch (InvalidOperationException) {
+            return null;
         }
-
-        return null;
     }
 
     /// <summary>
@@ -281,14 +274,102 @@ public static partial class Enumerables {
     /// <returns>the first item in <paramref name="source"/> that causes <paramref name="predicate"/> to return <c>true</c>, or <c>null</c> if it is empty or every item causes <paramref name="predicate"/> to return <c>false</c></returns>
     [Pure]
     public static TSource? FirstOrNull<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) where TSource: struct {
-        foreach (TSource element in source) {
-            if (predicate(element)) {
-                return element;
-            }
+        try {
+            return source.First(predicate);
+        } catch (InvalidOperationException) {
+            return null;
         }
-
-        return null;
     }
+
+    /// <summary>
+    /// Like <see cref="Enumerable.LastOrDefault{TSource}(System.Collections.Generic.IEnumerable{TSource})"/>, but returns <c>null</c> for value types instead of <c>default</c> when <paramref name="source"/> is empty, because nullable chaining and coalescing is easier than ambiguous defaults that can't be chained.
+    /// </summary>
+    /// <typeparam name="TSource">type of item in <paramref name="source"/></typeparam>
+    /// <param name="source">sequence of items</param>
+    /// <returns>the last item in <paramref name="source"/>, or <c>null</c> if it is empty</returns>
+    [Pure]
+    public static TSource? LastOrNull<TSource>(this IEnumerable<TSource> source) where TSource: struct {
+        try {
+            return source.Last();
+        } catch (InvalidOperationException) {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Like <see cref="Enumerable.LastOrDefault{TSource}(System.Collections.Generic.IEnumerable{TSource},System.Func{TSource,bool})"/>, but returns <c>null</c> for value types instead of <c>default</c> when <paramref name="source"/> has no items that match <paramref name="predicate"/>, because nullable chaining and coalescing is easier than ambiguous defaults that can't be chained.
+    /// </summary>
+    /// <typeparam name="TSource">type of item in <paramref name="source"/></typeparam>
+    /// <param name="source">sequence of items</param>
+    /// <param name="predicate">function that should return <c>true</c> when the passed in item from <paramref name="source"/> should be returned, or <c>false</c> to not return it</param>
+    /// <returns>the last item in <paramref name="source"/> that causes <paramref name="predicate"/> to return <c>true</c>, or <c>null</c> if it is empty or every item causes <paramref name="predicate"/> to return <c>false</c></returns>
+    [Pure]
+    public static TSource? LastOrNull<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) where TSource: struct {
+        try {
+            return source.Last(predicate);
+        } catch (InvalidOperationException) {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Like <see cref="Enumerable.SingleOrDefault{TSource}(System.Collections.Generic.IEnumerable{TSource})"/>, but returns <c>null</c> for value types instead of <c>default</c> when <paramref name="source"/> is empty or contains two or more items, because nullable chaining and coalescing is easier than ambiguous defaults that can't be chained.
+    /// </summary>
+    /// <typeparam name="TSource">type of item in <paramref name="source"/></typeparam>
+    /// <param name="source">sequence of items</param>
+    /// <returns>the only item in <paramref name="source"/>, or <c>null</c> if it is empty or contains more than one item</returns>
+    [Pure]
+    public static TSource? SingleOrNull<TSource>(this IEnumerable<TSource> source) where TSource: struct {
+        try {
+            return source.Single();
+        } catch (InvalidOperationException) {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Like <see cref="Enumerable.SingleOrDefault{TSource}(System.Collections.Generic.IEnumerable{TSource},System.Func{TSource,bool})"/>, but returns <c>null</c> for value types instead of <c>default</c> when <paramref name="source"/> has no items or multiple that match <paramref name="predicate"/>, because nullable chaining and coalescing is easier than ambiguous defaults that can't be chained.
+    /// </summary>
+    /// <typeparam name="TSource">type of item in <paramref name="source"/></typeparam>
+    /// <param name="source">sequence of items</param>
+    /// <param name="predicate">function that should return <c>true</c> when the passed in item from <paramref name="source"/> should be returned, or <c>false</c> to not return it</param>
+    /// <returns>the only item in <paramref name="source"/> that causes <paramref name="predicate"/> to return <c>true</c>; or <c>null</c> if either <paramref name="source"/> is empty, every item causes <paramref name="predicate"/> to return <c>false</c>, or more than one item causes <paramref name="predicate"/> to return <c>true</c></returns>
+    [Pure]
+    public static TSource? SingleOrNull<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) where TSource: struct {
+        try {
+            return source.Single(predicate);
+        } catch (InvalidOperationException) {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Like <see cref="Enumerable.ElementAtOrDefault{TSource}(System.Collections.Generic.IEnumerable{TSource},int)"/>, but returns <c>null</c> for value types instead of <c>default</c> when <paramref name="source"/> is too short to have the requested <paramref name="index"/>, because nullable chaining and coalescing is easier than ambiguous defaults that can't be chained.
+    /// </summary>
+    /// <typeparam name="TSource">Type of item in <paramref name="source"/></typeparam>
+    /// <param name="source">Sequence of items</param>
+    /// <param name="index">The 0-indexed position of the item in <paramref name="source"/> to return</param>
+    /// <returns>The item at position <paramref name="index"/> in <paramref name="source"/>, or <c>null</c> if <paramref name="index"/> is an invalid index in <paramref name="source"/>, either because the length of <paramref name="source"/> is less than or equal to <paramref name="index"/>, or because <paramref name="index"/> is negative</returns>
+    [Pure]
+    public static TSource? ElementAtOrNull<TSource>(this IEnumerable<TSource> source, int index) where TSource: struct {
+        try {
+            return source.ElementAt(index);
+        } catch (ArgumentOutOfRangeException) {
+            return null;
+        }
+    }
+
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER
+    /// <inheritdoc cref="ElementAtOrNull{TSource}(System.Collections.Generic.IEnumerable{TSource},int)" />
+    [Pure]
+    public static TSource? ElementAtOrNull<TSource>(this IEnumerable<TSource> source, Index index) where TSource: struct {
+        try {
+            return source.ElementAt(index);
+        } catch (ArgumentOutOfRangeException) {
+            return null;
+        }
+    }
+#endif
 
     /// <summary>
     /// Split an enumerable into the first element and the rest of the elements.

@@ -54,7 +54,11 @@
     - Fluent set difference method
     - Filter out consecutive duplicate values
     - Convert `IAsyncEnumerator` to list
-    - First item or `null` instead of `default` for value types
+    - Get the first item, last, singleton, or indexed item, or return `null` instead of `default` for value types
+        ```cs
+        IEnumerable<TimeSpan> ts = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2)];
+        TimeSpan t = ts.ElementAtOrNull(100) ?? TimeSpan.FromSeconds(3);
+        ```
     - Head and tail
     - Delta changeset between two enumerables (created, updated, deleted, and unchanged items)
     - Atomic swap on `ConcurrentDictionary` to upsert new value and get old value

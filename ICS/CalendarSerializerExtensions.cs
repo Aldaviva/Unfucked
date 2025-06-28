@@ -36,7 +36,7 @@ public static class CalendarSerializerExtensions {
         object encodingStack = serializer.GetService(EncodingStackType);
         EncodingStackPush.Invoke(encodingStack, [streamEncoding]);
 
-        string serializedCalendar = serializer.SerializeToString(dataToSerialize);
+        string serializedCalendar = serializer.SerializeToString(dataToSerialize) ?? string.Empty;
 
 #if NETSTANDARD2_1_OR_GREATER
         await using StreamWriter streamWriter = new(destinationStream, streamEncoding, BufferSize, true);

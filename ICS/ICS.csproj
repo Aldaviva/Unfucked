@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
-        <Version>0.0.1-beta.1</Version>
+        <Version>0.0.1-beta.2</Version>
         <RootNamespace>Unfucked</RootNamespace>
         <Description>Fix egregiously broken or missing functionality in Ical.Net.</Description>
         <PackageTags>ics ical icalendar Ical.Net vcalendar $(PackageTags)</PackageTags>

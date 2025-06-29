@@ -65,12 +65,12 @@ public static class Tasks {
     /// <param name="ct">If you want to stop waiting early.</param>
     /// <returns><c>true</c> if any of the <paramref name="innerTasks"/> completed successfully with a result that cause <paramref name="predicate"/> to return <c>true</c>, or <c>false</c> if none of them pass.</returns>
     [Pure]
-    public static async Task<bool> WhenAny<T>(IEnumerable<Task<T>> innerTasks, Predicate<Task<T>> predicate, CancellationToken? ct = default) {
+    public static async Task<bool> WhenAny<T>(IEnumerable<Task<T>> innerTasks, Predicate<T> predicate, CancellationToken ct = default) {
         TaskCompletionSource<bool> predicatePassed = new();
-        CancellationTokenSource    cts             = CancellationTokenSource.CreateLinkedTokenSource(ct ?? default);
+        CancellationTokenSource    cts             = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
         Task allInnerTasksDone = Task.WhenAll(innerTasks.Select(innerTask => innerTask.ContinueWith(c => {
-            if (!cts.IsCancellationRequested && predicate(c)) {
+            if (!cts.IsCancellationRequested && predicate(c.Result)) {
                 predicatePassed.TrySetResult(true);
                 cts.Cancel();
             }
@@ -99,12 +99,12 @@ public static class Tasks {
     /// <param name="ct">If you want to stop waiting early.</param>
     /// <returns>The result value of the first <paramref name="innerTasks"/> to finish successfully and have its return value pass <paramref name="predicate"/>, or <c>null</c> if all of the <paramref name="innerTasks"/> finished either unsuccessfully or with result values that failed <paramref name="predicate"/>.</returns>
     [Pure]
-    public static async Task<T?> FirstOrDefault<T>(IEnumerable<Task<T>> innerTasks, Predicate<Task<T>> predicate, CancellationToken? ct = default) where T: class {
+    public static async Task<T?> FirstOrDefault<T>(IEnumerable<Task<T>> innerTasks, Predicate<T> predicate, CancellationToken ct = default) where T: class {
         TaskCompletionSource<T> predicatePassed = new();
-        CancellationTokenSource cts             = CancellationTokenSource.CreateLinkedTokenSource(ct ?? default);
+        CancellationTokenSource cts             = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
         Task<T[]> allInnerTasksDone = Task.WhenAll(innerTasks.Select(innerTask => innerTask.ContinueWith(c => {
-            if (!cts.IsCancellationRequested && predicate(c)) {
+            if (!cts.IsCancellationRequested && predicate(c.Result)) {
                 predicatePassed.TrySetResult(c.Result);
                 cts.Cancel();
             }
@@ -118,12 +118,12 @@ public static class Tasks {
     }
 
     /// <inheritdoc cref="FirstOrDefault{T}" />
-    public static async Task<T?> FirstOrDefaultValueType<T>(IEnumerable<Task<T>> childTasks, Predicate<Task<T>> predicate, CancellationToken? ct = default) where T: struct {
+    public static async Task<T?> FirstOrDefaultStruct<T>(IEnumerable<Task<T>> childTasks, Predicate<T> predicate, CancellationToken ct = default) where T: struct {
         TaskCompletionSource<T> predicatePassed = new();
-        CancellationTokenSource cts             = CancellationTokenSource.CreateLinkedTokenSource(ct ?? default);
+        CancellationTokenSource cts             = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
         Task<T[]> allChildrenDone = Task.WhenAll(childTasks.Select(childTask => childTask.ContinueWith(c => {
-            if (!cts.IsCancellationRequested && predicate(c)) {
+            if (!cts.IsCancellationRequested && predicate(c.Result)) {
                 predicatePassed.TrySetResult(c.Result);
                 cts.Cancel();
             }
@@ -167,6 +167,41 @@ public static class Tasks {
             args.Cancel = true;
         };
         return cts;
+    }
+
+    /// <summary>
+    /// Get the result of a task or, if it threw an exception, <c>null</c>, rather than rethrowing the inner exception. This allows fluent null-coalescing fallback chaining instead of a bunch of multi-line, temporary variable declaraing try/catch blocks which aren't expression-valued.
+    /// </summary>
+    /// <typeparam name="T">Type of result</typeparam>
+    /// <param name="task">A task that return a result of type <typeparamref name="T"/> or throws an exception</param>
+    /// <returns><paramref name="task"/>'s awaited return value, or <c>null</c> if <paramref name="task"/> threw an exception. This method doesn't throw exceptions (except <see cref="OutOfMemoryException"/>).</returns>
+    [Pure]
+    public static async Task<T?> ResultOrNullForException<T>(this Task<T> task) where T: class? {
+        try {
+            return await task.ConfigureAwait(false);
+        } catch (Exception e) when (e is not OutOfMemoryException) {
+            return null;
+        }
+    }
+
+    /// <inheritdoc cref="ResultOrNullForException{T}" />
+    [Pure]
+    public static async Task<T?> ResultOrNullStructForException<T>(this Task<T> task) where T: struct {
+        try {
+            return await task.ConfigureAwait(false);
+        } catch (Exception e) when (e is not OutOfMemoryException) {
+            return null;
+        }
+    }
+
+    /// <inheritdoc cref="ResultOrNullForException{T}" />
+    [Pure]
+    public static async Task<T?> ResultOrNullStructForException<T>(this Task<T?> task) where T: struct {
+        try {
+            return await task.ConfigureAwait(false);
+        } catch (Exception e) when (e is not OutOfMemoryException) {
+            return null;
+        }
     }
 
 }

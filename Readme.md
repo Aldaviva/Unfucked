@@ -36,7 +36,6 @@
     - Colored text and background in strings, not tightly coupled to `Console.Write`
     - Enable colored output on Windows 10 1511 and later
     - Clear screen and move to top-left corner
-    - Cancel a `CancellationToken` when the user presses <kbd>Ctrl</kbd>+<kbd>C</kbd>
 - Cryptography
     - Random string generation
     - Is certificate temporally valid
@@ -93,11 +92,34 @@
     - Polyfill for `string.StartsWith(char)` and `string.EndsWith(char)` in .NET Standard 2.0
     - Polyfill for `string.Contains(string, StringComparison)` in .NET Standard 2.0
 - Tasks
-    - Unbounded delay time (.NET 6 tops out at 49.7 days)
+    - Unbounded delay time (.NET ≥ 6 tops out at 49.7 days, .NET < 6 tops out at 24.9 days)
+        ```cs
+        await Tasks.Delay(TimeSpan.FromDays(365));
+        ```
     - Await multiple tasks and proceed when any of them both completes and the return value passes a predicate, or they all fail to complete or the predicate
         - Return `true` if any passed or `false` if they all failed
+            ```cs
+            Task<string> a, b;
+            bool any = await Tasks.WhenAny([a, b], s => s.Length > 1);
+            ```
         - Return the first passing task's result, or `null` if they all failed
-    - Asynchronously await the cancellation of a `CancellationToken` without blocking the thread
+            ```cs
+            Task<string> a, b;
+            string? firstOrDefault = await Tasks.FirstOrDefault([a, b], s => s.Length > 1);
+            ```
+    - Asynchronously await the cancellation of a `CancellationToken` without blocking the thread, which is especially important to prevent a deadlock if a CancellationToken is used to keep your main thread from exiting
+        ```cs
+        await cancellationToken.Wait();
+        ```
+    - Cancel a `CancellationToken` when the user presses <kbd>Ctrl</kbd>+<kbd>C</kbd>
+        ```cs
+        CancellationTokenSource cts = new();
+        cts.CancelOnCtrlC();
+        ```
+    - Get the result of a task, or `null` if it threw an exception, to allow fluent null-coalescing to a fallback chain, instead of a temporary variable and multi-line `try`/`catch` block statement
+        ```cs
+        object resultWithFallback = await Task.FromException<object>(new Exception()).ResultOrNullForException() ?? new object();
+        ```
 - URIs
     - Fluent method to get URI query parameters
     - Check if a URI host belongs to a given domain (site locking)

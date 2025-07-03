@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 
 namespace Unfucked;
 
@@ -396,92 +396,6 @@ public static partial class Enumerables {
     #endregion
 
     /// <summary>
-    /// Wrapper class used as a dictionary value in <see cref="CreateConcurrentDictionary{TKey,TValue}(IEnumerable{KeyValuePair{TKey,TValue}}?,int,int?,IEqualityComparer{TKey}?)"/> to allow the value to be swapped with <see cref="Interlocked.Exchange{T}(ref T,T)"/> or <see cref="Exchange{TKey,TValue}"/>.
-    /// </summary>
-    /// <typeparam name="T">Type of the dictionary value.</typeparam>
-    /// <param name="value">Initial value for the dictionary key-value pair.</param>
-    public class ValueHolder<T>(T value): IEquatable<ValueHolder<T>> {
-
-        /// <summary>
-        /// Actual value of the dictionary key-value pair. Can be atomically updated and the old value returned using <see cref="Exchange{TKey,TValue}"/>.
-        /// </summary>
-        public T Value = value;
-
-        /// <inheritdoc />
-        public bool Equals(ValueHolder<T>? other) => other is not null && (ReferenceEquals(this, other) || EqualityComparer<T>.Default.Equals(Value, other.Value));
-
-        /// <inheritdoc />
-        public override bool Equals(object? obj) => obj is not null && (ReferenceEquals(this, obj) || (obj.GetType() == typeof(ValueHolder<T>) && Equals((ValueHolder<T>) obj)));
-
-        /// <inheritdoc />
-        public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode(Value!);
-
-        public static bool operator ==(ValueHolder<T>? left, ValueHolder<T>? right) => Equals(left, right);
-
-        public static bool operator !=(ValueHolder<T>? left, ValueHolder<T>? right) => !Equals(left, right);
-
-    }
-
-    /// <summary>
-    /// Wrapper class for <see cref="Enum"/>s used as a dictionary value in <see cref="Enumerables.CreateConcurrentEnumDictionary{TKey,TEnumValue,TIntegralValue}"/> to allow the value to be swapped with <see cref="Enumerables.Exchange{TKey,TIntegralValue,TValue}"/>.
-    /// </summary>
-    /// <typeparam name="TEnum"><see cref="Enum"/> type, such as <c>MyEnum</c>, not the underlying integral type.</typeparam>
-    /// <typeparam name="TUnderlying">Underlying integral type of <typeparamref name="TEnum"/>, such as <see cref="int"/> or <see cref="long"/>.</typeparam>
-    /// <param name="enumValue">Initial enum value for the dictionary key-value pair.</param>
-    public class EnumValueHolder<TEnum, TUnderlying>(TEnum enumValue)
-        : ValueHolder<TUnderlying>((TUnderlying) Convert.ChangeType(enumValue, enumValue.GetTypeCode())) where TUnderlying: struct where TEnum: struct, Enum {
-
-        private readonly TypeCode underlyingEnumType = enumValue.GetTypeCode();
-
-        /// <summary>
-        /// Enum value of the dictionary key-value pair, automatically converted to and from its underlying type. Can be atomically updated and the old value returned using <see cref="Enumerables.Exchange{TKey,TIntegralValue,TValue}"/>.
-        /// </summary>
-        public new TEnum Value {
-            get => (TEnum) Enum.ToObject(typeof(TEnum), ((ValueHolder<TUnderlying>) this).Value);
-            set => ((ValueHolder<TUnderlying>) this).Value = (TUnderlying) Convert.ChangeType(value, value.GetTypeCode());
-        }
-
-        /// <exception cref="ArgumentOutOfRangeException"><typeparamref name="TEnum"/>'s underlying integral type <typeparamref name="TUnderlying"/> is neither <see cref="int"/> nor <see cref="long"/> (.NET &lt; 6: nor <see cref="uint"/> nor <see cref="ulong"/>)</exception>
-        internal TEnum Exchange(TEnum newEnumValue) {
-#pragma warning disable CS8509 // The switch expression does not handle all possible values of its input type (it is not exhaustive). - Guarded by Convert.ChangeType calls in constructor and this method.
-            object newIntegralValue = Convert.ChangeType(newEnumValue, underlyingEnumType);
-            object oldIntegralValue = underlyingEnumType switch {
-                TypeCode.Int32 => Interlocked.Exchange(ref ((ValueHolder<int>) (object) this).Value, (int) newIntegralValue),
-                TypeCode.Int64 => Interlocked.Exchange(ref ((ValueHolder<long>) (object) this).Value, (long) newIntegralValue),
-#if NET6_0_OR_GREATER
-                TypeCode.UInt32 => Interlocked.Exchange(ref ((ValueHolder<uint>) (object) this).Value, (uint) newIntegralValue),
-                TypeCode.UInt64 => Interlocked.Exchange(ref ((ValueHolder<ulong>) (object) this).Value, (ulong) newIntegralValue),
-#endif
-                /*_ => throw new ArgumentOutOfRangeException(nameof(newEnumValue), newEnumValue,
-                    $"Enum values with underlying type {typeof(TEnum)} cannot be exchanged due to limitations on System.Threading.Interlocked. Only int and long are supported (as well as uint and ulong on .NET ≥ 6).")*/
-            };
-            return (TEnum) Enum.ToObject(typeof(TEnum), oldIntegralValue);
-#pragma warning restore CS8509 // The switch expression does not handle all possible values of its input type (it is not exhaustive).
-        }
-
-    }
-
-    /// <summary>
-    /// Wrapper class for <see cref="bool"/>s used as a dictionary value in <see cref="Enumerables.CreateConcurrentBooleanDictionary{TKey}"/> to allow the value to be swapped with <see cref="Enumerables.Exchange{TKey}(ConcurrentDictionary{TKey,BooleanValueHolder},TKey,bool)"/>.
-    /// </summary>
-    /// <param name="boolValue"></param>
-    public class BooleanValueHolder(bool boolValue): ValueHolder<int>(Convert.ToInt32(boolValue)) {
-
-        /// <summary>
-        /// Enum value of the dictionary key-value pair, automatically converted to and from an <see cref="int"/>. Can be atomically updated and the old value returned using <see cref="Enumerables.Exchange{TKey}(ConcurrentDictionary{TKey,BooleanValueHolder},TKey,bool)"/>.
-        /// </summary>
-        public new bool Value {
-            get => Convert.ToBoolean(((ValueHolder<int>) this).Value);
-            set => ((ValueHolder<int>) this).Value = Convert.ToInt32(value);
-        }
-
-        internal bool Exchange(bool newBoolValue) {
-            return Convert.ToBoolean(Interlocked.Exchange(ref ((ValueHolder<int>) this).Value, Convert.ToInt32(newBoolValue)));
-        }
-
-    }
-
-    /// <summary>
     /// <para>Adds a key/value pair to the <see cref="T:System.Collections.Concurrent.ConcurrentDictionary`2" /> by using the specified function if the key does not already exist. Returns the new value, or the existing value if the key exists.</para>
     /// <para>This extension method will also dispose of the value created by <paramref name="valueFactory"/> if it was unused. To avoid deadlocks, <see cref="ConcurrentDictionary{TKey,TValue}"/> does not atomically create the value and add it to the dictionary, because <paramref name="valueFactory"/> is untrusted code and could deadlock. Instead, the <see cref="ConcurrentDictionary{TKey,TValue}"/> takes a three phased approach: check if the key already exists, create the value, and add the value. This means that the key could be concurrently added after the first check, which would lead to the value being created in the second step but not added in the third step. In this case, the created value is unused and will never be disposed.</para>
     /// <para>If you want values created by <paramref name="valueFactory"/> that are never added to the dictionary to be disposed, call this method.</para>
@@ -555,6 +469,92 @@ public static partial class Enumerables {
     public static TValue GetOrAdd<TKey, TArg, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument, out bool added)
         where TKey: notnull {
         return GetOrAdd(dictionary, key, k => valueFactory(k, factoryArgument), out added);
+    }
+
+}
+
+/// <summary>
+/// Wrapper class used as a dictionary value in <see cref="Enumerables.CreateConcurrentDictionary{TKey,TValue}(IEnumerable{KeyValuePair{TKey,TValue}}?,int,int?,IEqualityComparer{TKey}?)"/> to allow the value to be swapped with <see cref="Interlocked.Exchange{T}(ref T,T)"/> or <see cref="Enumerables.Exchange{TKey,TValue}"/>.
+/// </summary>
+/// <typeparam name="T">Type of the dictionary value.</typeparam>
+/// <param name="value">Initial value for the dictionary key-value pair.</param>
+public class ValueHolder<T>(T value): IEquatable<ValueHolder<T>> {
+
+    /// <summary>
+    /// Actual value of the dictionary key-value pair. Can be atomically updated and the old value returned using <see cref="Enumerables.Exchange{TKey,TValue}"/>.
+    /// </summary>
+    public T Value = value;
+
+    /// <inheritdoc />
+    public bool Equals(ValueHolder<T>? other) => other is not null && (ReferenceEquals(this, other) || EqualityComparer<T>.Default.Equals(Value, other.Value));
+
+    /// <inheritdoc />
+    public override bool Equals(object? obj) => obj is not null && (ReferenceEquals(this, obj) || (obj.GetType() == typeof(ValueHolder<T>) && Equals((ValueHolder<T>) obj)));
+
+    /// <inheritdoc />
+    public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode(Value!);
+
+    public static bool operator ==(ValueHolder<T>? left, ValueHolder<T>? right) => Equals(left, right);
+
+    public static bool operator !=(ValueHolder<T>? left, ValueHolder<T>? right) => !Equals(left, right);
+
+}
+
+/// <summary>
+/// Wrapper class for <see cref="Enum"/>s used as a dictionary value in <see cref="Enumerables.CreateConcurrentEnumDictionary{TKey,TEnumValue,TIntegralValue}"/> to allow the value to be swapped with <see cref="Enumerables.Exchange{TKey,TIntegralValue,TValue}"/>.
+/// </summary>
+/// <typeparam name="TEnum"><see cref="Enum"/> type, such as <c>MyEnum</c>, not the underlying integral type.</typeparam>
+/// <typeparam name="TUnderlying">Underlying integral type of <typeparamref name="TEnum"/>, such as <see cref="int"/> or <see cref="long"/>.</typeparam>
+/// <param name="enumValue">Initial enum value for the dictionary key-value pair.</param>
+public class EnumValueHolder<TEnum, TUnderlying>(TEnum enumValue)
+    : ValueHolder<TUnderlying>((TUnderlying) Convert.ChangeType(enumValue, enumValue.GetTypeCode())) where TUnderlying: struct where TEnum: struct, Enum {
+
+    private readonly TypeCode underlyingEnumType = enumValue.GetTypeCode();
+
+    /// <summary>
+    /// Enum value of the dictionary key-value pair, automatically converted to and from its underlying type. Can be atomically updated and the old value returned using <see cref="Enumerables.Exchange{TKey,TIntegralValue,TValue}"/>.
+    /// </summary>
+    public new TEnum Value {
+        get => (TEnum) Enum.ToObject(typeof(TEnum), ((ValueHolder<TUnderlying>) this).Value);
+        set => ((ValueHolder<TUnderlying>) this).Value = (TUnderlying) Convert.ChangeType(value, value.GetTypeCode());
+    }
+
+    /// <exception cref="ArgumentOutOfRangeException"><typeparamref name="TEnum"/>'s underlying integral type <typeparamref name="TUnderlying"/> is neither <see cref="int"/> nor <see cref="long"/> (.NET &lt; 6: nor <see cref="uint"/> nor <see cref="ulong"/>)</exception>
+    internal TEnum Exchange(TEnum newEnumValue) {
+#pragma warning disable CS8509 // The switch expression does not handle all possible values of its input type (it is not exhaustive). - Guarded by Convert.ChangeType calls in constructor and this method.
+        object newIntegralValue = Convert.ChangeType(newEnumValue, underlyingEnumType);
+        object oldIntegralValue = underlyingEnumType switch {
+            TypeCode.Int32 => Interlocked.Exchange(ref ((ValueHolder<int>) (object) this).Value, (int) newIntegralValue),
+            TypeCode.Int64 => Interlocked.Exchange(ref ((ValueHolder<long>) (object) this).Value, (long) newIntegralValue),
+#if NET6_0_OR_GREATER
+            TypeCode.UInt32 => Interlocked.Exchange(ref ((ValueHolder<uint>) (object) this).Value, (uint) newIntegralValue),
+            TypeCode.UInt64 => Interlocked.Exchange(ref ((ValueHolder<ulong>) (object) this).Value, (ulong) newIntegralValue),
+#endif
+            /*_ => throw new ArgumentOutOfRangeException(nameof(newEnumValue), newEnumValue,
+                $"Enum values with underlying type {typeof(TEnum)} cannot be exchanged due to limitations on System.Threading.Interlocked. Only int and long are supported (as well as uint and ulong on .NET ≥ 6).")*/
+        };
+        return (TEnum) Enum.ToObject(typeof(TEnum), oldIntegralValue);
+#pragma warning restore CS8509 // The switch expression does not handle all possible values of its input type (it is not exhaustive).
+    }
+
+}
+
+/// <summary>
+/// Wrapper class for <see cref="bool"/>s used as a dictionary value in <see cref="Enumerables.CreateConcurrentBooleanDictionary{TKey}"/> to allow the value to be swapped with <see cref="Enumerables.Exchange{TKey}(ConcurrentDictionary{TKey,BooleanValueHolder},TKey,bool)"/>.
+/// </summary>
+/// <param name="boolValue"></param>
+public class BooleanValueHolder(bool boolValue): ValueHolder<int>(Convert.ToInt32(boolValue)) {
+
+    /// <summary>
+    /// Enum value of the dictionary key-value pair, automatically converted to and from an <see cref="int"/>. Can be atomically updated and the old value returned using <see cref="Enumerables.Exchange{TKey}(ConcurrentDictionary{TKey,BooleanValueHolder},TKey,bool)"/>.
+    /// </summary>
+    public new bool Value {
+        get => Convert.ToBoolean(((ValueHolder<int>) this).Value);
+        set => ((ValueHolder<int>) this).Value = Convert.ToInt32(value);
+    }
+
+    internal bool Exchange(bool newBoolValue) {
+        return Convert.ToBoolean(Interlocked.Exchange(ref ((ValueHolder<int>) this).Value, Convert.ToInt32(newBoolValue)));
     }
 
 }

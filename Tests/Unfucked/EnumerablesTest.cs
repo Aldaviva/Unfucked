@@ -23,7 +23,7 @@ public class EnumerablesTest {
     [Fact]
     public void AddAll() {
         ICollection<int> dest = new List<int> { 1 };
-        dest.AddAll([2, 3, 4]);
+        dest.AddAll(2, 3, 4);
         dest.Should().Equal(1, 2, 3, 4);
     }
 
@@ -129,7 +129,7 @@ public class EnumerablesTest {
 
     [Fact]
     public void InterlockedConcurrentDictionary() {
-        ConcurrentDictionary<int, Enumerables.ValueHolder<string>> stringDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, string> { { 1, "a" } });
+        ConcurrentDictionary<int, ValueHolder<string>> stringDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, string> { { 1, "a" } });
 
         string? oldStringValue = stringDict.Exchange(1, "aa");
         oldStringValue.Should().Be("a");
@@ -137,7 +137,7 @@ public class EnumerablesTest {
         stringDict.Exchange(2, "bb").Should().BeNull("the key was not previously in the dictionary");
         stringDict[2].Value.Should().Be("bb");
 
-        ConcurrentDictionary<int, Enumerables.ValueHolder<string?>> nullableReferenceDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, string?> { { 1, "a" } });
+        ConcurrentDictionary<int, ValueHolder<string?>> nullableReferenceDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, string?> { { 1, "a" } });
 
         oldStringValue = nullableReferenceDict.ExchangeNullable(1, "aa");
         oldStringValue.Should().Be("a");
@@ -150,7 +150,7 @@ public class EnumerablesTest {
         nullableReferenceDict.ExchangeNullable(3, null).Should().BeNull("the key was not previously in the dictionary");
         nullableReferenceDict[3].Value.Should().BeNull();
 
-        ConcurrentDictionary<int, Enumerables.ValueHolder<int>> intDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, int> { { 1, 100 } });
+        ConcurrentDictionary<int, ValueHolder<int>> intDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, int> { { 1, 100 } });
 
         int? oldIntValue = intDict.Exchange(1, 101);
         oldIntValue.Should().Be(100);
@@ -158,8 +158,8 @@ public class EnumerablesTest {
         intDict.Exchange(2, 201).Should().BeNull("the key was not previously in the dictionary");
         intDict[2].Value.Should().Be(201);
 
-        ConcurrentDictionary<int, Enumerables.ValueHolder<long>> longDict = Enumerables.CreateConcurrentDictionary<int, long>(capacity: 1, concurrency: 2);
-        longDict[1] = new Enumerables.ValueHolder<long>(100L);
+        ConcurrentDictionary<int, ValueHolder<long>> longDict = Enumerables.CreateConcurrentDictionary<int, long>(capacity: 1, concurrency: 2);
+        longDict[1] = new ValueHolder<long>(100L);
 
         long? oldLongValue = longDict.Exchange(1, 101L);
         oldLongValue.Should().Be(100L);
@@ -167,8 +167,8 @@ public class EnumerablesTest {
         longDict.Exchange(2, 201L).Should().BeNull("the key was not previously in the dictionary");
         longDict[2].Value.Should().Be(201L);
 
-        ConcurrentDictionary<int, Enumerables.ValueHolder<double>> doubleDict = Enumerables.CreateConcurrentDictionary<int, double>();
-        doubleDict[1] = new Enumerables.ValueHolder<double>(100);
+        ConcurrentDictionary<int, ValueHolder<double>> doubleDict = Enumerables.CreateConcurrentDictionary<int, double>();
+        doubleDict[1] = new ValueHolder<double>(100);
 
         double? oldDoubleValue = doubleDict.Exchange(1, 101.0);
         oldDoubleValue.Should().Be(100.0);
@@ -176,7 +176,7 @@ public class EnumerablesTest {
         doubleDict.Exchange(2, 201.0).Should().BeNull("the key was not previously in the dictionary");
         doubleDict[2].Value.Should().Be(201.0);
 
-        ConcurrentDictionary<int, Enumerables.ValueHolder<float>> floatDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, float> { { 1, 100.0f } });
+        ConcurrentDictionary<int, ValueHolder<float>> floatDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, float> { { 1, 100.0f } });
 
         double? oldFloatValue = floatDict.Exchange(1, 101.0f);
         oldFloatValue.Should().Be(100.0f);
@@ -184,7 +184,7 @@ public class EnumerablesTest {
         floatDict.Exchange(2, 201.0f).Should().BeNull("the key was not previously in the dictionary");
         floatDict[2].Value.Should().Be(201.0f);
 
-        ConcurrentDictionary<int, Enumerables.ValueHolder<IntPtr>> intPtrDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, IntPtr> { { 1, new IntPtr(100) } });
+        ConcurrentDictionary<int, ValueHolder<IntPtr>> intPtrDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, IntPtr> { { 1, new IntPtr(100) } });
 
         IntPtr? oldIntPtrValue = intPtrDict.Exchange(1, new IntPtr(101));
         oldIntPtrValue!.Value.Should().Be(new IntPtr(100));
@@ -192,7 +192,7 @@ public class EnumerablesTest {
         intPtrDict.Exchange(2, new IntPtr(201)).Should().BeNull("the key was not previously in the dictionary");
         intPtrDict[2].Value.Should().Be(new IntPtr(201));
 
-        ConcurrentDictionary<int, Enumerables.ValueHolder<UIntPtr>> uintPtrDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, UIntPtr> { { 1, new UIntPtr(100) } });
+        ConcurrentDictionary<int, ValueHolder<UIntPtr>> uintPtrDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, UIntPtr> { { 1, new UIntPtr(100) } });
 
         UIntPtr? oldUIntPtrValue = uintPtrDict.Exchange(1, new UIntPtr(101));
         oldUIntPtrValue!.Value.Should().Be(new UIntPtr(100));
@@ -200,7 +200,7 @@ public class EnumerablesTest {
         uintPtrDict.Exchange(2, new UIntPtr(201)).Should().BeNull("the key was not previously in the dictionary");
         uintPtrDict[2].Value.Should().Be(new UIntPtr(201));
 
-        ConcurrentDictionary<int, Enumerables.BooleanValueHolder> boolDict = Enumerables.CreateConcurrentBooleanDictionary(new Dictionary<int, bool> { { 1, false } });
+        ConcurrentDictionary<int, BooleanValueHolder> boolDict = Enumerables.CreateConcurrentBooleanDictionary(new Dictionary<int, bool> { { 1, false } });
 
         bool? oldBoolValue = boolDict.Exchange(1, true);
         oldBoolValue.Should().BeFalse();
@@ -210,7 +210,7 @@ public class EnumerablesTest {
         boolDict[2].Value = false;
         boolDict[2].Value.Should().BeFalse();
 
-        ConcurrentDictionary<int, Enumerables.EnumValueHolder<IntEnum, int>> intEnumDict =
+        ConcurrentDictionary<int, EnumValueHolder<IntEnum, int>> intEnumDict =
             Enumerables.CreateConcurrentEnumDictionary<int, IntEnum, int>(new Dictionary<int, IntEnum> { { 1, IntEnum.A } });
 
         IntEnum? oldIntEnumValue = intEnumDict.Exchange(1, IntEnum.B);
@@ -221,7 +221,7 @@ public class EnumerablesTest {
         intEnumDict[2].Value = IntEnum.A;
         intEnumDict[2].Value.Should().Be(IntEnum.A);
 
-        ConcurrentDictionary<int, Enumerables.EnumValueHolder<UIntEnum, uint>> uintEnumDict =
+        ConcurrentDictionary<int, EnumValueHolder<UIntEnum, uint>> uintEnumDict =
             Enumerables.CreateConcurrentEnumDictionary<int, UIntEnum, uint>(new Dictionary<int, UIntEnum> { { 1, UIntEnum.A } });
 
         UIntEnum? oldUIntEnumValue = uintEnumDict.Exchange(1, UIntEnum.B);
@@ -230,7 +230,7 @@ public class EnumerablesTest {
         uintEnumDict.Exchange(2, UIntEnum.C).Should().BeNull("the key was not previously in the dictionary");
         uintEnumDict[2].Value.Should().Be(UIntEnum.C);
 
-        ConcurrentDictionary<int, Enumerables.EnumValueHolder<LongEnum, long>> longEnumDict =
+        ConcurrentDictionary<int, EnumValueHolder<LongEnum, long>> longEnumDict =
             Enumerables.CreateConcurrentEnumDictionary<int, LongEnum, long>(new Dictionary<int, LongEnum> { { 1, LongEnum.A } });
 
         LongEnum? oldLongEnumValue = longEnumDict.Exchange(1, LongEnum.B);
@@ -239,7 +239,7 @@ public class EnumerablesTest {
         longEnumDict.Exchange(2, LongEnum.C).Should().BeNull("the key was not previously in the dictionary");
         longEnumDict[2].Value.Should().Be(LongEnum.C);
 
-        ConcurrentDictionary<int, Enumerables.EnumValueHolder<ULongEnum, ulong>> ulongEnumDict =
+        ConcurrentDictionary<int, EnumValueHolder<ULongEnum, ulong>> ulongEnumDict =
             Enumerables.CreateConcurrentEnumDictionary<int, ULongEnum, ulong>(new Dictionary<int, ULongEnum> { { 1, ULongEnum.A } });
 
         ULongEnum? oldULongEnumValue = ulongEnumDict.Exchange(1, ULongEnum.B);
@@ -248,7 +248,7 @@ public class EnumerablesTest {
         ulongEnumDict.Exchange(2, ULongEnum.C).Should().BeNull("the key was not previously in the dictionary");
         ulongEnumDict[2].Value.Should().Be(ULongEnum.C);
 
-        ConcurrentDictionary<int, Enumerables.ValueHolder<uint>> uintDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, uint> { { 1, 100u } });
+        ConcurrentDictionary<int, ValueHolder<uint>> uintDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, uint> { { 1, 100u } });
 
         uint? oldUintValue = uintDict.Exchange(1, 101u);
         oldUintValue.Should().Be(100u);
@@ -256,7 +256,7 @@ public class EnumerablesTest {
         uintDict.Exchange(2, 201u).Should().BeNull("the key was not previously in the dictionary");
         uintDict[2].Value.Should().Be(201u);
 
-        ConcurrentDictionary<int, Enumerables.ValueHolder<ulong>> ulongDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, ulong> { { 1, 100uL } });
+        ConcurrentDictionary<int, ValueHolder<ulong>> ulongDict = Enumerables.CreateConcurrentDictionary(new Dictionary<int, ulong> { { 1, 100uL } });
 
         ulong? oldUlongValue = ulongDict.Exchange(1, 101uL);
         oldUlongValue.Should().Be(100uL);
@@ -270,7 +270,7 @@ public class EnumerablesTest {
         Action thrower = () => _ = Enumerables.CreateConcurrentEnumDictionary<int, ULongEnum, long>(new Dictionary<int, ULongEnum> { { 1, ULongEnum.A } });
         thrower.Should().Throw<InvalidCastException>();
 
-        thrower = () => _ = new Enumerables.EnumValueHolder<ULongEnum, long>(ULongEnum.A);
+        thrower = () => _ = new EnumValueHolder<ULongEnum, long>(ULongEnum.A);
         thrower.Should().Throw<InvalidCastException>();
     }
 

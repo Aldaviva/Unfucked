@@ -1,4 +1,4 @@
-﻿using ManagedWinapi.Windows;
+using ManagedWinapi.Windows;
 using System.Collections.Concurrent;
 using System.Windows.Automation;
 using Timer = System.Threading.Timer;
@@ -44,7 +44,7 @@ public class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
     private readonly ShellHook shellHook;
     private readonly Timer     cleanUpTimer;
 
-    private readonly ConcurrentDictionary<int, Enumerables.ValueHolder<long>> alreadyOpenedWindows = Enumerables.CreateConcurrentDictionary<int, long>();
+    private readonly ConcurrentDictionary<int, ValueHolder<long>> alreadyOpenedWindows = Enumerables.CreateConcurrentDictionary<int, long>();
 
     /// <summary>
     /// Create a new event emitter that listens for windows being opened using both UI Automation and a Win32 window message processor pump.
@@ -98,9 +98,9 @@ public class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
     private void CleanUpWindowOpeningTimes(object? state) {
         DateTime now = DateTime.UtcNow;
 
-        IEnumerable<KeyValuePair<int, Enumerables.ValueHolder<long>>> oldWindowsToCleanUp = alreadyOpenedWindows.Where(pair => DateTime.FromBinary(pair.Value.Value) < now - CleanUpInterval);
+        IEnumerable<KeyValuePair<int, ValueHolder<long>>> oldWindowsToCleanUp = alreadyOpenedWindows.Where(pair => DateTime.FromBinary(pair.Value.Value) < now - CleanUpInterval);
 
-        foreach (KeyValuePair<int, Enumerables.ValueHolder<long>> windowToCleanUp in oldWindowsToCleanUp) {
+        foreach (KeyValuePair<int, ValueHolder<long>> windowToCleanUp in oldWindowsToCleanUp) {
             alreadyOpenedWindows.TryRemove(windowToCleanUp.Key, out _);
         }
     }

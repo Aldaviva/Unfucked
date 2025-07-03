@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 namespace Tests.Unfucked;
 
@@ -42,8 +42,8 @@ public class TasksTest: IDisposable {
             Task.FromResult(2)
         ];
 
-        (await Tasks.WhenAny(tasks, task => task.Result == 2, ct)).Should().BeTrue();
-        (await Tasks.WhenAny(tasks, task => task.Result == 3, ct)).Should().BeFalse();
+        (await Tasks.WhenAny(tasks, result => result == 2, ct)).Should().BeTrue();
+        (await Tasks.WhenAny(tasks, result => result == 3, ct)).Should().BeFalse();
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public class TasksTest: IDisposable {
             }, ct)
         ];
 
-        (await Tasks.WhenAny(tasks, task => task.Result == 1, ct)).Should().BeTrue();
+        (await Tasks.WhenAny(tasks, result => result == 1, ct)).Should().BeTrue();
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class TasksTest: IDisposable {
                 await Task.Delay(TimeSpan.FromHours(24), ct);
                 return "b";
             }, ct)
-        ], task => task.Result == "a", ct);
+        ], result => result == "a", ct);
 
         actual.Should().Be("a");
         stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromMinutes(1));
@@ -80,7 +80,7 @@ public class TasksTest: IDisposable {
     [Fact]
     public async Task FirstOrDefaultNull() {
         Stopwatch stopwatch = Stopwatch.StartNew();
-        int? actual = await Tasks.FirstOrDefaultValueType([
+        int? actual = await Tasks.FirstOrDefaultStruct([
             Task.FromCanceled<int>(new CancellationToken(true)),
             Task.FromException<int>(new ApplicationException()),
             Task.FromResult(1),
@@ -88,7 +88,7 @@ public class TasksTest: IDisposable {
                 await Task.Delay(TimeSpan.FromMilliseconds(50), ct);
                 return 2;
             }, ct)
-        ], task => task.Result == 3, ct);
+        ], result => result == 3, ct);
 
         actual.Should().BeNull("no tasks passed the predicate");
         stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromMinutes(1));

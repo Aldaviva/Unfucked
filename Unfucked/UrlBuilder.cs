@@ -288,19 +288,19 @@ public class UrlBuilder: ICloneable {
     };
 
     [Pure]
-    public UrlBuilder QueryParam(string key, IEnumerable<object> values) =>
-        new(this) { _queryParameters = _queryParameters.AddRange(values.Select(v => new KeyValuePair<string, object>(key, v.ToString() ?? string.Empty))) };
+    public UrlBuilder QueryParam(string key, IEnumerable<object?> values) =>
+        new(this) { _queryParameters = _queryParameters.AddRange(values.Compact().Select(v => new KeyValuePair<string, object>(key, v.ToString() ?? string.Empty))) };
 
     [Pure]
-    public UrlBuilder QueryParam(IEnumerable<KeyValuePair<string, string>>? parameters) => new(this) {
+    public UrlBuilder QueryParam(IEnumerable<KeyValuePair<string, string?>>? parameters) => new(this) {
         _queryParameters = parameters != null
-            ? _queryParameters.AddRange(parameters.Select(p => new KeyValuePair<string, object>(p.Key, p.Value.ToString())))
+            ? _queryParameters.AddRange(parameters.Compact().Select(p => new KeyValuePair<string, object>(p.Key, p.Value.ToString())))
             : ImmutableList<KeyValuePair<string, object>>.Empty
     };
 
     [Pure]
-    public UrlBuilder QueryParam(IEnumerable<KeyValuePair<string, object>>? parameters) =>
-        QueryParam(parameters?.Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.ToString() ?? string.Empty)));
+    public UrlBuilder QueryParam(IEnumerable<KeyValuePair<string, object?>>? parameters) =>
+        QueryParam(parameters?.Compact().Select(pair => new KeyValuePair<string, string?>(pair.Key, pair.Value.ToString() ?? string.Empty)));
 
     [Pure]
     public UrlBuilder Fragment(string? fragment) => new(this) { _fragment = fragment };

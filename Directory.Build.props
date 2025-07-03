@@ -27,7 +27,7 @@
 
     <!-- Self version numbers -->
     <PropertyGroup>
-        <UnfuckedVersion>0.0.1-beta.7</UnfuckedVersion>
+        <UnfuckedVersion>0.0.1-beta.9</UnfuckedVersion>
         <UnfuckedCachingVersion>0.0.1-beta.1</UnfuckedCachingVersion>
     </PropertyGroup>
 
@@ -39,6 +39,7 @@
         <None Include="..\Unfucked\icon.png;..\Readme.md" Pack="true" PackagePath="\" Visible="false" />
         <None Include=".\*.sln.DotSettings;.\*.csproj.DotSettings" Visible="false" />
         <AdditionalFiles Include="..\ExceptionAdjustments.txt" Visible="false" />
+        <Compile Include="$(MSBuildThisFileDirectory)\Unfucked\IsExternalInit.cs" Visible="true" Condition="'$(ProjectName)' != 'Unfucked'" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' or '$(Configuration)' == 'Release'">

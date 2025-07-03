@@ -8,7 +8,7 @@ dotnet pack --configuration Release --output $binPath --no-restore
 
 Remove-Item -Path "~\.nuget\packages\unfucked*" -Recurse
 echo "Packed libraries into $binPath"
-echo "Remember to run `dotnet restore --force-evaluate` in dependent projects"
+echo "Remember to run ``dotnet restore --force-evaluate`` in dependent projects"
 
 # To push all packages, run (in ~/.nuget/local):
 # Get-ChildItem "*.nupkg" | % { dotnet nuget push $_.FullName }

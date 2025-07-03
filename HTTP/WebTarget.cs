@@ -36,13 +36,13 @@ public interface WebTarget: Configurable<WebTarget> {
     WebTarget QueryParam(string key, object? value);
 
     [Pure]
-    WebTarget QueryParam(string key, IEnumerable<object> values);
+    WebTarget QueryParam(string key, IEnumerable<object?> values);
 
     [Pure]
-    WebTarget QueryParam(IEnumerable<KeyValuePair<string, string>>? parameters);
+    WebTarget QueryParam(IEnumerable<KeyValuePair<string, string?>>? parameters);
 
     [Pure]
-    WebTarget QueryParam(IEnumerable<KeyValuePair<string, object>>? parameters);
+    WebTarget QueryParam(IEnumerable<KeyValuePair<string, object?>>? parameters);
 
     [Pure]
     WebTarget Fragment(string? fragment);

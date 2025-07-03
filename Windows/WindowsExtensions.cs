@@ -1,4 +1,4 @@
-﻿using ManagedWinapi.Windows;
+using ManagedWinapi.Windows;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
@@ -53,7 +53,7 @@ public static class WindowsExtensions {
     /// <param name="windowsRect">A <see cref="RECT"/> from Win32.</param>
     /// <returns>A <see cref="RECT"/> with the same coordinates as <paramref name="windowsRect"/>.</returns>
     [Pure]
-    public static RECT toMwinapiRect(this Rect windowsRect) {
+    public static RECT ToMwinapiRect(this Rect windowsRect) {
         return new RECT((int) windowsRect.X, (int) windowsRect.Y, (int) windowsRect.Right, (int) windowsRect.Bottom);
     }
 

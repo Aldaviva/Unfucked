@@ -1,7 +1,7 @@
 using ManagedWinapi.Windows;
 using System.Diagnostics.Contracts;
 using System.Windows.Automation;
-using ThrottleDebounce;
+using ThrottleDebounce.Retry;
 
 namespace Unfucked;
 
@@ -74,12 +74,12 @@ public static class UIAutomationExtensions {
 
     private static readonly Exception ElementNotFound = new ApplicationException("element not found");
 
-    private static readonly Retrier.Options WaitForFirstOptions = new() {
-        Delay          = Retrier.Delays.Power(TimeSpan.FromMilliseconds(8), max: TimeSpan.FromMilliseconds(500)),
-        IsRetryAllowed = exception => exception is not ArgumentException
+    private static readonly RetryOptions WaitForFirstOptions = new() {
+        Delay          = Delays.Power(TimeSpan.FromMilliseconds(8), max: TimeSpan.FromMilliseconds(500)),
+        IsRetryAllowed = (exception, _) => exception is not ArgumentException
     };
 
-    private static Retrier.Options GetWaitForFirstOptions(TimeSpan maxWait, CancellationToken cancellationToken) => WaitForFirstOptions with {
+    private static RetryOptions GetWaitForFirstOptions(TimeSpan maxWait, CancellationToken cancellationToken) => WaitForFirstOptions with {
         MaxOverallDuration = maxWait > TimeSpan.Zero ? maxWait : null,
         CancellationToken = cancellationToken
     };
@@ -95,7 +95,7 @@ public static class UIAutomationExtensions {
     /// <returns>The first child or descendant element of <paramref name="parent"/> that matches <paramref name="condition"/>, or <c>null</c> if either <paramref name="maxWait"/> elapsed or <paramref name="cancellationToken"/> was canceled before a match could be found.</returns>
     /// <exception cref="ArgumentException"><paramref name="scope"/> is neither <see cref="TreeScope.Children"/> nor <see cref="TreeScope.Descendants"/>.</exception>
     /// <exception cref="TaskCanceledException"><paramref name="cancellationToken"/> was canceled</exception>
-    // ExceptionAdjustment: M:ThrottleDebounce.Retrier.Attempt``1(System.Func{System.Int32,``0},ThrottleDebounce.Retrier.Options) -T:System.Exception
+    // ExceptionAdjustment: M:ThrottleDebounce.Retry.Retrier.Attempt``1(System.Func{System.Int64,``0},ThrottleDebounce.Retry.RetryOptions) -T:System.Exception
     [Pure]
     public static AutomationElement? WaitForFirst(this AutomationElement parent, TreeScope scope, Condition condition, TimeSpan maxWait = default, CancellationToken cancellationToken = default) {
         try {
@@ -108,7 +108,7 @@ public static class UIAutomationExtensions {
 #pragma warning disable CS1573 // param validation is unaware of inheritdoc
     /// <inheritdoc cref="WaitForFirst" />
     /// <param name="resultTransformer">After finding the first matching child element, apply this function to it to produce the method's final return value, instead of just returning the matched element directly. If this function throws an exception, this method will retry, so it is safe to try to access an element that may not exist yet, because it will just wait until it's available.</param>
-    // ExceptionAdjustment: M:ThrottleDebounce.Retrier.Attempt``1(System.Func{System.Int32,``0},ThrottleDebounce.Retrier.Options) -T:System.Exception
+    // ExceptionAdjustment: M:ThrottleDebounce.Retry.Retrier.Attempt``1(System.Func{System.Int64,``0},ThrottleDebounce.Retry.RetryOptions) -T:System.Exception
     [Pure]
     public static TResult? WaitForFirst<TResult>(this AutomationElement parent, TreeScope scope, Condition condition, Func<AutomationElement, TResult> resultTransformer, TimeSpan maxWait = default,
                                                  CancellationToken cancellationToken = default) where TResult: class {
@@ -120,7 +120,7 @@ public static class UIAutomationExtensions {
     }
 
     /// <inheritdoc cref="WaitForFirst" />
-    // ExceptionAdjustment: M:ThrottleDebounce.Retrier.Attempt``1(System.Func{System.Int32,System.Threading.Tasks.Task{``0}},ThrottleDebounce.Retrier.Options) -T:System.Exception
+    // ExceptionAdjustment: M:ThrottleDebounce.Retry.Retrier.Attempt``1(System.Func{System.Int64,``0},ThrottleDebounce.Retry.RetryOptions) -T:System.Exception
     [Pure]
     public static async Task<AutomationElement?> WaitForFirstAsync(this AutomationElement parent, TreeScope scope, Condition condition, TimeSpan maxWait = default,
                                                                    CancellationToken cancellationToken = default) {
@@ -133,7 +133,7 @@ public static class UIAutomationExtensions {
     }
 
     /// <inheritdoc cref="WaitForFirst{T}" />
-    // ExceptionAdjustment: M:ThrottleDebounce.Retrier.Attempt``1(System.Func{System.Int32,System.Threading.Tasks.Task{``0}},ThrottleDebounce.Retrier.Options) -T:System.Exception
+    // ExceptionAdjustment: M:ThrottleDebounce.Retry.Retrier.Attempt``1(System.Func{System.Int64,``0},ThrottleDebounce.Retry.RetryOptions) -T:System.Exception
     [Pure]
     public static async Task<TResult?> WaitForFirstAsync<TResult>(this AutomationElement parent, TreeScope scope, Condition condition, Func<AutomationElement, Task<TResult>> resultTransformer,
                                                                   TimeSpan maxWait = default, CancellationToken cancellationToken = default) where TResult: class {

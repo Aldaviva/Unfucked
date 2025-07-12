@@ -48,26 +48,26 @@ public partial class UnfuckedWebTarget {
             }
         }
 
-        string bodyPrefix;
-        Stream bodyStream;
         await response.Content.LoadIntoBufferAsync().ConfigureAwait(false);
-        // this using block disposes the response stream, which may prevent further reads
+        /*
+         * Don't dispose the bodyStream yet, because it's a buffered shared instance in the HttpContent at this point and must be read multiple times by message body readers below who each call
+         * ReadAsStreamAsync(). It will get disposed in Get<T>() and similar by DisposeIfNotStream().
+         */
 #if NET5_0_OR_GREATER
-        await using (bodyStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false)) {
+        Stream bodyStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
 #else
-        using (bodyStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false)) {
+        Stream bodyStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
 #endif
-            using StreamReader bodyReader   = new(bodyStream, responseEncoding ?? Encoding.UTF8, true);
-            char[]             prefixBuffer = new char[32];
-            int prefixSize =
+        using StreamReader bodyReader   = new(bodyStream, responseEncoding ?? Encoding.UTF8, true);
+        char[]             prefixBuffer = new char[32];
+        int prefixSize =
 #if NETCOREAPP2_1_OR_GREATER
-                await bodyReader.ReadAsync(prefixBuffer.AsMemory(), cancellationToken).ConfigureAwait(false);
+            await bodyReader.ReadAsync(prefixBuffer.AsMemory(), cancellationToken).ConfigureAwait(false);
 #else
-                await bodyReader.ReadAsync(prefixBuffer, 0, prefixBuffer.Length).ConfigureAwait(false);
+            await bodyReader.ReadAsync(prefixBuffer, 0, prefixBuffer.Length).ConfigureAwait(false);
 #endif
-            bodyPrefix          = new string(prefixBuffer, 0, prefixSize).Trim();
-            bodyStream.Position = 0;
-        }
+        string bodyPrefix = new string(prefixBuffer, 0, prefixSize).Trim();
+        bodyStream.Position = 0;
 
         foreach (MessageBodyReader reader in messageBodyReaders) {
             if (reader.CanRead<T>(responseContentType?.MediaType, bodyPrefix) && !cancellationToken.IsCancellationRequested) {
@@ -79,9 +79,9 @@ public partial class UnfuckedWebTarget {
             }
         }
 
-        HttpExceptionParams p2 = await CreateHttpExceptionParams(response, cancellationToken).ConfigureAwait(false);
+        HttpExceptionParams p = await CreateHttpExceptionParams(response, cancellationToken).ConfigureAwait(false);
         throw new ProcessingException(
-            new SerializationException($"Could not determine content type of response body to deserialize (URI: {p2.RequestUrl}, Content-Type: {responseContentType}, .NET type: {typeof(T)})"), p2);
+            new SerializationException($"Could not determine content type of response body to deserialize (URI: {p.RequestUrl}, Content-Type: {responseContentType}, .NET type: {typeof(T)})"), p);
     }
 
     internal static async Task ThrowIfUnsuccessful(HttpResponseMessage response, CancellationToken cancellationToken) {
@@ -119,7 +119,7 @@ public partial class UnfuckedWebTarget {
 #if NET5_0_OR_GREATER
                 response.Content.ReadAsByteArrayAsync(cancellationToken);
 #else
-            response.Content.ReadAsByteArrayAsync();
+                response.Content.ReadAsByteArrayAsync();
 #endif
             responseBody = (await readAsByteArrayAsync.ConfigureAwait(false)).AsMemory();
         } catch (InvalidOperationException) {

@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Unfucked.HTTP.Config;
 
 namespace Unfucked.HTTP.Serialization;
@@ -18,7 +18,7 @@ public class StreamBodyReader: MessageBodyReader {
         return (T) (object) new ResponseDisposingStream(await stream.ConfigureAwait(false), responseBody);
     }
 
-    internal class ResponseDisposingStream(Stream actualStream, IDisposable alsoDispose): Stream {
+    internal sealed class ResponseDisposingStream(Stream actualStream, IDisposable alsoDispose): Stream {
 
         public override bool CanRead => actualStream.CanRead;
         public override bool CanSeek => actualStream.CanSeek;
@@ -93,19 +93,14 @@ public class StreamBodyReader: MessageBodyReader {
 #endif
 
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER
-        protected virtual async ValueTask DisposeAsyncCore() {
+        public override async ValueTask DisposeAsync() {
             await actualStream.DisposeAsync().ConfigureAwait(false);
             if (alsoDispose is IAsyncDisposable alsoDisposeAsyncDisposable) {
                 await alsoDisposeAsyncDisposable.DisposeAsync().ConfigureAwait(false);
             } else {
                 alsoDispose.Dispose();
             }
-        }
-
-        public sealed override async ValueTask DisposeAsync() {
-            await DisposeAsyncCore().ConfigureAwait(false);
             await base.DisposeAsync().ConfigureAwait(false);
-            GC.SuppressFinalize(this);
         }
 #endif
 

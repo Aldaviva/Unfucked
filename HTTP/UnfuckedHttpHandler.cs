@@ -49,6 +49,13 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
     [Pure]
     public IEnumerable<MessageBodyReader> MessageBodyReaders => ClientConfig.MessageBodyReaders;
 
+    /*
+     * No-argument constructor overload lets FakeItEasy call this real constructor, which makes ClientConfig not a fake so registering JSON options aren't ignored, which would cause confusing errors
+     * at test runtime. Default values for other constructor below wouldn't have been called by FakeItEasy. This avoids having to remember to call
+     * options.WithArgumentsForConstructor(() => new UnfuckedHttpHandler(null, null)) when creating the fake.
+     */
+    public UnfuckedHttpHandler(): this(null) { }
+
     // HttpClientHandler automatically uses SocketsHttpHandler on .NET Core ≥ 2.1, or HttpClientHandler otherwise
     public UnfuckedHttpHandler(HttpMessageHandler? innerHandler = null, IClientConfig? configuration = null): base(innerHandler ??
 #if NETCOREAPP2_1_OR_GREATER

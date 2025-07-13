@@ -269,6 +269,9 @@ public class UrlBuilder: ICloneable {
     public UrlBuilder Path(object segments) => Path(segments.ToString(), false);
 
     [Pure]
+    public UrlBuilder Path(params string[] segments) => Path((IEnumerable<string>) segments);
+
+    [Pure]
     public UrlBuilder Path(params IEnumerable<string> segments) => segments.Aggregate(this, (builder, segment) => builder.Path(segment));
 
     [Pure]

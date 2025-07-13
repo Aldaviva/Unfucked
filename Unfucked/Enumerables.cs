@@ -92,11 +92,16 @@ public static partial class Enumerables {
     /// <param name="destination">Items will be copied into here.</param>
     /// <param name="source">Items will be copied from here.</param>
     /// <typeparam name="T">Type of items in both enumerables.</typeparam>
-    public static void AddAll<T>(this ICollection<T> destination, params IEnumerable<T>? source) {
+    public static void AddAll<T>(this ICollection<T> destination, params T[]? source) {
         if (source is not null) {
-            foreach (T item in source) {
-                destination.Add(item);
-            }
+            AddAll(destination, (IEnumerable<T>) source);
+        }
+    }
+
+    /// <inheritdoc cref="AddAll{T}(System.Collections.Generic.ICollection{T},T[])" />
+    public static void AddAll<T>(this ICollection<T> destination, params IEnumerable<T> source) {
+        foreach (T item in source) {
+            destination.Add(item);
         }
     }
 

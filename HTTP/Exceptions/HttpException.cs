@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -37,9 +37,11 @@ public class WebApplicationException(HttpStatusCode status, string reasonPhrase,
     public HttpResponseHeaders ResponseHeaders => HttpExceptionParams.ResponseHeaders!;
     public ReadOnlyMemory<byte>? ResponseBody => HttpExceptionParams.ResponseBody;
 
-#if !NET5_0_OR_GREATER
-    public HttpStatusCode? StatusCode => status;
+    public
+#if NET5_0_OR_GREATER
+        new
 #endif
+        HttpStatusCode StatusCode => status;
 
 }
 
@@ -71,4 +73,13 @@ public class RedirectionException(HttpStatusCode statusCode, Uri? destination, s
 
 }
 
-public class ProcessingException(Exception cause, HttpExceptionParams p): HttpException(null, $"Network, filter, or serialization error during HTTP {p.Verb} request to {p.RequestUrl}", cause, p) { }
+public class ProcessingException(Exception cause, HttpExceptionParams p): HttpException(null, $"Network, filter, or serialization error during HTTP {p.Verb} request to {p.RequestUrl}", cause, p) {
+
+#if NET5_0_OR_GREATER
+    // ReSharper disable once MemberCanBeMadeStatic.Global - unhides parent property, defeating the purpose of hiding it
+    [Obsolete(
+        $"{nameof(ProcessingException)}s never have status codes, so this property always returns null. They represent failures in network I/O or response deserialization (such as timeouts, refused connections, or malformed JSON), rather than non-200-class status codes, which are instead represented by {nameof(WebApplicationException)}.")]
+    public new HttpStatusCode? StatusCode => null;
+#endif
+
+}

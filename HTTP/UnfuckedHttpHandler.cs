@@ -32,6 +32,9 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 
     private static readonly IDictionary<int, WeakReference<IUnfuckedHttpHandler>?> HttpClientHandlerCache = new Dictionary<int, WeakReference<IUnfuckedHttpHandler>?>();
 
+    private static readonly Lazy<FieldInfo> HttpClientHandlerField = new(() => typeof(HttpMessageInvoker).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+        .First(field => field.FieldType == typeof(HttpMessageHandler)), LazyThreadSafetyMode.PublicationOnly);
+
     private static FieldInfo? _handlerField;
 
     /// <inheritdoc />
@@ -54,7 +57,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
      * at test runtime. Default values for other constructor below wouldn't have been called by FakeItEasy. This avoids having to remember to call
      * options.WithArgumentsForConstructor(() => new UnfuckedHttpHandler(null, null)) when creating the fake.
      */
-    public UnfuckedHttpHandler(): this(null) { }
+    public UnfuckedHttpHandler(): this((HttpMessageHandler?) null) { }
 
     // HttpClientHandler automatically uses SocketsHttpHandler on .NET Core ≥ 2.1, or HttpClientHandler otherwise
     public UnfuckedHttpHandler(HttpMessageHandler? innerHandler = null, IClientConfig? configuration = null): base(innerHandler ??
@@ -66,6 +69,8 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
     ) {
         ClientConfig = configuration ?? new ClientConfig();
     }
+
+    public UnfuckedHttpHandler(HttpClient toClone, IClientConfig? configuration = null): this((HttpMessageHandler) HttpClientHandlerField.Value.GetValue(toClone)!, configuration) { }
 
     [Pure]
     public static HttpClient CreateClient(HttpMessageHandler? innerHandler = null) => new UnfuckedHttpClient(innerHandler);

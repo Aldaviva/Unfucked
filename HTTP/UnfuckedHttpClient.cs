@@ -30,6 +30,16 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
         UnfuckedHttpHandler.CacheClientHandler(this, unfuckedHandler);
     }
 
+    public UnfuckedHttpClient(HttpClient toClone, bool disposeHandler = true, IClientConfig? configuration = null): this(
+        toClone is UnfuckedHttpClient u ? u.Handler : new UnfuckedHttpHandler(toClone, configuration), disposeHandler) {
+        BaseAddress                  = toClone.BaseAddress;
+        Timeout                      = toClone.Timeout;
+        MaxResponseContentBufferSize = toClone.MaxResponseContentBufferSize;
+        foreach (KeyValuePair<string, IEnumerable<string>> wrappedDefaultHeader in toClone.DefaultRequestHeaders) {
+            DefaultRequestHeaders.Add(wrappedDefaultHeader.Key, wrappedDefaultHeader.Value);
+        }
+    }
+
     /// <exception cref="ProcessingException"></exception>
     public virtual async Task<HttpResponseMessage> SendAsync(HttpRequest request, CancellationToken cancellationToken = default) {
         using HttpRequestMessage req = new(request.Verb, request.Uri) {

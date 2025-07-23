@@ -9,7 +9,7 @@ public static class Directories {
     /// <param name="path">The name of the directory to remove.</param>
     /// <param name="recursive">
     /// <see langword="true" /> to remove directories, subdirectories, and files in <paramref name="path" />; otherwise, <see langword="false" />.</param>
-    /// <exception cref="T:System.IO.IOException">A file with the same name and location specified by <paramref name="path" /> exists.
+    /// <exception cref="IOException">A file with the same name and location specified by <paramref name="path" /> exists.
     /// 
     /// -or-
     /// 
@@ -26,11 +26,11 @@ public static class Directories {
     /// -or-
     /// 
     /// The directory is being used by another process.</exception>
-    /// <exception cref="T:System.UnauthorizedAccessException">The caller does not have the required permission.</exception>
-    /// <exception cref="T:System.ArgumentException">.NET Framework and .NET Core versions older than 2.1: <paramref name="path" /> is a zero-length string, contains only white space, or contains one or more invalid characters. You can query for invalid characters by using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method.</exception>
-    /// <exception cref="T:System.ArgumentNullException">
+    /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
+    /// <exception cref="ArgumentException">.NET Framework and .NET Core versions older than 2.1: <paramref name="path" /> is a zero-length string, contains only white space, or contains one or more invalid characters. You can query for invalid characters by using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method.</exception>
+    /// <exception cref="ArgumentNullException">
     /// <paramref name="path" /> is <see langword="null" />.</exception>
-    /// <exception cref="T:System.IO.PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
+    /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
     public static void DeleteQuietly(string path, bool recursive = false) {
         try {
             Directory.Delete(path, recursive);

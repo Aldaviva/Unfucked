@@ -17,6 +17,9 @@ public partial class UnfuckedWebTarget {
     public IEnumerable<MessageBodyReader> MessageBodyReaders => clientConfig?.MessageBodyReaders ?? throw ConfigUnavailable;
 
     [Pure]
+    public IEnumerable<Feature> Features => clientConfig?.Features ?? throw ConfigUnavailable;
+
+    [Pure]
     public UnfuckedWebTarget Register(Registrable registrable) =>
         clientConfig is not null ? new UnfuckedWebTarget(client, urlBuilder, clientHandler, clientConfig.Register(registrable)) : throw ConfigUnavailable;
 
@@ -32,8 +35,8 @@ public partial class UnfuckedWebTarget {
 
     /// <inheritdoc />
     [Pure]
-    public UnfuckedWebTarget Property<T>(PropertyKey<T> key, T? value) where T: notnull =>
-        clientConfig is not null ? new UnfuckedWebTarget(client, urlBuilder, clientHandler, clientConfig.Property(key, value)) : throw ConfigUnavailable;
+    public UnfuckedWebTarget Property<T>(PropertyKey<T> key, T? newValue) where T: notnull =>
+        clientConfig is not null ? new UnfuckedWebTarget(client, urlBuilder, clientHandler, clientConfig.Property(key, newValue)) : throw ConfigUnavailable;
 
     public bool Property<T>(PropertyKey<T> key,
 #if !NETSTANDARD2_0
@@ -49,7 +52,7 @@ public partial class UnfuckedWebTarget {
     }
 
     [Pure]
-    WebTarget Configurable<WebTarget>.Property<T>(PropertyKey<T> key, T? value) where T: default => Property(key, value);
+    WebTarget Configurable<WebTarget>.Property<T>(PropertyKey<T> key, T? newValue) where T: default => Property(key, newValue);
 
     internal static InvalidOperationException ConfigUnavailable => new(
         $"Configuration is not available on this {nameof(UnfuckedWebTarget)} because the underlying {nameof(HttpClient)} was constructed with a default {nameof(HttpMessageHandler)}, or an {nameof(HttpMessageHandler)} that is neither a {nameof(UnfuckedHttpHandler)} nor a {nameof(DelegatingHandler)} that delegates to an inner {nameof(UnfuckedHttpHandler)}. Try instantiating it by calling `new {nameof(HttpClient)}(new {nameof(UnfuckedHttpHandler)}())` instead.");

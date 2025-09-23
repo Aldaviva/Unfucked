@@ -30,5 +30,5 @@ public class PropertyKey(string id) {
 
 }
 
-// ReSharper disable once UnusedTypeParameter - it's used for parameter constraints in HttpConfiguration
+// ReSharper disable once UnusedTypeParameter - it's used for parameter constraints in Configurable
 public class PropertyKey<T>(string id): PropertyKey(id);

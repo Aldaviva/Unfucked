@@ -27,6 +27,8 @@ public interface Configurable {
     /// </summary>
     IEnumerable<MessageBodyReader> MessageBodyReaders { get; }
 
+    IEnumerable<Feature> Features { get; }
+
     /// <summary>
     /// Get a property value used to configure HTTP requests and responses.
     /// </summary>
@@ -56,9 +58,8 @@ public interface Configurable<out TContainer>: Configurable {
     /// </summary>
     /// <typeparam name="T">Type of the property value</typeparam>
     /// <param name="key">See <see cref="PropertyKey"/> for built-in keys, such as <see cref="PropertyKey.JsonSerializerOptions"/>.</param>
-    /// <param name="value">The new value you want to set in the client or target configuration, or <c>null</c> to unset the property</param>
+    /// <param name="newValue">The new value you want to set in the client or target configuration, or <c>null</c> to unset the property</param>
     /// <returns>The updated subject to use in the future, which may be a different immutable instance than the original <c>this</c> subject on which this method was called.</returns>
-    [Pure]
-    TContainer Property<T>(PropertyKey<T> key, T? value) where T: notnull;
+    TContainer Property<T>(PropertyKey<T> key, T? newValue) where T: notnull;
 
 }

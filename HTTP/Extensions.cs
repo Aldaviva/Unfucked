@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.Contracts;
+using System.Diagnostics.Contracts;
 using Unfucked.HTTP.Config;
 using Unfucked.HTTP.Filters;
 using Unfucked.HTTP.Serialization;
@@ -19,23 +19,28 @@ public static class Extensions {
     [Pure]
     public static WebTarget Target(this HttpClient httpClient, UriBuilder uriBuilder) => new UnfuckedWebTarget(httpClient, uriBuilder);
 
-    public static HttpClient Register(this HttpClient httpClient, ClientRequestFilter filter, int position = ClientConfig.LastFilterPosition) {
+    public static H Register<H>(this H httpClient, ClientRequestFilter filter, int position = ClientConfig.LastFilterPosition) where H: HttpClient {
         _ = UnfuckedHttpHandler.FindHandler(httpClient)?.Register(filter, position) ?? throw UnfuckedWebTarget.ConfigUnavailable;
         return httpClient;
     }
 
-    public static HttpClient Register(this HttpClient httpClient, ClientResponseFilter filter, int position = ClientConfig.LastFilterPosition) {
+    public static H Register<H>(this H httpClient, ClientResponseFilter filter, int position = ClientConfig.LastFilterPosition) where H: HttpClient {
         _ = UnfuckedHttpHandler.FindHandler(httpClient)?.Register(filter, position) ?? throw UnfuckedWebTarget.ConfigUnavailable;
         return httpClient;
     }
 
-    public static HttpClient Register(this HttpClient httpClient, MessageBodyReader reader) {
+    public static H Register<H>(this H httpClient, MessageBodyReader reader) where H: HttpClient {
         _ = UnfuckedHttpHandler.FindHandler(httpClient)?.Register(reader) ?? throw UnfuckedWebTarget.ConfigUnavailable;
         return httpClient;
     }
 
-    public static HttpClient Property<T>(this HttpClient httpClient, PropertyKey<T> key, T? value) where T: notnull {
-        _ = UnfuckedHttpHandler.FindHandler(httpClient)?.Property(key, value) ?? throw UnfuckedWebTarget.ConfigUnavailable;
+    public static H Register<H>(this H httpClient, Feature feature) where H: HttpClient {
+        _ = UnfuckedHttpHandler.FindHandler(httpClient)?.Register(feature) ?? throw UnfuckedWebTarget.ConfigUnavailable;
+        return httpClient;
+    }
+
+    public static H Property<H, T>(this H httpClient, PropertyKey<T> key, T? newValue) where H: HttpClient where T: notnull {
+        _ = UnfuckedHttpHandler.FindHandler(httpClient)?.Property(key, newValue) ?? throw UnfuckedWebTarget.ConfigUnavailable;
         return httpClient;
     }
 

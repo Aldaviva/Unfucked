@@ -15,6 +15,8 @@ public interface IUnfuckedHttpClient {
 
 public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
 
+    private static readonly TimeSpan DefaultTimeout = new(0, 0, 30);
+
     public IUnfuckedHttpHandler Handler { get; }
 
     public UnfuckedHttpClient(HttpMessageHandler? handler = null, bool disposeHandler = true, IClientConfig? configuration = null): this(
@@ -23,7 +25,7 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
     public UnfuckedHttpClient(IUnfuckedHttpHandler unfuckedHandler, bool disposeHandler = true): base(unfuckedHandler as HttpMessageHandler ?? new IUnfuckedHttpHandlerWrapper(unfuckedHandler),
         disposeHandler) {
         Handler = unfuckedHandler;
-        Timeout = TimeSpan.FromSeconds(30);
+        Timeout = DefaultTimeout;
         if (Assembly.GetEntryAssembly()?.GetName() is { Name: { } programName, Version: { } programVersion }) {
             DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(programName, programVersion.ToString(4, true)));
         }
@@ -35,6 +37,10 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
         BaseAddress                  = toClone.BaseAddress;
         Timeout                      = toClone.Timeout;
         MaxResponseContentBufferSize = toClone.MaxResponseContentBufferSize;
+#if NETCOREAPP3_0_OR_GREATER
+        DefaultRequestVersion = toClone.DefaultRequestVersion;
+        DefaultVersionPolicy  = toClone.DefaultVersionPolicy;
+#endif
         foreach (KeyValuePair<string, IEnumerable<string>> wrappedDefaultHeader in toClone.DefaultRequestHeaders) {
             DefaultRequestHeaders.Add(wrappedDefaultHeader.Key, wrappedDefaultHeader.Value);
         }

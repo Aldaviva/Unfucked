@@ -22,7 +22,7 @@ public interface IUnfuckedHttpHandler: Configurable<IUnfuckedHttpHandler> {
     Task<HttpResponseMessage> TestableSendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
 
     /// <summary>
-    /// This should just delegate to <see cref="UnfuckedHttpHandler.SendAsync"/>, it's only here because the method was originally only specified on a superclass, not an interface.
+    /// This should just delegate to <c>UnfuckedHttpHandler.SendAsync</c>, it's only here because the method was originally only specified on a superclass, not an interface.
     /// </summary>
     Task<HttpResponseMessage> FilterAndSendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
 
@@ -36,6 +36,8 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
         .First(field => field.FieldType == typeof(HttpMessageHandler)), LazyThreadSafetyMode.PublicationOnly);
 
     private static FieldInfo? _handlerField;
+
+    private bool disposed;
 
     /// <inheritdoc />
     public IClientConfig ClientConfig { get; private set; }
@@ -51,6 +53,10 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
     /// <inheritdoc />
     [Pure]
     public IEnumerable<MessageBodyReader> MessageBodyReaders => ClientConfig.MessageBodyReaders;
+
+    /// <inheritdoc />
+    [Pure]
+    public IEnumerable<Feature> Features => ClientConfig.Features;
 
     /*
      * No-argument constructor overload lets FakeItEasy call this real constructor, which makes ClientConfig not a fake so registering JSON options aren't ignored, which would cause confusing errors
@@ -83,16 +89,15 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
         IUnfuckedHttpHandler? handler = null;
         if (!HttpClientHandlerCache.TryGetValue(httpClient.GetHashCode(), out WeakReference<IUnfuckedHttpHandler>? handlerHolder) || !(handlerHolder?.TryGetTarget(out handler) ?? true)) {
             _handlerField ??= typeof(HttpMessageInvoker).GetFields(BindingFlags.NonPublic | BindingFlags.Instance).FirstOrDefault(field => field.FieldType == typeof(HttpMessageHandler));
-            handler       =   FindDescendantHandler((HttpMessageHandler?) _handlerField?.GetValue(httpClient));
+            handler       =   FindDescendantUnfuckedHandler((HttpMessageHandler?) _handlerField?.GetValue(httpClient));
             CacheClientHandler(httpClient, handler);
         }
 
         return handler;
 
-        static UnfuckedHttpHandler? FindDescendantHandler(HttpMessageHandler? parent) => parent switch {
-            null                  => null,
+        static UnfuckedHttpHandler? FindDescendantUnfuckedHandler(HttpMessageHandler? parent) => parent switch {
             UnfuckedHttpHandler f => f,
-            DelegatingHandler d   => FindDescendantHandler(d.InnerHandler),
+            DelegatingHandler d   => FindDescendantUnfuckedHandler(d.InnerHandler),
             _                     => null
         };
     }
@@ -105,6 +110,10 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 
     /// <inheritdoc />
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+        foreach (Feature feature in Features) {
+            await feature.OnBeforeRequest(this).ConfigureAwait(false);
+        }
+
         foreach (ClientRequestFilter requestFilter in RequestFilters) {
             HttpRequestMessage newRequest = await requestFilter.Filter(request, cancellationToken).ConfigureAwait(false);
             if (request != newRequest) {
@@ -148,7 +157,21 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
                             out T? existingValue) where T: notnull => ClientConfig.Property(key, out existingValue);
 
     [Pure]
-    IUnfuckedHttpHandler Configurable<IUnfuckedHttpHandler>.Property<T>(PropertyKey<T> key, T? value) where T: default => Property(key, value);
+    IUnfuckedHttpHandler Configurable<IUnfuckedHttpHandler>.Property<T>(PropertyKey<T> key, T? newValue) where T: default => Property(key, newValue);
+
+    protected override void Dispose(bool disposing) {
+        if (!disposed) {
+            disposed = true;
+            if (disposing) {
+                List<KeyValuePair<int, WeakReference<IUnfuckedHttpHandler>?>> evictions =
+                    HttpClientHandlerCache.Where(pair => pair.Value != null && (!pair.Value.TryGetTarget(out IUnfuckedHttpHandler? handler) || handler == this)).ToList();
+                foreach (KeyValuePair<int, WeakReference<IUnfuckedHttpHandler>?> eviction in evictions) {
+                    HttpClientHandlerCache.Remove(eviction);
+                }
+            }
+        }
+        base.Dispose(disposing);
+    }
 
 }
 

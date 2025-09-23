@@ -223,7 +223,7 @@
 ### HTTP
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.HTTP?logo=nuget&label=Unfucked.HTTP%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.HTTP)
 - Inspired by [JAX-RS](https://projects.eclipse.org/projects/ee4j.rest) and [Jersey](https://projects.eclipse.org/projects/ee4j.jersey) for Java
-- Drop-in subclasses of `HttpClient` and `HttpMessageHandler` and extension methods
+- Drop-in subclasses of `HttpClient` and `HttpMessageHandler`, and extension methods
     ```cs
     HttpClient http = new UnfuckedHttpClient(); // set the subclass
     http = new HttpClient(new UnfuckedHttpHandler()); // or set the handler
@@ -253,6 +253,15 @@
             return response;
         }
     }
+    ```
+- Wire logging (.NET &ge; 6)
+    ```cs
+    NLog.Logger LOGGER = NLog.LogManager.GetLogger("wire"); // you can plug in any logging implementation, such as NLog or Microsoft.Extensions.Logging
+    http.Register(new WireLoggingFeature(new WireLoggingFeature.Config {
+        LogRequestTransmitted = (message, id) => LOGGER.Trace("{0} >> {1}", id, message),
+        LogResponseReceived   = (message, id) => LOGGER.Trace("{0} << {1}", id, message),
+        IsLogEnabled          = () => LOGGER.IsTraceEnabled
+    }));
     ```
 - Type-safe property registration
     ```cs

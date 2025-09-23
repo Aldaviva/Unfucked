@@ -102,6 +102,21 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
         };
     }
 
+    // internal static WireLoggingFeature.IWireLoggingStream? FindWireLoggingStream(HttpResponseMessage response) {
+    //     Assembly systemNetHttp = typeof(HttpClient).Assembly;
+    //     object? outerStream = systemNetHttp.GetType("System.Net.Http.HttpConnectionResponseContent")
+    //         .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+    //         .FirstOrDefault(field => field.FieldType == typeof(Stream))
+    //         .GetValue(response.Content);
+    //     Type httpConnectionType = systemNetHttp.GetType("System.Net.Http.HttpConnection")!;
+    //     object? httpConnection = systemNetHttp.GetType("System.Net.Http.HttpContentStream")!
+    //         .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+    //         .FirstOrDefault(field => field.FieldType == httpConnectionType)?
+    //         .GetValue(outerStream);
+    //     Stream? stream = httpConnectionType.GetFields(BindingFlags.NonPublic | BindingFlags.Instance).FirstOrDefault(field => field.FieldType == typeof(Stream))?.GetValue(httpConnection) as Stream;
+    //     return stream as WireLoggingFeature.IWireLoggingStream;
+    // }
+
     internal static void CacheClientHandler(HttpClient client, IUnfuckedHttpHandler? handler) =>
         HttpClientHandlerCache[client.GetHashCode()] = handler is null ? null : new WeakReference<IUnfuckedHttpHandler>(handler);
 
@@ -123,6 +138,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
         }
 
         HttpResponseMessage response = await TestableSendAsync(request, cancellationToken).ConfigureAwait(false);
+        // request.Properties[WireLoggingFeature.StreamCorrelationOption] = FindWireLoggingStream(response);
 
         foreach (ClientResponseFilter responseFilter in ResponseFilters) {
             HttpResponseMessage newResponse = await responseFilter.Filter(response, cancellationToken).ConfigureAwait(false);

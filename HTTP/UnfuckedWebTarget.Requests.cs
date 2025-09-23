@@ -1,4 +1,4 @@
-﻿namespace Unfucked.HTTP;
+namespace Unfucked.HTTP;
 
 public partial class UnfuckedWebTarget {
 
@@ -85,7 +85,11 @@ public partial class UnfuckedWebTarget {
         }
     }
 
-    private static void DisposeIfNotStream<T>(IDisposable response) {
+    private static void DisposeIfNotStream<T>(HttpResponseMessage response) {
+        // if ((response.RequestMessage?.Properties.TryGetValue(WireLoggingFeature.StreamCorrelationOption, out object value) ?? false) && value is WireLoggingFeature.IWireLoggingStream wire) {
+        // wire.OnResponseFinished();
+        // }
+
         if (typeof(T) != typeof(Stream)) {
             response.Dispose();
         }

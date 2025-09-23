@@ -10,7 +10,7 @@
     <ItemGroup>
         <PackageReference Include="System.Text.Json" />
     </ItemGroup>
-
+    
     <Choose>
         <When Condition="'$(Configuration)' == 'Release'">
             <ItemGroup>

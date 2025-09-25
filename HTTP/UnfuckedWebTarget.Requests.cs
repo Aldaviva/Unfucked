@@ -4,10 +4,13 @@ public partial class UnfuckedWebTarget {
 
     private static readonly HttpMethod PatchVerb = new("PATCH");
 
-    public virtual async Task<HttpResponseMessage> Send(HttpMethod verb, HttpContent? requestBody = null, CancellationToken cancellationToken = default) {
+    /*
+     * Must not be async so the AsyncLocal scope for wire logging is high enough in the async chain.
+     */
+    public virtual Task<HttpResponseMessage> Send(HttpMethod verb, HttpContent? requestBody = null, CancellationToken cancellationToken = default) {
         Uri url = urlBuilder.ToUrl();
         if (client is IUnfuckedHttpClient u) {
-            return await u.SendAsync(new HttpRequest(verb, url, Headers, requestBody), cancellationToken).ConfigureAwait(false);
+            return u.SendAsync(new HttpRequest(verb, url, Headers, requestBody), cancellationToken);
         }
 
         using HttpRequestMessage request = new(verb, url) { Content = requestBody };
@@ -16,7 +19,7 @@ public partial class UnfuckedWebTarget {
             request.Headers.Add(header.Key, header);
         }
 
-        return await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        return client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
     }
 
     public Task<HttpResponseMessage> Get(CancellationToken cancellationToken = default) => Send(HttpMethod.Get, null, cancellationToken);
@@ -86,10 +89,6 @@ public partial class UnfuckedWebTarget {
     }
 
     private static void DisposeIfNotStream<T>(HttpResponseMessage response) {
-        // if ((response.RequestMessage?.Properties.TryGetValue(WireLoggingFeature.StreamCorrelationOption, out object value) ?? false) && value is WireLoggingFeature.IWireLoggingStream wire) {
-        // wire.OnResponseFinished();
-        // }
-
         if (typeof(T) != typeof(Stream)) {
             response.Dispose();
         }

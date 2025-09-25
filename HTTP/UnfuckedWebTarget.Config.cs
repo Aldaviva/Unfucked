@@ -17,9 +17,6 @@ public partial class UnfuckedWebTarget {
     public IEnumerable<MessageBodyReader> MessageBodyReaders => clientConfig?.MessageBodyReaders ?? throw ConfigUnavailable;
 
     [Pure]
-    public IEnumerable<Feature> Features => clientConfig?.Features ?? throw ConfigUnavailable;
-
-    [Pure]
     public UnfuckedWebTarget Register(Registrable registrable) =>
         clientConfig is not null ? new UnfuckedWebTarget(client, urlBuilder, clientHandler, clientConfig.Register(registrable)) : throw ConfigUnavailable;
 

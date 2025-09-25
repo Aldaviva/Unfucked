@@ -15,7 +15,6 @@ public class ClientConfig: IClientConfig {
     private ImmutableList<ClientRequestFilter> ReqFilters { get; init; }
     private ImmutableList<ClientResponseFilter> ResFilters { get; init; }
     private ImmutableHashSet<MessageBodyReader> Readers { get; init; }
-    private ImmutableHashSet<Feature> Feats { get; init; }
     private ImmutableDictionary<PropertyKey, object> Properties { get; init; }
 
     [Pure]
@@ -27,14 +26,10 @@ public class ClientConfig: IClientConfig {
     [Pure]
     public IEnumerable<MessageBodyReader> MessageBodyReaders => Readers.AsEnumerable();
 
-    [Pure]
-    public IEnumerable<Feature> Features => Feats.AsEnumerable();
-
     internal ClientConfig() {
         ReqFilters = ImmutableList<ClientRequestFilter>.Empty;
         ResFilters = ImmutableList<ClientResponseFilter>.Empty;
         Readers    = ImmutableHashSet<MessageBodyReader>.Empty;
-        Feats      = ImmutableHashSet<Feature>.Empty;
         Properties = ImmutableDictionary<PropertyKey, object>.Empty;
     }
 
@@ -42,7 +37,6 @@ public class ClientConfig: IClientConfig {
         ReqFilters = other.ReqFilters;
         ResFilters = other.ResFilters;
         Readers    = other.Readers;
-        Feats      = other.Feats;
         Properties = other.Properties;
     }
 
@@ -56,7 +50,6 @@ public class ClientConfig: IClientConfig {
         MessageBodyReader m    => new ClientConfig(this) { Readers = Readers.Add(m) },
         ClientRequestFilter r  => Register(r, LastFilterPosition),
         ClientResponseFilter r => Register(r, LastFilterPosition),
-        Feature f              => new ClientConfig(this) { Feats = Feats.Add(f) },
         _                      => throw new ArgumentException($"This {nameof(ClientConfig)} class does not have a way to register a {registrable.GetType()}", nameof(registrable))
     };
 

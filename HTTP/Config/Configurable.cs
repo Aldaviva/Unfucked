@@ -27,8 +27,6 @@ public interface Configurable {
     /// </summary>
     IEnumerable<MessageBodyReader> MessageBodyReaders { get; }
 
-    IEnumerable<Feature> Features { get; }
-
     /// <summary>
     /// Get a property value used to configure HTTP requests and responses.
     /// </summary>

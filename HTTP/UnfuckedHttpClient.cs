@@ -2,6 +2,9 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using Unfucked.HTTP.Config;
 using Unfucked.HTTP.Exceptions;
+#if NET8_0_OR_GREATER
+using Unfucked.HTTP.Filters;
+#endif
 
 namespace Unfucked.HTTP;
 
@@ -47,8 +50,12 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
     }
 
     /// <exception cref="ProcessingException"></exception>
-    public virtual async Task<HttpResponseMessage> SendAsync(HttpRequest request, CancellationToken cancellationToken = default) {
-        using HttpRequestMessage req = new(request.Verb, request.Uri) {
+    public virtual Task<HttpResponseMessage> SendAsync(HttpRequest request, CancellationToken cancellationToken = default) {
+#if NET8_0_OR_GREATER
+        WireLoggingFilter.AsyncState.Value = new WireLoggingFilter.WireAsyncState();
+#endif
+
+        HttpRequestMessage req = new(request.Verb, request.Uri) {
             Content = request.Body
         };
 
@@ -56,15 +63,24 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
             req.Headers.Add(header.Key, header.Value);
         }
 
-        try {
-            return await SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-        } catch (OperationCanceledException e) {
-            // Official documentation is wrong: .NET Framework throws a TaskCanceledException for an HTTP request timeout, not an HttpRequestException (https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpclient.sendasync)
-            TimeoutException cause = e.InnerException as TimeoutException ??
-                new TimeoutException($"The request was canceled due to the configured {nameof(HttpClient)}.{nameof(Timeout)} of {Timeout.TotalSeconds} seconds elapsing.");
-            throw new ProcessingException(cause, CreateHttpExceptionParams(req));
-        } catch (HttpRequestException e) {
-            throw new ProcessingException(e.InnerException ?? e, CreateHttpExceptionParams(req));
+        Task<HttpResponseMessage> sendAsync = SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+        return SendInner();
+
+        // Set wire logging AsyncLocal outside of this async method so it is available higher in the await chain when the response finishes
+        async Task<HttpResponseMessage> SendInner() {
+            try {
+                return await sendAsync.ConfigureAwait(false);
+            } catch (OperationCanceledException e) {
+                // Official documentation is wrong: .NET Framework throws a TaskCanceledException for an HTTP request timeout, not an HttpRequestException (https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpclient.sendasync)
+                TimeoutException cause = e.InnerException as TimeoutException ??
+                    new TimeoutException($"The request was canceled due to the configured {nameof(HttpClient)}.{nameof(Timeout)} of {Timeout.TotalSeconds} seconds elapsing.");
+                throw new ProcessingException(cause, CreateHttpExceptionParams(req));
+            } catch (HttpRequestException e) {
+                throw new ProcessingException(e.InnerException ?? e, CreateHttpExceptionParams(req));
+            } finally {
+                req.Dispose();
+            }
         }
     }
 

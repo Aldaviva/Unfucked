@@ -254,13 +254,14 @@
         }
     }
     ```
-- Wire logging (.NET &ge; 6)
+- Wire logging (requires .NET &ge; 8 and HTTP 1.1)
     ```cs
-    NLog.Logger LOGGER = NLog.LogManager.GetLogger("wire"); // you can plug in any logging implementation, such as NLog or Microsoft.Extensions.Logging
-    http.Register(new WireLoggingFeature(new WireLoggingFeature.Config {
-        LogRequestTransmitted = (message, id) => LOGGER.Trace("{0} >> {1}", id, message),
-        LogResponseReceived   = (message, id) => LOGGER.Trace("{0} << {1}", id, message),
-        IsLogEnabled          = () => LOGGER.IsTraceEnabled
+    NLog.Logger wireLogger = NLog.LogManager.GetLogger("wire"); // you can plug in any logging implementation, such as NLog or Microsoft.Extensions.Logging
+    HttpClient http = new UnfuckedHttpClient();
+    http.Register(new WireLoggingFilter(new WireLoggingFilter.Config {
+        LogRequestTransmitted = (message, id) => wireLogger.Trace("{0} >> {1}", id, message),
+        LogResponseReceived   = (message, id) => wireLogger.Trace("{0} << {1}", id, message),
+        IsLogEnabled          = () => wireLogger.IsTraceEnabled
     }));
     ```
 - Type-safe property registration

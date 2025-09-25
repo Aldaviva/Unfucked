@@ -43,7 +43,7 @@ public class UnfuckedHttpClientTests {
         using (StreamWriter streamWriter = new(stream, Utf8, leaveOpen: true)) {
             streamWriter.Write(input);
         }
-        WireLoggingFeature.WireLoggingStream.TrimTrailingLineEndings(stream);
+        WireLoggingFilter.WireLoggingStream.TrimTrailingLineEndings(stream);
         using (StreamReader streamReader = new(stream, Utf8, leaveOpen: true)) {
             string actual = streamReader.ReadToEnd();
             actual.Should().Be(expected);

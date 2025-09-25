@@ -34,11 +34,6 @@ public static class Extensions {
         return httpClient;
     }
 
-    public static H Register<H>(this H httpClient, Feature feature) where H: HttpClient {
-        _ = UnfuckedHttpHandler.FindHandler(httpClient)?.Register(feature) ?? throw UnfuckedWebTarget.ConfigUnavailable;
-        return httpClient;
-    }
-
     public static H Property<H, T>(this H httpClient, PropertyKey<T> key, T? newValue) where H: HttpClient where T: notnull {
         _ = UnfuckedHttpHandler.FindHandler(httpClient)?.Property(key, newValue) ?? throw UnfuckedWebTarget.ConfigUnavailable;
         return httpClient;

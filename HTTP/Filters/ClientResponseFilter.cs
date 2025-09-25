@@ -1,9 +1,9 @@
-﻿using Unfucked.HTTP.Config;
+using Unfucked.HTTP.Config;
 
 namespace Unfucked.HTTP.Filters;
 
 public interface ClientResponseFilter: Registrable<int> {
 
-    Task<HttpResponseMessage> Filter(HttpResponseMessage response, CancellationToken cancellationToken);
+    Task<HttpResponseMessage> Filter(HttpResponseMessage response, FilterContext context, CancellationToken cancellationToken);
 
 }

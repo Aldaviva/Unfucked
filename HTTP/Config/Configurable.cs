@@ -14,17 +14,20 @@ public interface Configurable {
     /// <summary>
     /// Interceptors that run before an HTTP client request is sent. Empty by default.
     /// </summary>
+    /// <exception cref="InvalidOperationException" accessor="get">the HTTP client does not have a usable configuration because of how it was constructed</exception>
     IReadOnlyList<ClientRequestFilter> RequestFilters { get; }
 
     /// <summary>
     /// Interceptors that run after an HTTP client response is received. Empty by default.
     /// </summary>
+    /// <exception cref="InvalidOperationException" accessor="get">the HTTP client does not have a usable configuration because of how it was constructed</exception>
     IReadOnlyList<ClientResponseFilter> ResponseFilters { get; }
 
     /// <summary>
     /// <para>Marshallers that deserialize HTTP client response bodies from byte streams into types, such as classes that are mapped from JSON objects.</para>
     /// <para>By default, these can read <see cref="string"/>, <see cref="Stream"/>, <see cref="byte"/><c>[]</c>, JSON (both mapped to types, and unmapped like <see cref="JsonDocument"/> and <see cref="JsonNode"/>), and XML (including mapped to types, DOM <see cref="XmlDocument"/>, LINQ <see cref="XDocument"/>, and XPath <see cref="XPathNavigator"/>)</para>
     /// </summary>
+    /// <exception cref="InvalidOperationException" accessor="get">the HTTP client does not have a usable configuration because of how it was constructed</exception>
     IEnumerable<MessageBodyReader> MessageBodyReaders { get; }
 
     /// <summary>
@@ -34,6 +37,7 @@ public interface Configurable {
     /// <param name="key">See <see cref="PropertyKey"/> for built-in keys, such as <see cref="PropertyKey.JsonSerializerOptions"/>.</param>
     /// <param name="existingValue">This will be set to the value of the property which from this client or target, or <c>default</c> if it has not been set and the return value is <c>false</c></param>
     /// <returns><c>true</c> if the property exists in the configuration, or <c>false</c> if it has not been set</returns>
+    /// <exception cref="InvalidOperationException">the HTTP client does not have a usable configuration because of how it was constructed</exception>
     [Pure]
     bool Property<T>(PropertyKey<T> key,
 #if !NETSTANDARD2_0
@@ -45,9 +49,25 @@ public interface Configurable {
 
 public interface Configurable<out TContainer>: Configurable {
 
+    /// <summary>
+    /// <para>Add a registration for an object such as a message body reader or request/response filter.</para>
+    /// <para>When adding parameterized registrations without providing a parameter by calling this method, a default value will be used for the parameter. For example, when inserting a <see cref="ClientRequestFilter"/> without passing its chain position through <see cref="Register{Option}"/>, the position parameter will default to the last position in the filter chain.</para>
+    /// </summary>
+    /// <param name="registrable">The object to register, such as a <see cref="MessageBodyReader"/>, <see cref="ClientRequestFilter"/>, or <see cref="ClientResponseFilter"/></param>
+    /// <returns>The <typeparamref name="TContainer"/> for subsequent calls. Some implementations may return new immutable values, so you should use this return value instead of the original callee.</returns>
+    /// <exception cref="ArgumentException"><paramref name="registrable"/> is not a recognized type that this <typeparamref name="TContainer"/> is able to register</exception>
+    /// <exception cref="InvalidOperationException">the HTTP client does not have a usable configuration because of how it was constructed</exception>
     [Pure]
     TContainer Register(Registrable registrable);
 
+    /// <summary>
+    /// Add a parameterized registration for an object such as a message body reader or request/response filter.
+    /// </summary>
+    /// <param name="registrable">The object to register, such as a <see cref="MessageBodyReader"/>, <see cref="ClientRequestFilter"/>, or <see cref="ClientResponseFilter"/></param>
+    /// <param name="registrationOption">Value for a parameterized registration, such as the position in the filter chain where a <see cref="ClientRequestFilter"/> should be inserted</param>
+    /// <returns>The <typeparamref name="TContainer"/> for subsequent calls. Some implementations may return new immutable values, so you should use this return value instead of the original callee.</returns>
+    /// <exception cref="ArgumentException"><paramref name="registrable"/> is not a recognized type that this <typeparamref name="TContainer"/> is able to register</exception>
+    /// <exception cref="InvalidOperationException">the HTTP client does not have a usable configuration because of how it was constructed</exception>
     [Pure]
     TContainer Register<Option>(Registrable<Option> registrable, Option registrationOption);
 
@@ -58,6 +78,7 @@ public interface Configurable<out TContainer>: Configurable {
     /// <param name="key">See <see cref="PropertyKey"/> for built-in keys, such as <see cref="PropertyKey.JsonSerializerOptions"/>.</param>
     /// <param name="newValue">The new value you want to set in the client or target configuration, or <c>null</c> to unset the property</param>
     /// <returns>The updated subject to use in the future, which may be a different immutable instance than the original <c>this</c> subject on which this method was called.</returns>
+    /// <exception cref="InvalidOperationException">the HTTP client does not have a usable configuration because of how it was constructed</exception>
     TContainer Property<T>(PropertyKey<T> key, T? newValue) where T: notnull;
 
 }

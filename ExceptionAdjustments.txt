@@ -1,4 +1,4 @@
-﻿# Due to [1], you may have to manually change the "Build Action" of this file to "C# analyzer additional file".
+# Due to [1], you may have to manually change the "Build Action" of this file to "C# analyzer additional file".
 # [1] https://github.com/dotnet/roslyn/issues/4655
 
 # This file adjusts exception information used by Tetractic.CodeAnalysis.ExceptionAnalyzers.
@@ -18,5 +18,7 @@
 # M:System.TimeSpan.Negate -T:System.OverflowException
 M:System.Array.CopyTo(System.Array,System.Int32) -T:System.ArrayTypeMismatchException
 M:System.Array.CopyTo(System.Array,System.Int32) -T:System.RankException
-M:System.String.Join(System.String,System.Collections.Generic.IEnumerable{System.String}) -T:System.OutOfMemoryException
-M:System.Text.RegularExpressions.Regex.Replace(System.String,System.Text.RegularExpressions.MatchEvaluator) -T:System.Text.RegularExpressions.RegexMatchTimeoutException
+P:System.Lazy`1.Value get -T:System.MemberAccessException
+P:System.Lazy`1.Value get -T:System.MissingMemberException
+M:System.Reflection.FieldInfo.GetValue(System.Object) -T:System.FieldAccessException
+M:System.Reflection.FieldInfo.GetValue(System.Object) -T:System.Reflection.TargetException

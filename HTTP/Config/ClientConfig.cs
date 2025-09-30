@@ -26,12 +26,14 @@ public class ClientConfig: IClientConfig {
     [Pure]
     public IEnumerable<MessageBodyReader> MessageBodyReaders => Readers.AsEnumerable();
 
+#pragma warning disable IDE0301 // Simplify collection initialization - breaks in .NET 6
     internal ClientConfig() {
         ReqFilters = ImmutableList<ClientRequestFilter>.Empty;
         ResFilters = ImmutableList<ClientResponseFilter>.Empty;
         Readers    = ImmutableHashSet<MessageBodyReader>.Empty;
         Properties = ImmutableDictionary<PropertyKey, object>.Empty;
     }
+#pragma warning restore IDE0301 // Simplify collection initialization
 
     private ClientConfig(ClientConfig other) {
         ReqFilters = other.ReqFilters;
@@ -39,6 +41,8 @@ public class ClientConfig: IClientConfig {
         Readers    = other.Readers;
         Properties = other.Properties;
     }
+
+    public UnfuckedHttpClient CreateClient(HttpMessageHandler? handler = null, bool disposeHandler = true) => new(handler, disposeHandler, this);
 
     /// <inheritdoc />
     [Pure]

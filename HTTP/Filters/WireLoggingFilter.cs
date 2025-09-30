@@ -1,12 +1,13 @@
-using System.Text;
-using Unfucked.HTTP.Config;
 #if NET8_0_OR_GREATER
 using System.Diagnostics.Metrics;
 using System.Reflection;
+using System.Text;
+using Unfucked.HTTP.Config;
 #endif
 
 namespace Unfucked.HTTP.Filters;
 
+#pragma warning disable CS9113 // Parameter is unread. - it's read in other targets through conditional compilation
 /// <summary>
 /// <para>Log raw plaintext HTTP requests and responses to your logging solution.</para>
 /// <para>Requires .NET ≥ 8, otherwise it is a no-op. Only tested with HTTP 1.1, which is the default for all versions of .NET through 10 so far.</para>
@@ -18,9 +19,12 @@ namespace Unfucked.HTTP.Filters;
 ///         LogRequestReceived    = (message, id) => wireLogger.Trace("{0} &lt;&lt; {1}", id, message),
 ///         IsLogEnabled          = () => wireLogger.IsTraceEnabled()
 ///     }));</code></para>
+/// <para>Does not work with a plain <see cref="HttpClient"/> with an <see cref="UnfuckedHttpHandler"/>, you must use an <see cref="UnfuckedHttpClient"/> (such as <c>new UnfuckedHttpClient()</c> or <c>new UnfuckedHttpHandler.CreateClient()</c>.</para>
 /// </summary>
 /// <param name="config">Configure how to log the messages.</param>
 public class WireLoggingFilter(WireLoggingFilter.Config config): ClientRequestFilter {
+
+#pragma warning restore CS9113 // Parameter is unread.
 
     /// <summary>
     /// Configure the wire logging filter
@@ -89,7 +93,7 @@ public class WireLoggingFilter(WireLoggingFilter.Config config): ClientRequestFi
 
     internal class WireLoggingStream: Stream {
 
-        private static readonly Encoding Encoding = Encoding.UTF8;
+        private static readonly Encoding MessageEncoding = Encoding.UTF8;
 
         private static ulong _mostRecentRequestId;
 
@@ -101,19 +105,26 @@ public class WireLoggingFilter(WireLoggingFilter.Config config): ClientRequestFi
         private ulong requestId;
         private bool  isNewRequest                = true;
         private bool  isFinalResponseChunkWritten = true;
+        private bool  warnedAboutClientClass;
 
         public WireLoggingStream(Stream httpStream, Config config) {
             this.httpStream = httpStream;
             this.config     = config;
 
-            AsyncState.Value!.wireStream = this;
+            if (AsyncState.Value != null) {
+                AsyncState.Value.wireStream = this;
+            }
         }
 
         /**
          * Sending a request
          */
+        /// <exception cref="OperationCanceledException"></exception>
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) {
-            AsyncState.Value!.wireStream = this;
+            if (AsyncState.Value != null) {
+                AsyncState.Value.wireStream = this;
+            }
+
             if (isNewRequest) {
                 isNewRequest                = false;
                 isFinalResponseChunkWritten = true;
@@ -121,7 +132,8 @@ public class WireLoggingFilter(WireLoggingFilter.Config config): ClientRequestFi
                 if (responseBuffer.Length != 0) { // log previously buffered response from a different request
                     if (config.IsLogEnabled()) {
                         TrimTrailingLineEndings(responseBuffer);
-                        using StreamReader reader = new(responseBuffer, Encoding, leaveOpen: true);
+                        using StreamReader reader = new(responseBuffer, MessageEncoding, leaveOpen: true);
+                        // ReSharper disable once MethodHasAsyncOverloadWithCancellation - the source is already in memory because it's a MemoryStream, so there is no reason to use async or cancellations
                         config.LogResponseReceived(reader.ReadToEnd(), requestId);
                     }
                     responseBuffer.SetLength(0);
@@ -134,20 +146,31 @@ public class WireLoggingFilter(WireLoggingFilter.Config config): ClientRequestFi
                 requestBuffer.Write(buffer.Span[..(config.MaxMessageSize > 0 ? (Index) (config.MaxMessageSize - requestBuffer.Length).Clip(0, buffer.Length) : ^0)]);
             }
 
-            await httpStream.WriteAsync(buffer, cancellationToken);
+            await httpStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         }
 
         /**
          * Receiving a response
          */
+        /// <exception cref="OperationCanceledException"></exception>
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) {
-            AsyncState.Value!.wireStream = this;
+            if (AsyncState.Value != null) {
+                AsyncState.Value.wireStream = this;
+            } else if (!warnedAboutClientClass) {
+                warnedAboutClientClass = true;
+                config.LogResponseReceived(
+                    $"Warning: Unable to detect the end of message for HTTP responses during wire logging. To fix this, create the {nameof(HttpClient)} using `new {nameof(UnfuckedHttpClient)}()` instead of `new {nameof(HttpClient)}(new {nameof(UnfuckedHttpHandler)}())`.",
+                    0);
+            }
+
             if (requestBuffer.Length != 0) { // log previous buffered request for this response
                 if (config.IsLogEnabled()) {
                     TrimTrailingLineEndings(requestBuffer);
-                    using StreamReader reader = new(requestBuffer, Encoding, leaveOpen: true);
+                    using StreamReader reader = new(requestBuffer, MessageEncoding, leaveOpen: true);
+                    // ReSharper disable once MethodHasAsyncOverloadWithCancellation - the source is already in memory because it's a MemoryStream, so there is no reason to use async or cancellations
                     config.LogRequestTransmitted(reader.ReadToEnd(), requestId);
                 }
+
                 requestBuffer.SetLength(0);
             }
 
@@ -156,6 +179,7 @@ public class WireLoggingFilter(WireLoggingFilter.Config config): ClientRequestFi
             if (config.IsLogEnabled()) {
                 responseBuffer.Write(buffer.Span[.. (Index) (config.MaxMessageSize > 0 ? (config.MaxMessageSize - requestBuffer.Length).Clip(0, bytesRead) : bytesRead)]);
             }
+
             isFinalResponseChunkWritten = false;
 
             return bytesRead;
@@ -172,9 +196,10 @@ public class WireLoggingFilter(WireLoggingFilter.Config config): ClientRequestFi
                 if (responseBuffer.Length != 0) { // log response because this is the last chunk
                     if (config.IsLogEnabled()) {
                         TrimTrailingLineEndings(responseBuffer);
-                        using StreamReader reader = new(responseBuffer, Encoding, leaveOpen: true);
+                        using StreamReader reader = new(responseBuffer, MessageEncoding, leaveOpen: true);
                         config.LogResponseReceived(reader.ReadToEnd(), requestId);
                     }
+
                     responseBuffer.SetLength(0);
                 }
             }
@@ -188,6 +213,7 @@ public class WireLoggingFilter(WireLoggingFilter.Config config): ClientRequestFi
                 if (stream.Position < 2) break;
                 stream.Position -= 2;
             }
+
             stream.SetLength(Math.Max(newLength, 0));
             stream.Position = 0;
         }
@@ -278,6 +304,7 @@ public class WireLoggingFilter(WireLoggingFilter.Config config): ClientRequestFi
                         break;
                     }
                 }
+
                 if (isIdleConnection) {
                     AsyncState.Value?.wireStream?.OnResponseFinished();
                 }

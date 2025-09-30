@@ -3,3 +3,7 @@
 # This has too many false positives (negatives?) because it ignores <inheritdoc/>, so it's a pretty worthless analysis
 # CS1573: Parameter has no matching param tag in the XML comment (but other parameters do)
 dotnet_diagnostic.CS1573.severity = silent
+
+# Recommended replacement breaks the build when targeting .NET 6:
+# 'ImmutableList<KeyValuePair<string, string>>' does not contain a constructor that takes 0 arguments
+dotnet_diagnostic.IDE0301.severity = none

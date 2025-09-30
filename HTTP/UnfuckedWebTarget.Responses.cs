@@ -24,6 +24,8 @@ public partial class UnfuckedWebTarget {
         new XmlBodyReader()
     ];
 
+    /// <exception cref="ProcessingException">response parsing failed</exception>
+    /// <exception cref="WebApplicationException">the response status code was not succesful, and <see cref="PropertyKey.ThrowOnUnsuccessfulStatusCode"/> was left enabled</exception>
     private async Task<T> ParseResponseBody<T>(HttpResponseMessage response, CancellationToken cancellationToken) {
         if (!Property(PropertyKey.ThrowOnUnsuccessfulStatusCode, out bool value) || value) {
             await ThrowIfUnsuccessful(response, cancellationToken).ConfigureAwait(false);
@@ -49,6 +51,7 @@ public partial class UnfuckedWebTarget {
         }
 
         await response.Content.LoadIntoBufferAsync().ConfigureAwait(false);
+
         /*
          * Don't dispose the bodyStream yet, because it's a buffered shared instance in the HttpContent at this point and must be read multiple times by message body readers below who each call
          * ReadAsStreamAsync(). It will get disposed in Get<T>() and similar by DisposeIfNotStream().
@@ -60,11 +63,16 @@ public partial class UnfuckedWebTarget {
 #endif
         using StreamReader bodyReader   = new(bodyStream, responseEncoding ?? Encoding.UTF8, true);
         char[]             prefixBuffer = new char[32];
-        int prefixSize =
+
+        int prefixSize;
 #if NETCOREAPP2_1_OR_GREATER
-            await bodyReader.ReadAsync(prefixBuffer.AsMemory(), cancellationToken).ConfigureAwait(false);
+        try {
+            prefixSize = await bodyReader.ReadAsync(prefixBuffer.AsMemory(), cancellationToken).ConfigureAwait(false);
+        } catch (OperationCanceledException e) {
+            throw new ProcessingException(e, await CreateHttpExceptionParams(response, CancellationToken.None).ConfigureAwait(false));
+        }
 #else
-            await bodyReader.ReadAsync(prefixBuffer, 0, prefixBuffer.Length).ConfigureAwait(false);
+        prefixSize = await bodyReader.ReadAsync(prefixBuffer, 0, prefixBuffer.Length).ConfigureAwait(false);
 #endif
         string bodyPrefix = new string(prefixBuffer, 0, prefixSize).Trim();
         bodyStream.Position = 0;
@@ -84,6 +92,7 @@ public partial class UnfuckedWebTarget {
             new SerializationException($"Could not determine content type of response body to deserialize (URI: {p.RequestUrl}, Content-Type: {responseContentType}, .NET type: {typeof(T)})"), p);
     }
 
+    /// <exception cref="WebApplicationException">the response status code was not successful</exception>
     internal static async Task ThrowIfUnsuccessful(HttpResponseMessage response, CancellationToken cancellationToken) {
         if (!response.IsSuccessStatusCode) {
             HttpStatusCode      statusCode = response.StatusCode;

@@ -83,14 +83,17 @@ public class UrlBuilder: ICloneable {
         _unusedTemplateQueryParameterRealNames = other._unusedTemplateQueryParameterRealNames;
     }
 
+    /// <exception cref="UriFormatException"></exception>
     public UrlBuilder(string uri): this(new Uri(uri, UriKind.Absolute)) { }
 
     public static implicit operator UrlBuilder(Uri uri) => new(uri);
 
     public static implicit operator UrlBuilder(UriBuilder uri) => new(uri);
 
+    /// <exception cref="UriFormatException"></exception>
     public static explicit operator UrlBuilder(string uri) => new(uri);
 
+    /// <exception cref="UriFormatException"></exception>
     public static UrlBuilder FromTemplate(string uriTemplate) {
         const string alphabet            = "abcdefghijklmnopqrstuvwxyz";
         Regex        templatePattern     = new(@"\{(?<prefix>[/?&]?)(?<names>[\w-,]+?)\}");
@@ -171,6 +174,7 @@ public class UrlBuilder: ICloneable {
 
     #region Serialization
 
+    // ExceptionAdjustment: M:System.Uri.#ctor(System.String,System.UriKind) -T:System.UriFormatException
     [Pure]
     public Uri ToUrl() {
         StringBuilder built = new();
@@ -204,9 +208,11 @@ public class UrlBuilder: ICloneable {
             built.Append('/').AppendJoin('/',
                 _path.Select(p => UrlEncoder.Encode(ReplacePlaceholders(p.Trim('/')), UrlEncoder.Component.PathSegment)));
 
+#pragma warning disable IDE0056 // Use index operator - not available when targeting .NET Standard 2
             if (_trailingSlash && built[built.Length - 1] != '/') {
                 built.Append('/');
             }
+#pragma warning restore IDE0056 // Use index operator
         }
 
         IList<KeyValuePair<string, object>> queryParameters = _unusedTemplateQueryParameterRealNames != null

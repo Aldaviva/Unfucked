@@ -4,6 +4,7 @@ using Unfucked.HTTP.Config;
 using Unfucked.HTTP.Filters;
 using Unfucked.HTTP.Serialization;
 #if NET8_0_OR_GREATER
+using System.Diagnostics.Metrics;
 #endif
 
 namespace Unfucked.HTTP;
@@ -37,9 +38,11 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
     private static readonly Lazy<FieldInfo> HttpClientHandlerField = new(() => typeof(HttpMessageInvoker).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
         .First(field => field.FieldType == typeof(HttpMessageHandler)), LazyThreadSafetyMode.PublicationOnly);
 
-    private static FieldInfo? _handlerField;
-
     private readonly FilterContext filterContext;
+
+#if NET8_0_OR_GREATER
+    private readonly IMeterFactory? wireLoggingMeterFactory;
+#endif
 
     private bool disposed;
 
@@ -81,6 +84,12 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
     ) {
         ClientConfig  = configuration ?? new ClientConfig();
         filterContext = new FilterContext(this);
+
+#if NET8_0_OR_GREATER
+        if (innerHandler == null) {
+            wireLoggingMeterFactory = ((SocketsHttpHandler) InnerHandler!).MeterFactory;
+        }
+#endif
     }
 
     public UnfuckedHttpHandler(HttpClient toClone, IClientConfig? configuration = null): this((HttpMessageHandler) HttpClientHandlerField.Value.GetValue(toClone)!, configuration) { }
@@ -95,8 +104,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 
         IUnfuckedHttpHandler? handler = null;
         if (!HttpClientHandlerCache.TryGetValue(httpClient.GetHashCode(), out WeakReference<IUnfuckedHttpHandler>? handlerHolder) || !(handlerHolder?.TryGetTarget(out handler) ?? true)) {
-            _handlerField ??= typeof(HttpMessageInvoker).GetFields(BindingFlags.NonPublic | BindingFlags.Instance).FirstOrDefault(field => field.FieldType == typeof(HttpMessageHandler));
-            handler       =   FindDescendantUnfuckedHandler((HttpMessageHandler?) _handlerField?.GetValue(httpClient));
+            handler = FindDescendantUnfuckedHandler((HttpMessageHandler?) HttpClientHandlerField.Value.GetValue(httpClient));
             CacheClientHandler(httpClient, handler);
         }
 
@@ -171,6 +179,10 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
                 foreach (KeyValuePair<int, WeakReference<IUnfuckedHttpHandler>?> eviction in evictions) {
                     HttpClientHandlerCache.Remove(eviction);
                 }
+
+#if NET8_0_OR_GREATER
+                wireLoggingMeterFactory?.Dispose();
+#endif
             }
         }
         base.Dispose(disposing);

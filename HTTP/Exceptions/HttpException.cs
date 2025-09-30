@@ -29,7 +29,11 @@ public abstract class HttpException(HttpStatusCode? status, string message, Exce
 
 }
 
-public record HttpExceptionParams(HttpMethod Verb, Uri? RequestUrl, HttpResponseHeaders? ResponseHeaders, ReadOnlyMemory<byte>? ResponseBody);
+public record HttpExceptionParams(HttpMethod Verb, Uri? RequestUrl, HttpResponseHeaders? ResponseHeaders, ReadOnlyMemory<byte>? ResponseBody) {
+
+    internal HttpExceptionParams(HttpRequestMessage request): this(request.Method, request.RequestUri, null, null) { }
+
+}
 
 public class WebApplicationException(HttpStatusCode status, string reasonPhrase, HttpExceptionParams p): HttpException(status, $"{(int) status} {reasonPhrase} from {p.RequestUrl}", null, p) {
 

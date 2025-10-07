@@ -77,17 +77,53 @@
     - Run program and get output and exit code
 - Strings
     - Coerce empty strings to `null`
+        ```cs
+        "".EmptyToNull(); // null
+        ```
     - Fluently check if a string has any non-whitespace characters
+        ```cs
+        " ".HasText(); // false
+        ```
     - Fluently check if a string has any characters
+        ```cs
+        "".HasLength(); // false
+        ```
     - Fluent join method
+        ```cs
+        new[] { "A", "B" }.Join(", ");
+        ```
     - Uppercase first letter
+        ```cs
+        "ben".ToUpperFirstLetter(); // "Ben"
+        ```
     - Lowercase first letter
+        ```cs
+        "Ben".ToLowerFirstLetter(); // "ben"
+        ```
     - Trim multiple strings from start, end, or both
+        ```cs
+        "..::Ben::..".Trim(".", ":"); // "Ben"
+        ```
     - Join enumerable into an English-style list with commas an a conjunction like `and`
+        ```cs
+        new[] { "Dewey", "Cheetum", "Howe" }.JoinHumanized(",", "and", true); // "Dewey, Cheetum, and Howe"
+        ```
     - Fluent conversion method to byte array
+        ```cs
+        "Ben".ToByteArray(new UTF8Encoding(false, true)); // [0x42, 0x65, 0x6E]
+        ```
     - Fluent conversion method to byte stream
+        ```cs
+        Stream stream = "Ben".ToByteStream();
+        ```
     - Convert DOS CRLF line breaks to Unix LF line breaks
+        ```cs
+        "A\r\nB".Dos2Unix(); // "A\nB"        
+        ```
     - Repeat a string a certain number of times
+        ```cs
+        "Ben".Repeat(4); // "BenBenBenBen"
+        ```
     - Polyfill for `StringBuilder.AppendJoin` in .NET Standard 2.0
     - Polyfill for `string.StartsWith(char)` and `string.EndsWith(char)` in .NET Standard 2.0
     - Polyfill for `string.Contains(string, StringComparison)` in .NET Standard 2.0
@@ -121,10 +157,29 @@
         object resultWithFallback = await Task.FromException<object>(new Exception()).ResultOrNullForException() ?? new object();
         ```
 - URIs
-    - Fluent method to get URI query parameters
-    - Check if a URI host belongs to a given domain (site locking)
+    - Fluent method to get URL query parameters
+        ```cs
+        string? value = new Uri("https://aldaviva.com?key=value").GetQuery()["key"];
+        ```
     - Builder pattern for URLs
+        ```cs
+        Uri url = new UrlBuilder("https", "aldaviva.com")
+            .Path("a")
+            .Path("b/c")
+            .QueryParam("d", "e")
+            .QueryParam("f", "{f}")
+            .ResolveTemplate("f", "g")
+            .Fragment("h")
+            .ToUrl(); // https://aldaviva.com/a/b/c?d=e&f=g#h
+        ```
     - Truncate URIs to remove the fragment, query parameters, or path. Useful for getting the origin too.
+        ```cs
+        Uri full = new("https://ben@aldaviva.com:443/path?key=value#hash");
+        full.Truncate(URI.Part.Query);     // https://ben@aldaviva.com:443/path?key=value
+        full.Truncate(URI.Part.Path);      // https://ben@aldaviva.com:443/path
+        full.Truncate(URI.Part.Authority); // https://ben@aldaviva.com:443/
+        full.Truncate(URI.Part.Origin);    // https://aldaviva.com:443
+        ```
 - XML
     - Fluent methods to read an XML document from an HTTP response body as a mapped object, DOM, LINQ, or XPath
     - Find all descendant elements of a parent node which have a given tag name
@@ -323,15 +378,54 @@
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.Windows?logo=nuget&label=Unfucked.Windows%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.Windows)
 - For use with [Managed Windows API](https://mwinapi.sourceforge.net) ([mwinapi](https://www.nuget.org/packages/mwinapi))
 - Reliably detect when computer is entering and exiting standby
+    ```cs
+    using IStandbyListener standbyListener = new EventLogStandbyListener();
+    standbyListener.StandingBy += (_, _) => Console.WriteLine("The computer is entering sleep mode");
+    standbyListener.Resumed += (_, _) => Console.WriteLine("The computer woke up from sleep mode");
+    ```
 - Kill the running screensaver
+    ```cs
+    new ScreensaverKiller().KillScreensaver();
+    ```
 - Easier to get program's basename without memory leaks
+    ```cs
+    string? basename = SystemWindow.ForegroundWindow.GetProcessExecutableBasename();
+    ```
 - Get parent process of a process
+    ```cs
+    Process? parent = Process.GetCurrentProcess().GetParentProcess();
+    ```
 - Get descendant processes recursively of a process
+    ```cs
+    IEnumerable<Process> decendants = Process.GetCurrentProcess().GetDescendantProcesses();
+    ```
+- Detect if a process is suspended
+    ```cs
+    bool isSuspended = Process.GetProcessById(pid).IsProcessSuspended();
+    ```
 - Get locale of the operating system, rather than the user
+    ```cs
+    CultureInfo machineCulture = Cultures.CurrentMachineCulture;
+    ```
 - Convert between Win32 window handles, UI Automation elements, and mwinapi window instances
+    ```cs
+    AutomationElement? automationElement = SystemWindow.ForegroundWindow.ToAutomationElement();
+    SystemWindow foreground = foregroundUiaElementd.ToSystemWindow();
+    IntPtr? foregroundHwnd = automationElement.ToHwnd();
+    ```
 - Easily get all children of a UI Automation element
+    ```cs
+    IEnumerable<AutomationElement> children = automationElement.Children();
+    ```
 - Create a UI Automation property AND or OR condition that doesn't crash if there is only one sub-condition
+    ```cs
+    IEnumerable<string> allowedNames = ["A"];
+    automationElement.FindFirst(TreeScope.Children, UIAutomationExtensions.SingletonSafePropertyCondition(AutomationElement.NameProperty, false, allowedNames));
+    ```
 - Find a child or descendant UI Automation element and wait if it doesn't immediately exist, instead of returning null, to prevent UI rendering race conditions
+    ```cs
+    AutomationElement? a = automationElement.WaitForFirst(TreeScope.Children, new PropertyCondition(AutomationElement.NameProperty, "A"), TimeSpan.FromSeconds(30), cancellationToken);
+    ```
 - Detach a console application from its console window if you want to prevent it from receiving `Ctrl`+`C`, because it's a child process of your console application, you're handling that signal in your parent process using [`Console.CancelKeyPress`](https://learn.microsoft.com/en-us/dotnet/api/system.console.cancelkeypress), and you don't want the console sidestepping your parent and killing your child.
    ```cs
    using Process child = Process.Start("child.exe", "args")!;

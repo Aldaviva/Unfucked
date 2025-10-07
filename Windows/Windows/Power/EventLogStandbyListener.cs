@@ -18,11 +18,6 @@ public interface IStandbyListener: IDisposable {
     /// </summary>
     event EventHandler Resumed;
 
-    /// <summary>
-    /// Triggered if there is an unrecoverable error on the event listener, preventing all future events from being fired.
-    /// </summary>
-    event EventHandler<Exception> FatalError;
-
 }
 
 /// <inheritdoc />
@@ -37,35 +32,19 @@ public class EventLogStandbyListener: IStandbyListener {
     /// <inheritdoc />
     public event EventHandler? Resumed;
 
-    /// <inheritdoc />
-    public event EventHandler<Exception>? FatalError;
-
     private readonly EventLogWatcher logWatcher;
 
-    /// <exception cref="EventLogNotFoundException">if the given event log or file was not found</exception>
-    /// <exception cref="UnauthorizedAccessException">if the log did not already exist and this program is not running elevated</exception>
     public EventLogStandbyListener() {
         logWatcher = new EventLogWatcher(new EventLogQuery("System", PathType.LogName,
             $"*[System[Provider/@Name=\"Microsoft-Windows-Kernel-Power\" and (EventID={StandByEventId} or EventID={ResumeEventId})]]"));
 
         logWatcher.EventRecordWritten += onEventRecord;
 
-        try {
-            logWatcher.Enabled = true;
-        } catch (EventLogNotFoundException) {
-            logWatcher.Dispose();
-            throw;
-        } catch (UnauthorizedAccessException) {
-            logWatcher.Dispose();
-            throw;
-        }
+        logWatcher.Enabled = true;
     }
 
     private void onEventRecord(object? sender, EventRecordWrittenEventArgs e) {
-        if (e.EventException is { } exception) {
-            FatalError?.Invoke(this, exception);
-            Dispose();
-        } else {
+        if (e.EventException == null) {
             using EventRecord? record = e.EventRecord;
             switch (record?.Id) {
                 case StandByEventId:
@@ -75,6 +54,8 @@ public class EventLogStandbyListener: IStandbyListener {
                     Resumed?.Invoke(this, EventArgs.Empty);
                     break;
             }
+        } else {
+            Dispose();
         }
     }
 

@@ -301,15 +301,16 @@ public class UrlBuilder: ICloneable {
         new(this) { _queryParameters = _queryParameters.AddRange(values.Compact().Select(v => new KeyValuePair<string, object>(key, v.ToString() ?? string.Empty))) };
 
     [Pure]
-    public UrlBuilder QueryParam(IEnumerable<KeyValuePair<string, string?>>? parameters) => new(this) {
-        _queryParameters = parameters != null
-            ? _queryParameters.AddRange(parameters.Compact().Select(p => new KeyValuePair<string, object>(p.Key, p.Value.ToString())))
-            : ImmutableList<KeyValuePair<string, object>>.Empty
+    public UrlBuilder QueryParam(IEnumerable<KeyValuePair<string, string>> parameters) => new(this) {
+        _queryParameters = _queryParameters.AddRange(parameters.Select(p => new KeyValuePair<string, object>(p.Key, p.Value.ToString())))
     };
 
     [Pure]
-    public UrlBuilder QueryParam(IEnumerable<KeyValuePair<string, object?>>? parameters) =>
-        QueryParam(parameters?.Compact().Select(pair => new KeyValuePair<string, string?>(pair.Key, pair.Value.ToString() ?? string.Empty)));
+    public UrlBuilder QueryParam(IEnumerable<KeyValuePair<string, object?>>? parameters) => new(this) {
+        _queryParameters = parameters is null
+            ? ImmutableList<KeyValuePair<string, object>>.Empty
+            : _queryParameters.AddRange(parameters.Compact().Select(pair => new KeyValuePair<string, object>(pair.Key, pair.Value.ToString() ?? string.Empty)))
+    };
 
     [Pure]
     public UrlBuilder Fragment(string? fragment) => new(this) { _fragment = fragment };

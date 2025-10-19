@@ -21,8 +21,22 @@ public partial class UnfuckedWebTarget {
 
     /// <inheritdoc />
     [Pure]
-    public WebTarget Header(string key, params IEnumerable<object> values) => new UnfuckedWebTarget(client, urlBuilder, clientHandler, clientConfig) {
-        Headers = Headers.AddRange(values.Select(value => new KeyValuePair<string, string>(key, value.ToString() ?? string.Empty)))
+    public WebTarget Header(string key, params IEnumerable<object?> values) => new UnfuckedWebTarget(client, urlBuilder, clientHandler, clientConfig) {
+        Headers = Headers.AddRange(values.Compact().Select(value => new KeyValuePair<string, string>(key, value.ToString() ?? string.Empty)))
+    };
+
+    /// <inheritdoc />
+    [Pure]
+    public WebTarget Header(IEnumerable<KeyValuePair<string, object?>>? headers) => new UnfuckedWebTarget(client, urlBuilder, clientHandler, clientConfig) {
+        Headers = headers is null
+            ? ImmutableList<KeyValuePair<string, string>>.Empty
+            : Headers.AddRange(headers.Where(pair => pair.Value is not null).Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value!.ToString() ?? string.Empty)))
+    };
+
+    /// <inheritdoc />
+    [Pure]
+    public WebTarget Header(IEnumerable<KeyValuePair<string, string>> headers) => new UnfuckedWebTarget(client, urlBuilder, clientHandler, clientConfig) {
+        Headers = Headers.AddRange(headers.Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value)))
     };
 
     /// <inheritdoc />

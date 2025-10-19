@@ -38,7 +38,7 @@ public partial class UnfuckedWebTarget {
     public WebTarget QueryParam(string key, IEnumerable<object?> values) => With(urlBuilder.QueryParam(key, values));
 
     [Pure]
-    public WebTarget QueryParam(IEnumerable<KeyValuePair<string, string?>>? parameters) => With(urlBuilder.QueryParam(parameters));
+    public WebTarget QueryParam(IEnumerable<KeyValuePair<string, string>> parameters) => With(urlBuilder.QueryParam(parameters));
 
     [Pure]
     public WebTarget QueryParam(IEnumerable<KeyValuePair<string, object?>>? parameters) => With(urlBuilder.QueryParam(parameters));

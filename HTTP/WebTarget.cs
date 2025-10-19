@@ -99,7 +99,7 @@ public interface WebTarget: Configurable<WebTarget> {
     /// <param name="parameters">Multiple key-value pairs to add. Parameters with <c>null</c> values will be ignored. If this entire argument is <c>null</c>, then all query parameters will be removed from this URL.</param>
     /// <returns>New immutable target instance with the changed value</returns>
     [Pure]
-    WebTarget QueryParam(IEnumerable<KeyValuePair<string, string?>>? parameters);
+    WebTarget QueryParam(IEnumerable<KeyValuePair<string, string>> parameters);
 
     /// <inheritdoc cref="QueryParam(IEnumerable{KeyValuePair{string,string?}}?)" />
     [Pure]
@@ -157,6 +157,22 @@ public interface WebTarget: Configurable<WebTarget> {
     /// <returns>New immutable target instance with the changed value</returns>
     [Pure]
     WebTarget Header(string key, params IEnumerable<object> values);
+
+    /// <summary>
+    /// Adds zero or more HTTP headers to the request
+    /// </summary>
+    /// <param name="headers">Map of header keys and values. If a value is <c>null</c>, that key-value pair will be skipped. If this argument is <c>null</c>, then all headers will be removed from the request. If this argument is empty, the headers in the request will be left unmodified. If another header with the same key already exists in this request, both will be sent as separate headers, rather than being sent as one header with combined values.</param>
+    /// <returns>New immutable target instance with the changed values</returns>
+    [Pure]
+    WebTarget Header(IEnumerable<KeyValuePair<string, object?>>? headers);
+
+    /// <summary>
+    /// Adds zero or more HTTP headers to the request
+    /// </summary>
+    /// <param name="headers">Map of header keys and values. If a value is <c>null</c>, that key-value pair will be skipped. If this argument is empty, the headers in the request will be left unmodified. If another header with the same key already exists in this request, both will be sent as separate headers, rather than being sent as one header with combined values.</param>
+    /// <returns>New immutable target instance with the changed values</returns>
+    [Pure]
+    WebTarget Header(IEnumerable<KeyValuePair<string, string>> headers);
 
     /// <summary>
     /// Set the <c>Accept</c> request header

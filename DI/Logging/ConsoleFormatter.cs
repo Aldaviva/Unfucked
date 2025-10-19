@@ -4,12 +4,12 @@ using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Unfucked.DI;
+namespace Unfucked.Logging;
 
 /// <summary>
 /// <para>A console log formatter that prints messages with a level character (like 'i'), ISO 8601-like date and time with milliseconds, class (by default the simple name), message, and any stack trace, separated by vertical pipes (' | '), for example:</para>
 /// <para><c> i | 2024-09-08 13:27:00.000 | Program | Application starting</c></para>
-/// <para>Install this formatter in your app host using <see cref="DependencyInjectionExtensions.AddUnfuckedConsole"/>, for example:</para>
+/// <para>Install this formatter in your app host using <see cref="LoggingExtensions.AddUnfuckedConsole"/>, for example:</para>
 /// <para><c>new HostApplicationBuilder().Logging.AddUnfuckedConsole(opts => opts.Color = false);</c></para>
 /// </summary>
 /// <param name="options">Whether the formatter should include full class names including their namespace, what character to use to separate columns, and whether to use colored output</param>
@@ -45,7 +45,7 @@ public class ConsoleFormatter(IOptions<ConsoleFormatter.ConsoleFormatterOptions>
     /// <inheritdoc />
     public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter) {
         DateTimeOffset now       = DateTimeOffset.Now;
-        string?        message   = logEntry.State?.ToString();
+        string?        message   = logEntry.State?.ToString(); // logEntry.Formatter?.Invoke(logEntry.State, logEntry.Exception)
         Exception?     exception = logEntry.Exception;
         if (message is not null || exception is not null) {
             if (useColor) {

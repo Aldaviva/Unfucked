@@ -2,14 +2,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Unfucked.DI;
+namespace Unfucked.Logging;
 
 /// <summary>
 /// <para>Increase the level of log messages from certain categories/classes with certain event IDs, because the original developers foolishly logged errors at the debug level in the same class that logs lots of noisy, low-severity debug messages too, so you can't just set the log level for the provider to debug for this class without getting flooded with extra garbage.</para>
 /// <para>For example, if you have mismatched serialization settings between your sender and receiver, SignalR by default won't log anything, until you turn on debug logs for the correct class, at which point you get that error message as well as way too many unrelated logs that cry wolf.</para>
 /// <para>To fix this problem, this logger provider increases the log level of certain log messages in that class from debug to a higher level like warning, based on their event ID, so that messages which truly represent errors and other unexpected behavior are shown at the correct level.</para>
 /// <para>Usage:</para>
-/// <para>1. Register this logger provider by calling <see cref="DependencyInjectionExtensions.AmplifyMessageLevels"/>. In the options callback, call <see cref="AmplifiedLogOptions.Amplify"/> one or more times to give it the class name or category of the log message source, the desired new log level, and one or more event IDs that should be changed to the new log level.</para>
+/// <para>1. Register this logger provider by calling <see cref="LoggingExtensions.AmplifyMessageLevels"/>. In the options callback, call <see cref="AmplifiedLogOptions.Amplify"/> one or more times to give it the class name or category of the log message source, the desired new log level, and one or more event IDs that should be changed to the new log level.</para>
 /// <para><c>WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 /// builder.Logging.AmplifyMessageLevels(options =&gt; options.Amplify("Microsoft.AspNetCore.SignalR.Internal.DefaultHubDispatcher", LogLevel.Warning, 2, 3, 5, 11, 13, 14, 15, 19, 21, 22, 23, 24));</c></para>
 /// <para>2. Set your application log level, in <c>appsettings.json</c> or wherever you set them. Make sure the level for the categories you specified (or their ancestors) is both greater than the original level (like debug) so that the noisy unwanted messages are hidden, and less than or equal to the amplified level (like warning), so you can see the important messages you amplified.</para>

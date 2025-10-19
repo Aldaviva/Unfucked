@@ -15,20 +15,21 @@ namespace Unfucked.OBS;
  * How to generate this facade:
  * 1. Copy the third-party source code for decompiled ObsClient.cs to a temporary file in this project
  * 2. Extract an interface from ObsClient, which creates this IObsClient interface
- * 3. Add the <inheritdoc>, [GeneratedCode], INotifyPropertyChanged, and IDisposable to this interface
- * 4. Delete the temporary ObsClient.cs file
- * 5. Create a ObsClientFacade subclass of ObsClient which implements the new IObsClient interface
- * 6. Register ObsClientFacade in dependency injection context with IObsClient interface
- * 7. Inject IObjsClient into dependent classes
+ * 3. Remove the inherited members NotifyPropertyChanged and Dispose()
+ * 4. Add the <inheritdoc>, [GeneratedCode], INotifyPropertyChanged, and IDisposable to this interface
+ * 5. Delete the temporary ObsClient.cs file
+ * 6. Create an ObsClient subclass of ObsClient which implements the new IObsClient interface
+ * 7. Register ObsClient in dependency injection context with IObsClient interface
+ * 8. Inject IObjsClient into dependent classes
  *
- * Note: in step 2, make sure you're extracting the interface from ObsClient instead of its ObsClientFacade subclass, otherwise documentation comments will not be copied to the interface.
+ * Note: in step 2, make sure you're extracting the interface from upstream ObsClient instead of its subclass, otherwise documentation comments will not be copied to the interface.
  *
  * If you want to tell which methods changed between versions, Telerik JustAssembly (free) is useful: https://www.telerik.com/justassembly
  * Also try ReSharper's new assembly diff tool, which was improved recently: https://www.jetbrains.com.cn/en-us/help/resharper/Compare_Assemblies.html
  */
 
 /// <inheritdoc cref="OBSStudioClient.ObsClient"/>
-[GeneratedCode("OBSClient", "2.1.1")]
+[GeneratedCode("OBSClient", "3.0.0")]
 public interface IObsClient: INotifyPropertyChanged, IDisposable {
 
     /// <summary>
@@ -140,6 +141,44 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// </summary>
     event EventHandler<ConnectionClosedEventArgs>? ConnectionClosed;
 
+    /// <summary>Occurs when the number of bytes sent changes.</summary>
+    event EventHandler<long>? TotalBytesSentChanged;
+
+    /// <summary>Occurs when the number of bytes received changes.</summary>
+    /// <remarks>This event is triggered whenever there is an update to the total number of bytes
+    /// received. Subscribers can use this event to monitor data transfer progress or handle updates in real
+    /// time.</remarks>
+    event EventHandler<long>? TotalBytesReceivedChanged;
+
+    /// <summary>Occurs when the number of messages sent changes.</summary>
+    event EventHandler<int>? TotalMessagesSentChanged;
+
+    /// <summary>Occurs when the number of messages received changes.</summary>
+    event EventHandler<int>? TotalMessagesReceivedChanged;
+
+    /// <summary>
+    /// Occurs when the number of bytes sent changes in the current session.
+    /// </summary>
+    event EventHandler<long>? SessionBytesSentChanged;
+
+    /// <summary>
+    /// Occurs when the number of bytes received changes in the current session.
+    /// </summary>
+    /// <remarks>This event is triggered whenever there is an update to the total number of bytes
+    /// received in the current session. Subscribers can use this event to monitor data transfer progress
+    /// or handle updates in real time.</remarks>
+    event EventHandler<long>? SessionBytesReceivedChanged;
+
+    /// <summary>
+    /// Occurs when the number of messages sent changes in the current session.
+    /// </summary>
+    event EventHandler<int>? SessionMessagesSentChanged;
+
+    /// <summary>
+    /// Occurs when the number of messages received changes in the current session.
+    /// </summary>
+    event EventHandler<int>? SessionMessagesReceivedChanged;
+
     /// <summary>
     /// Opens the connection to OBS Studio and tries to authenticate the session.
     /// </summary>
@@ -154,7 +193,12 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// You can use the <see cref="E:OBSStudioClient.ObsClient.PropertyChanged" /> event to see whether the <see cref="P:OBSStudioClient.ObsClient.ConnectionState" /> is Connected, which indicates succesfull authenticaiton.
     /// When the client is already connected, disconnect first.
     /// </remarks>
-    Task<bool> ConnectAsync(bool autoReconnect = false, string password = "", string hostname = "localhost", int port = 4455, EventSubscriptions eventSubscription = EventSubscriptions.All);
+    Task<bool> ConnectAsync(
+        bool autoReconnect = false,
+        string password = "",
+        string hostname = "localhost",
+        int port = 4455,
+        EventSubscriptions eventSubscription = EventSubscriptions.All);
 
     /// <summary>Closes the connection to OBS Studio.</summary>
     void Disconnect();
@@ -164,7 +208,9 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <param name="timeOutInMilliseconds">The timeout for the request. (Defauls to <see cref="P:OBSStudioClient.ObsClient.RequestTimeout" />.)</param>
     /// <returns>The responses for the individual requests.</returns>
     /// <remarks>Since batch requests typically take more time than individual request, you have the opportunity here to override the default timeout for this specific call.</remarks>
-    Task<RequestResponseMessage[]> SendRequestBatchAsync(RequestBatchMessage requestBatchMessage, int? timeOutInMilliseconds = null);
+    Task<RequestResponseMessage[]> SendRequestBatchAsync(
+        RequestBatchMessage requestBatchMessage,
+        int? timeOutInMilliseconds = null);
 
     /// <summary>
     /// Sends a Reidentify request to OBS Studio, typically to subscribe to a different set of events.
@@ -233,7 +279,9 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <param name="parameterCategory">Category of the parameter to get</param>
     /// <param name="parameterName">Name of the parameter to get</param>
     /// <returns>A <see cref="T:OBSStudioClient.Responses.ProfileParameterResponse" /></returns>
-    Task<ProfileParameterResponse> GetProfileParameter(string parameterCategory, string parameterName);
+    Task<ProfileParameterResponse> GetProfileParameter(
+        string parameterCategory,
+        string parameterName);
 
     /// <summary>
     /// Sets the value of a parameter in the current profile's configuration.
@@ -241,7 +289,10 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <param name="parameterCategory">Category of the parameter to set</param>
     /// <param name="parameterName">Name of the parameter to set</param>
     /// <param name="parameterValue">Value of the parameter to set. Use null to delete</param>
-    Task SetProfileParameter(string parameterCategory, string parameterName, string? parameterValue);
+    Task SetProfileParameter(
+        string parameterCategory,
+        string parameterName,
+        string? parameterValue);
 
     /// <summary>Gets the current video settings.</summary>
     /// <returns>A <see cref="T:OBSStudioClient.Responses.VideoSettingsResponse" /></returns>
@@ -254,7 +305,13 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <param name="baseHeight">Height of the base (canvas) resolution in pixels.</param>
     /// <param name="outputWidth">Width of the output resolution in pixels.</param>
     /// <param name="outputHeight">Height of the output resolution in pixels.</param>
-    Task SetVideoSettings(float? fpsNumerator, float? fpsDenominator, int? baseWidth, int? baseHeight, int? outputWidth, int? outputHeight);
+    Task SetVideoSettings(
+        float? fpsNumerator,
+        float? fpsDenominator,
+        int? baseWidth,
+        int? baseHeight,
+        int? outputWidth,
+        int? outputHeight);
 
     /// <summary>
     /// Gets the current stream service settings (stream destination).
@@ -345,6 +402,12 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <summary>Occurs when the name of an input has changed.</summary>
     event EventHandler<InputNameChangedEventArgs>? InputNameChanged;
 
+    /// <summary>An input's settings have changed (been updated).</summary>
+    /// <remarks>
+    /// Note: On some inputs, changing values in the properties dialog will cause an immediate update. Pressing the "Cancel" button will revert the settings, resulting in another event being fired.
+    /// </remarks>
+    event EventHandler<InputSettingsChangedEventArgs>? InputSettingsChanged;
+
     /// <summary>Occurs when an input's active state has changed.</summary>
     /// <remarks>
     /// When an input is active, it means it's being shown by the program feed.
@@ -425,6 +488,11 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     event EventHandler<SourceFilterNameChangedEventArgs>? SourceFilterNameChanged;
 
     /// <summary>
+    /// An source filter's settings have changed (been updated).
+    /// </summary>
+    event EventHandler<SourceFilterSettingsChangedEventArgs>? SourceFilterSettingsChanged;
+
+    /// <summary>
     /// Occurs when a source filter's enable state has changed.
     /// </summary>
     event EventHandler<SourceFilterEnableStateChangedEventArgs>? SourceFilterEnableStateChanged;
@@ -493,10 +561,19 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// </remarks>
     event EventHandler<ScreenshotSavedEventArgs>? ScreenshotSaved;
 
+    /// <summary>Gets an array of all available source filter kinds.</summary>
+    /// <returns>Array of source filter kinds</returns>
+    Task<string[]> GetSourceFilterKindList();
+
     /// <summary>Gets an array of all of a source's filters.</summary>
     /// <param name="sourceName">Name of the source</param>
     /// <returns>Array of <see cref="T:OBSStudioClient.Classes.Filter" /></returns>
     Task<Filter[]> GetSourceFilterList(string sourceName);
+
+    /// <summary>Gets an array of all of a source's filters.</summary>
+    /// <param name="sourceUuid">Uuid of the source</param>
+    /// <returns>Array of <see cref="T:OBSStudioClient.Classes.Filter" /></returns>
+    Task<Filter[]> GetSourceFilterList(Guid sourceUuid);
 
     /// <summary>Gets the default settings for a filter kind.</summary>
     /// <param name="filterKind">Filter kind to get the default settings for</param>
@@ -510,12 +587,34 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <param name="filterName">Name of the new filter to be created</param>
     /// <param name="filterKind">The kind of filter to be created</param>
     /// <param name="filterSettings">Settings object to initialize the filter with</param>
-    Task CreateSourceFilter(string sourceName, string filterName, string filterKind, Dictionary<string, object>? filterSettings);
+    Task CreateSourceFilter(
+        string sourceName,
+        string filterName,
+        string filterKind,
+        Dictionary<string, object>? filterSettings);
+
+    /// <summary>
+    /// Creates a new filter, adding it to the specified source.
+    /// </summary>
+    /// <param name="sourceUuid">Uuid of the source to add the filter to</param>
+    /// <param name="filterName">Name of the new filter to be created</param>
+    /// <param name="filterKind">The kind of filter to be created</param>
+    /// <param name="filterSettings">Settings object to initialize the filter with</param>
+    Task CreateSourceFilter(
+        Guid sourceUuid,
+        string filterName,
+        string filterKind,
+        Dictionary<string, object>? filterSettings);
 
     /// <summary>Removes a filter from a source.</summary>
     /// <param name="sourceName">Name of the source the filter is on</param>
     /// <param name="filterName">Name of the filter to remove</param>
     Task RemoveSourceFilter(string sourceName, string filterName);
+
+    /// <summary>Removes a filter from a source.</summary>
+    /// <param name="sourceUuid">Uuid of the source the filter is on</param>
+    /// <param name="filterName">Name of the filter to remove</param>
+    Task RemoveSourceFilter(Guid sourceUuid, string filterName);
 
     /// <summary>Sets the name of a source filter (rename).</summary>
     /// <param name="sourceName">Name of the source the filter is on</param>
@@ -523,11 +622,23 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <param name="newFilterName">New name for the filter</param>
     Task SetSourceFilterName(string sourceName, string filterName, string newFilterName);
 
+    /// <summary>Sets the name of a source filter (rename).</summary>
+    /// <param name="sourceUuid">Uuid of the source the filter is on</param>
+    /// <param name="filterName">Current name of the filter</param>
+    /// <param name="newFilterName">New name for the filter</param>
+    Task SetSourceFilterName(Guid sourceUuid, string filterName, string newFilterName);
+
     /// <summary>Gets the info for a specific source filter.</summary>
     /// <param name="sourceName">Name of the source</param>
     /// <param name="filterName">Name of the filter</param>
     /// <returns>A <see cref="T:OBSStudioClient.Responses.SourceFilterResponse" /></returns>
     Task<SourceFilterResponse> GetSourceFilter(string sourceName, string filterName);
+
+    /// <summary>Gets the info for a specific source filter.</summary>
+    /// <param name="sourceUuid">Uuid of the source</param>
+    /// <param name="filterName">Name of the filter</param>
+    /// <returns>A <see cref="T:OBSStudioClient.Responses.SourceFilterResponse" /></returns>
+    Task<SourceFilterResponse> GetSourceFilter(Guid sourceUuid, string filterName);
 
     /// <summary>Sets the index position of a filter on a source.</summary>
     /// <param name="sourceName">Name of the source the filter is on</param>
@@ -535,18 +646,48 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <param name="filterIndex">New index position of the filter (&gt;= 0)</param>
     Task SetSourceFilterIndex(string sourceName, string filterName, int filterIndex);
 
+    /// <summary>Sets the index position of a filter on a source.</summary>
+    /// <param name="sourceUuid">Uuid of the source the filter is on</param>
+    /// <param name="filterName">Name of the filter</param>
+    /// <param name="filterIndex">New index position of the filter (&gt;= 0)</param>
+    Task SetSourceFilterIndex(Guid sourceUuid, string filterName, int filterIndex);
+
     /// <summary>Sets the settings of a source filter.</summary>
     /// <param name="sourceName">Name of the source the filter is on</param>
     /// <param name="filterName">Name of the filter to set the settings of</param>
     /// <param name="filterSettings">Object of settings to apply</param>
     /// <param name="overlay">True == apply the settings on top of existing ones, False == reset the input to its defaults, then apply settings.</param>
-    Task SetSourceFilterSettings(string sourceName, string filterName, Dictionary<string, object> filterSettings, bool overlay = true);
+    Task SetSourceFilterSettings(
+        string sourceName,
+        string filterName,
+        Dictionary<string, object> filterSettings,
+        bool overlay = true);
+
+    /// <summary>Sets the settings of a source filter.</summary>
+    /// <param name="sourceUuid">Uuid of the source the filter is on</param>
+    /// <param name="filterName">Name of the filter to set the settings of</param>
+    /// <param name="filterSettings">Object of settings to apply</param>
+    /// <param name="overlay">True == apply the settings on top of existing ones, False == reset the input to its defaults, then apply settings.</param>
+    Task SetSourceFilterSettings(
+        Guid sourceUuid,
+        string filterName,
+        Dictionary<string, object> filterSettings,
+        bool overlay = true);
 
     /// <summary>Sets the enable state of a source filter.</summary>
     /// <param name="sourceName">Name of the source the filter is on</param>
     /// <param name="filterName">Name of the filter</param>
     /// <param name="filterEnabled">New enable state of the filter</param>
-    Task SetSourceFilterEnabled(string sourceName, string filterName, bool filterEnabled);
+    Task SetSourceFilterEnabled(
+        string sourceName,
+        string filterName,
+        bool filterEnabled);
+
+    /// <summary>Sets the enable state of a source filter.</summary>
+    /// <param name="sourceUuid">Uuid of the source the filter is on</param>
+    /// <param name="filterName">Name of the filter</param>
+    /// <param name="filterEnabled">New enable state of the filter</param>
+    Task SetSourceFilterEnabled(Guid sourceUuid, string filterName, bool filterEnabled);
 
     /// <summary>Gets data about the current plugin and RPC version.</summary>
     /// <returns>A <see cref="T:OBSStudioClient.Responses.VersionResponse" /> object with OBS Studio Version information.</returns>
@@ -568,7 +709,10 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <param name="vendorName">Name of the vendor to use</param>
     /// <param name="requestType">The request type to call</param>
     /// <param name="requestData">Object containing appropriate request data</param>
-    Task<CallVendorResponse> CallVendorRequest(string vendorName, string requestType, JsonElement? requestData);
+    Task<CallVendorResponse> CallVendorRequest(
+        string vendorName,
+        string requestType,
+        JsonElement? requestData);
 
     /// <summary>Gets an array of all hotkey names in OBS</summary>
     /// <returns>Array of hotkey names</returns>
@@ -578,7 +722,8 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// Triggers a hotkey using its name. See <see cref="M:OBSStudioClient.ObsClient.GetHotkeyList" />
     /// </summary>
     /// <param name="hotkeyName">Name of the hotkey to trigger</param>
-    Task TriggerHotkeyByName(string hotkeyName);
+    /// <param name="contextName">Name of context of the hotkey to trigger</param>
+    Task TriggerHotkeyByName(string hotkeyName, string? contextName);
 
     /// <summary>Triggers a hotkey using a sequence of keys.</summary>
     /// <param name="keyId">The OBS key ID to use. See https://github.com/obsproject/obs-studio/blob/master/libobs/obs-hotkeys.h</param>
@@ -587,7 +732,7 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
 
     /// <summary>Gets an array of all inputs in OBS.</summary>
     /// <param name="inputKind">Restrict the array to only inputs of the specified kind</param>
-    /// <returns>An array of <see cref="T:OBSStudioClient.Messages.Input" /></returns>
+    /// <returns>An array of <see cref="T:OBSStudioClient.Classes.Input" /></returns>
     Task<Input[]> GetInputList(string? inputKind = null);
 
     /// <summary>Gets an array of all available input kinds in OBS.</summary>
@@ -608,7 +753,28 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <param name="inputSettings">Settings object to initialize the input with</param>
     /// <param name="sceneItemEnabled">Whether to set the created scene item to enabled or disabled</param>
     /// <returns>ID of the newly created scene item</returns>
-    Task<int> CreateInput(string sceneName, string inputName, string inputKind, Input? inputSettings, bool sceneItemEnabled = true);
+    Task<CreateInputResponse> CreateInput(
+        string sceneName,
+        string inputName,
+        string inputKind,
+        Input? inputSettings,
+        bool sceneItemEnabled = true);
+
+    /// <summary>
+    /// Creates a new input, adding it as a scene item to the specified scene.
+    /// </summary>
+    /// <param name="sceneUuid">Uuid of the scene to add the input to as a scene item</param>
+    /// <param name="inputName">Name of the new input to created</param>
+    /// <param name="inputKind">The kind of input to be created</param>
+    /// <param name="inputSettings">Settings object to initialize the input with</param>
+    /// <param name="sceneItemEnabled">Whether to set the created scene item to enabled or disabled</param>
+    /// <returns>ID of the newly created scene item</returns>
+    Task<CreateInputResponse> CreateInput(
+        Guid sceneUuid,
+        string inputName,
+        string inputKind,
+        Input? inputSettings,
+        bool sceneItemEnabled = true);
 
     /// <summary>Removes an existing input.</summary>
     /// <param name="inputName">Name of the input to remove</param>
@@ -617,10 +783,22 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// </remarks>
     Task RemoveInput(string inputName);
 
+    /// <summary>Removes an existing input.</summary>
+    /// <param name="inputUuid">Uuid of the input to remove</param>
+    /// <remarks>
+    /// Note: Will immediately remove all associated scene items.
+    /// </remarks>
+    Task RemoveInput(Guid inputUuid);
+
     /// <summary>Sets the name of an input (rename).</summary>
     /// <param name="inputName">Current input name</param>
     /// <param name="newInputName">New name for the input</param>
     Task SetInputName(string inputName, string newInputName);
+
+    /// <summary>Sets the name of an input (rename).</summary>
+    /// <param name="inputUuid">Current input uuid</param>
+    /// <param name="newInputName">New name for the input</param>
+    Task SetInputName(Guid inputUuid, string newInputName);
 
     /// <summary>Gets the default settings for an input kind.</summary>
     /// <param name="inputKind">Input kind to get the default settings for</param>
@@ -635,31 +813,71 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// </remarks>
     Task<InputSettingsResponse> GetInputSettings(string inputName);
 
+    /// <summary>Gets the settings of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to get the settings of</param>
+    /// <returns>A <see cref="T:OBSStudioClient.Responses.InputSettingsResponse" /></returns>
+    /// <remarks>
+    /// Note: Does not include defaults. To create the entire settings object, overlay inputSettings over the defaultInputSettings provided by GetInputDefaultSettings.
+    /// </remarks>
+    Task<InputSettingsResponse> GetInputSettings(Guid inputUuid);
+
     /// <summary>Sets the settings of an input.</summary>
     /// <param name="inputName">Name of the input to set the settings of</param>
     /// <param name="inputSettings">Object of settings to apply</param>
     /// <param name="overlay">True == apply the settings on top of existing ones, False == reset the input to its defaults, then apply settings.</param>
-    Task SetInputSettings(string inputName, Dictionary<string, object> inputSettings, bool overlay = true);
+    Task SetInputSettings(
+        string inputName,
+        Dictionary<string, object> inputSettings,
+        bool overlay = true);
+
+    /// <summary>Sets the settings of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to set the settings of</param>
+    /// <param name="inputSettings">Object of settings to apply</param>
+    /// <param name="overlay">True == apply the settings on top of existing ones, False == reset the input to its defaults, then apply settings.</param>
+    Task SetInputSettings(
+        Guid inputUuid,
+        Dictionary<string, object> inputSettings,
+        bool overlay = true);
 
     /// <summary>Gets the audio mute state of an input.</summary>
     /// <param name="inputName">Name of input to get the mute state of</param>
     /// <returns>Whether the input is muted</returns>
     Task<bool> GetInputMute(string inputName);
 
+    /// <summary>Gets the audio mute state of an input.</summary>
+    /// <param name="inputUuid">Uuid of input to get the mute state of</param>
+    /// <returns>Whether the input is muted</returns>
+    Task<bool> GetInputMute(Guid inputUuid);
+
     /// <summary>Sets the audio mute state of an input.</summary>
     /// <param name="inputName">Name of the input to set the mute state of</param>
     /// <param name="inputMuted">Whether to mute the input or not</param>
     Task SetInputMute(string inputName, bool inputMuted);
+
+    /// <summary>Sets the audio mute state of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to set the mute state of</param>
+    /// <param name="inputMuted">Whether to mute the input or not</param>
+    Task SetInputMute(Guid inputUuid, bool inputMuted);
 
     /// <summary>Toggles the audio mute state of an input.</summary>
     /// <param name="inputName">Name of the input to toggle the mute state of</param>
     /// <returns>Whether the input has been muted or unmuted</returns>
     Task<bool> ToggleInputMute(string inputName);
 
+    /// <summary>Toggles the audio mute state of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to toggle the mute state of</param>
+    /// <returns>Whether the input has been muted or unmuted</returns>
+    Task<bool> ToggleInputMute(Guid inputUuid);
+
     /// <summary>Gets the current volume setting of an input.</summary>
     /// <param name="inputName">Name of the input to get the volume of</param>
     /// <returns>A <see cref="T:OBSStudioClient.Responses.InputVolumeResponse" /></returns>
     Task<InputVolumeResponse> GetInputVolume(string inputName);
+
+    /// <summary>Gets the current volume setting of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to get the volume of</param>
+    /// <returns>A <see cref="T:OBSStudioClient.Responses.InputVolumeResponse" /></returns>
+    Task<InputVolumeResponse> GetInputVolume(Guid inputUuid);
 
     /// <summary>Sets the volume setting of an input.</summary>
     /// <param name="inputName">Name of the input to set the volume of</param>
@@ -667,19 +885,39 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     Task SetInputVolumeMul(string inputName, float inputVolumeMul);
 
     /// <summary>Sets the volume setting of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to set the volume of</param>
+    /// <param name="inputVolumeMul">Volume setting in mul.</param>
+    Task SetInputVolumeMul(Guid inputUuid, float inputVolumeMul);
+
+    /// <summary>Sets the volume setting of an input.</summary>
     /// <param name="inputName">Name of the input to set the volume of</param>
     /// <param name="inputVolumeDb">Volume setting in dB.</param>
     Task SetInputVolumeDb(string inputName, float inputVolumeDb);
+
+    /// <summary>Sets the volume setting of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to set the volume of</param>
+    /// <param name="inputVolumeDb">Volume setting in dB.</param>
+    Task SetInputVolumeDb(Guid inputUuid, float inputVolumeDb);
 
     /// <summary>Gets the audio balance of an input.</summary>
     /// <param name="inputName">Name of the input to get the audio balance of</param>
     /// <returns>Audio balance value from 0.0-1.0</returns>
     Task<float> GetInputAudioBalance(string inputName);
 
+    /// <summary>Gets the audio balance of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to get the audio balance of</param>
+    /// <returns>Audio balance value from 0.0-1.0</returns>
+    Task<float> GetInputAudioBalance(Guid inputUuid);
+
     /// <summary>Sets the audio balance of an input.</summary>
     /// <param name="inputName">Name of the input to set the audio balance of</param>
     /// <param name="inputAudioBalance">New audio balance value.</param>
     Task SetInputAudioBalance(string inputName, float inputAudioBalance);
+
+    /// <summary>Sets the audio balance of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to set the audio balance of</param>
+    /// <param name="inputAudioBalance">New audio balance value.</param>
+    Task SetInputAudioBalance(Guid inputUuid, float inputAudioBalance);
 
     /// <summary>Gets the audio sync offset of an input.</summary>
     /// <param name="inputName">Name of the input to get the audio sync offset of</param>
@@ -687,20 +925,41 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <remarks>Note: The audio sync offset can be negative too!</remarks>
     Task<int> GetInputAudioSyncOffset(string inputName);
 
+    /// <summary>Gets the audio sync offset of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to get the audio sync offset of</param>
+    /// <returns>Audio sync offset in milliseconds</returns>
+    /// <remarks>Note: The audio sync offset can be negative too!</remarks>
+    Task<int> GetInputAudioSyncOffset(Guid inputUuid);
+
     /// <summary>Sets the audio sync offset of an input.</summary>
     /// <param name="inputName">Name of the input to set the audio sync offset of</param>
     /// <param name="inputAudioSyncOffset">New audio sync offset in milliseconds.</param>
     Task SetInputAudioSyncOffset(string inputName, int inputAudioSyncOffset);
+
+    /// <summary>Sets the audio sync offset of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to set the audio sync offset of</param>
+    /// <param name="inputAudioSyncOffset">New audio sync offset in milliseconds.</param>
+    Task SetInputAudioSyncOffset(Guid inputUuid, int inputAudioSyncOffset);
 
     /// <summary>Gets the audio monitor type of an input.</summary>
     /// <param name="inputName">Name of the input to get the audio monitor type of</param>
     /// <returns>Audio monitor type</returns>
     Task<MonitorType> GetInputAudioMonitorType(string inputName);
 
+    /// <summary>Gets the audio monitor type of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to get the audio monitor type of</param>
+    /// <returns>Audio monitor type</returns>
+    Task<MonitorType> GetInputAudioMonitorType(Guid inputUuid);
+
     /// <summary>Sets the audio monitor type of an input.</summary>
     /// <param name="inputName">Name of the input to set the audio monitor type of</param>
     /// <param name="monitorType">Audio monitor type</param>
     Task SetInputAudioMonitorType(string inputName, MonitorType monitorType);
+
+    /// <summary>Sets the audio monitor type of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to set the audio monitor type of</param>
+    /// <param name="monitorType">Audio monitor type</param>
+    Task SetInputAudioMonitorType(Guid inputUuid, MonitorType monitorType);
 
     /// <summary>
     /// Gets the enable state of all audio tracks of an input.
@@ -709,10 +968,86 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <returns>Object of audio tracks and associated enable states</returns>
     Task<AudioTracks> GetInputAudioTracks(string inputName);
 
+    /// <summary>
+    /// Gets the enable state of all audio tracks of an input.
+    /// </summary>
+    /// <param name="inputUuid">Uuid of the input</param>
+    /// <returns>Object of audio tracks and associated enable states</returns>
+    Task<AudioTracks> GetInputAudioTracks(Guid inputUuid);
+
     /// <summary>Sets the enable state of audio tracks of an input.</summary>
     /// <param name="inputName">Name of the input</param>
     /// <param name="inputAudioTracks">Track settings to apply</param>
     Task SetInputAudioTracks(string inputName, AudioTracks inputAudioTracks);
+
+    /// <summary>Sets the enable state of audio tracks of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input</param>
+    /// <param name="inputAudioTracks">Track settings to apply</param>
+    Task SetInputAudioTracks(Guid inputUuid, AudioTracks inputAudioTracks);
+
+    /// <summary>Gets the deinterlace mode of an input.</summary>
+    /// <param name="inputName">Name of the input</param>
+    /// <returns>Deinterlace mode of the input</returns>
+    /// <remarks>
+    /// Deinterlacing functionality is restricted to async inputs only.
+    /// </remarks>
+    Task<DeinterlaceMode> GetInputDeinterlaceMode(string inputName);
+
+    /// <summary>Gets the deinterlace mode of an input.</summary>
+    /// <param name="inputUuid">UUID of the input</param>
+    /// <returns>Deinterlace mode of the input</returns>
+    /// <remarks>
+    /// Deinterlacing functionality is restricted to async inputs only.
+    /// </remarks>
+    Task<DeinterlaceMode> GetInputDeinterlaceMode(Guid inputUuid);
+
+    /// <summary>Sets the deinterlace mode of an input.</summary>
+    /// <param name="inputName">Name of the input</param>
+    /// <param name="inputDeinterlaceMode">Deinterlace mode for the input</param>
+    /// <remarks>
+    /// Deinterlacing functionality is restricted to async inputs only.
+    /// </remarks>
+    Task SetInputDeinterlaceMode(string inputName, DeinterlaceMode inputDeinterlaceMode);
+
+    /// <summary>Sets the deinterlace mode of an input.</summary>
+    /// <param name="inputUuid">UUID of the input</param>
+    /// <param name="inputDeinterlaceMode">Deinterlace mode for the input</param>
+    /// <remarks>
+    /// Deinterlacing functionality is restricted to async inputs only.
+    /// </remarks>
+    Task SetInputDeinterlaceMode(Guid inputUuid, DeinterlaceMode inputDeinterlaceMode);
+
+    /// <summary>Gets the deinterlace field order of an input.</summary>
+    /// <param name="inputName">Name of the input</param>
+    /// <remarks>
+    /// Deinterlacing functionality is restricted to async inputs only.
+    /// </remarks>
+    Task<string> GetInputDeinterlaceFieldOrder(string inputName);
+
+    /// <summary>Gets the deinterlace field order of an input.</summary>
+    /// <param name="inputUuid">UUID of the input</param>
+    /// <remarks>
+    /// Deinterlacing functionality is restricted to async inputs only.
+    /// </remarks>
+    Task<string> GetInputDeinterlaceFieldOrder(Guid inputUuid);
+
+    /// <summary>Sets the deinterlace field order of an input.</summary>
+    /// <param name="inputName">Name of the input</param>
+    /// <param name="inputDeinterlaceFieldOrder">Deinterlace field order for the input</param>
+    /// <remarks>
+    /// Deinterlacing functionality is restricted to async inputs only.
+    /// </remarks>
+    Task SetInputDeinterlaceFieldOrder(
+        string inputName,
+        string inputDeinterlaceFieldOrder);
+
+    /// <summary>Sets the deinterlace field order of an input.</summary>
+    /// <param name="inputUuid">UUID of the input</param>
+    /// <param name="inputDeinterlaceFieldOrder">Deinterlace field order for the input</param>
+    /// <remarks>
+    /// Deinterlacing functionality is restricted to async inputs only.
+    /// </remarks>
+    Task SetInputDeinterlaceFieldOrder(Guid inputUuid, string inputDeinterlaceFieldOrder);
 
     /// <summary>
     /// Gets the items of a list property from an input's properties.
@@ -723,7 +1058,22 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <remarks>
     /// Note: Use this in cases where an input provides a dynamic, selectable list of items. For example, display capture, where it provides a list of available displays.
     /// </remarks>
-    Task<PropertyItem[]> GetInputPropertiesListPropertyItems(string inputName, string propertyName);
+    Task<PropertyItem[]> GetInputPropertiesListPropertyItems(
+        string inputName,
+        string propertyName);
+
+    /// <summary>
+    /// Gets the items of a list property from an input's properties.
+    /// </summary>
+    /// <param name="inputUuid">Uuid of the input</param>
+    /// <param name="propertyName">Name of the list property to get the items of</param>
+    /// <returns>Array of items in the list property</returns>
+    /// <remarks>
+    /// Note: Use this in cases where an input provides a dynamic, selectable list of items. For example, display capture, where it provides a list of available displays.
+    /// </remarks>
+    Task<PropertyItem[]> GetInputPropertiesListPropertyItems(
+        Guid inputUuid,
+        string propertyName);
 
     /// <summary>Presses a button in the properties of an input.</summary>
     /// <param name="inputName">Name of the input</param>
@@ -733,10 +1083,23 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// </remarks>
     Task PressInputPropertiesButton(string inputName, string propertyName);
 
+    /// <summary>Presses a button in the properties of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input</param>
+    /// <param name="propertyName">Name of the button property to press</param>
+    /// <remarks>
+    /// Note: Use this in cases where there is a button in the properties of an input that cannot be accessed in any other way. For example, browser sources, where there is a refresh button.
+    /// </remarks>
+    Task PressInputPropertiesButton(Guid inputUuid, string propertyName);
+
     /// <summary>Gets the status of a media input.</summary>
     /// <param name="inputName">Name of the media input</param>
     /// <returns>A <see cref="T:OBSStudioClient.Responses.MediaInputStatusResponse" /></returns>
     Task<MediaInputStatusResponse> GetMediaInputStatus(string inputName);
+
+    /// <summary>Gets the status of a media input.</summary>
+    /// <param name="inputUuid">Uuid of the media input</param>
+    /// <returns>A <see cref="T:OBSStudioClient.Responses.MediaInputStatusResponse" /></returns>
+    Task<MediaInputStatusResponse> GetMediaInputStatus(Guid inputUuid);
 
     /// <summary>Sets the cursor position of a media input.</summary>
     /// <param name="inputName">Name of the media input</param>
@@ -745,6 +1108,14 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// This request does not perform bounds checking of the cursor position.
     /// </remarks>
     Task SetMediaInputCursor(string inputName, int mediaCursor);
+
+    /// <summary>Sets the cursor position of a media input.</summary>
+    /// <param name="inputUuid">Uuid of the media input</param>
+    /// <param name="mediaCursor">New cursor position to set (&gt;= 0)</param>
+    /// <remarks>
+    /// This request does not perform bounds checking of the cursor position.
+    /// </remarks>
+    Task SetMediaInputCursor(Guid inputUuid, int mediaCursor);
 
     /// <summary>
     /// Offsets the current cursor position of a media input by the specified value.
@@ -756,10 +1127,25 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// </remarks>
     Task OffsetMediaInputCursor(string inputName, int mediaCursorOffset);
 
+    /// <summary>
+    /// Offsets the current cursor position of a media input by the specified value.
+    /// </summary>
+    /// <param name="inputUuid">Uuid of the media input</param>
+    /// <param name="mediaCursorOffset">Value to offset the current cursor position by</param>
+    /// <remarks>
+    /// This request does not perform bounds checking of the cursor position.
+    /// </remarks>
+    Task OffsetMediaInputCursor(Guid inputUuid, int mediaCursorOffset);
+
     /// <summary>Triggers an action on a media input.</summary>
     /// <param name="inputName">Name of the media input</param>
     /// <param name="mediaAction">Identifier of the ObsMediaInputAction enum</param>
     Task TriggerMediaInputAction(string inputName, ObsMediaInputAction mediaAction);
+
+    /// <summary>Triggers an action on a media input.</summary>
+    /// <param name="inputUuid">Uuid of the media input</param>
+    /// <param name="mediaAction">Identifier of the ObsMediaInputAction enum</param>
+    Task TriggerMediaInputAction(Guid inputUuid, ObsMediaInputAction mediaAction);
 
     /// <summary>Gets the status of the virtualcam output.</summary>
     /// <returns>Whether the output is active</returns>
@@ -835,6 +1221,7 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     Task<RecordStatusResponse> GetRecordStatus();
 
     /// <summary>Toggles the status of the record output.</summary>
+    /// <returns>Whether the output is active</returns>
     Task<bool> ToggleRecord();
 
     /// <summary>Starts the record output.</summary>
@@ -859,10 +1246,29 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <param name="recordDirectory">The directory that the record output writes to.</param>
     Task SetRecordDirectory(string recordDirectory);
 
+    /// <summary>
+    /// Splits the current file being recorded into a new file.
+    /// </summary>
+    Task SplitRecordFile();
+
+    /// <summary>
+    /// Adds a new chapter marker to the file currently being recorded.
+    /// </summary>
+    /// <returns>The name of the new chapter.</returns>
+    /// <remarks>
+    /// As of OBS 30.2.0, the only file format supporting this feature is Hybrid MP4.
+    /// </remarks>
+    Task<string?> CreateRecordChapter();
+
     /// <summary>Gets a list of all scene items in a scene.</summary>
     /// <param name="sceneName">Name of the scene to get the items of</param>
     /// <returns>Array of <see cref="T:OBSStudioClient.Classes.SceneItem" /> in the scene</returns>
     Task<SceneItem[]> GetSceneItemList(string sceneName);
+
+    /// <summary>Gets a list of all scene items in a scene.</summary>
+    /// <param name="sceneUuid">Uuid of the scene to get the items of</param>
+    /// <returns>Array of <see cref="T:OBSStudioClient.Classes.SceneItem" /> in the scene</returns>
+    Task<SceneItem[]> GetSceneItemList(Guid sceneUuid);
 
     /// <summary>Basically GetSceneItemList, but for groups.</summary>
     /// <param name="sceneName">Name of the group to get the items of</param>
@@ -872,6 +1278,14 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// </remarks>
     Task<SceneItem[]> GetGroupSceneItemList(string sceneName);
 
+    /// <summary>Basically GetSceneItemList, but for groups.</summary>
+    /// <param name="sceneUuid">Uuid of the group to get the items of</param>
+    /// <returns>Array of <see cref="T:OBSStudioClient.Classes.SceneItem" /> in the group</returns>
+    /// <remarks>
+    /// Using groups at all in OBS is discouraged, as they are very broken under the hood. Please use nested scenes instead.
+    /// </remarks>
+    Task<SceneItem[]> GetGroupSceneItemList(Guid sceneUuid);
+
     /// <summary>Searches a scene for a source, and returns its id.</summary>
     /// <param name="sceneName">Name of the scene or group to search in</param>
     /// <param name="sourceName">Name of the source to find</param>
@@ -879,17 +1293,65 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <returns>Numeric ID of the scene item</returns>
     Task<int> GetSceneItemId(string sceneName, string sourceName, int searchOffset = 0);
 
+    /// <summary>Searches a scene for a source, and returns its id.</summary>
+    /// <param name="sceneUuid">Name of the scene or group to search in</param>
+    /// <param name="sourceName">Name of the source to find</param>
+    /// <param name="searchOffset">Number of matches to skip during search. &gt;= 0 means first forward. -1 means last (top) item (&gt;= -1)</param>
+    /// <returns>Numeric ID of the scene item</returns>
+    Task<int> GetSceneItemId(Guid sceneUuid, string sourceName, int searchOffset = 0);
+
+    /// <summary>Gets the source associated with a scene item.</summary>
+    /// <param name="sceneName">Name of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item</param>
+    /// <returns>The details of the source.</returns>
+    Task<SceneItemSourceResponse> GetSceneItemSource(string sceneName, int sceneItemId);
+
+    /// <summary>Gets the source associated with a scene item.</summary>
+    /// <param name="sceneUuid">UUID of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item</param>
+    /// <returns>The details of the source.</returns>
+    Task<SceneItemSourceResponse> GetSceneItemSource(Guid sceneUuid, int sceneItemId);
+
     /// <summary>Creates a new scene item using a source.</summary>
     /// <param name="sceneName">Name of the scene to create the new item in</param>
     /// <param name="sourceName">Name of the source to add to the scene</param>
     /// <param name="sceneItemEnabled">Enable state to apply to the scene item on creation</param>
     /// <returns>Numeric ID of the scene item</returns>
-    Task<int> CreateSceneItem(string sceneName, string sourceName, bool sceneItemEnabled = true);
+    Task<int> CreateSceneItem(
+        string sceneName,
+        string sourceName,
+        bool sceneItemEnabled = true);
+
+    /// <summary>Creates a new scene item using a source.</summary>
+    /// <param name="sceneUuid">Uuid of the scene to create the new item in</param>
+    /// <param name="sourceName">Name of the source to add to the scene</param>
+    /// <param name="sceneItemEnabled">Enable state to apply to the scene item on creation</param>
+    /// <returns>Numeric ID of the scene item</returns>
+    Task<int> CreateSceneItem(Guid sceneUuid, string sourceName, bool sceneItemEnabled = true);
+
+    /// <summary>Creates a new scene item using a source.</summary>
+    /// <param name="sceneName">Name of the scene to create the new item in</param>
+    /// <param name="sourceUuid">Uuid of the source to add to the scene</param>
+    /// <param name="sceneItemEnabled">Enable state to apply to the scene item on creation</param>
+    /// <returns>Numeric ID of the scene item</returns>
+    Task<int> CreateSceneItem(string sceneName, Guid sourceUuid, bool sceneItemEnabled = true);
+
+    /// <summary>Creates a new scene item using a source.</summary>
+    /// <param name="sceneUuid">Uuid of the scene to create the new item in</param>
+    /// <param name="sourceUuid">Uuid of the source to add to the scene</param>
+    /// <param name="sceneItemEnabled">Enable state to apply to the scene item on creation</param>
+    /// <returns>Numeric ID of the scene item</returns>
+    Task<int> CreateSceneItem(Guid sceneUuid, Guid sourceUuid, bool sceneItemEnabled = true);
 
     /// <summary>Removes a scene item from a scene.</summary>
     /// <param name="sceneName">Name of the scene the item is in</param>
     /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
     Task RemoveSceneItem(string sceneName, int sceneItemId);
+
+    /// <summary>Removes a scene item from a scene.</summary>
+    /// <param name="sceneUuid">Uuid of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    Task RemoveSceneItem(Guid sceneUuid, int sceneItemId);
 
     /// <summary>
     /// Duplicates a scene item, copying all transform and crop info.
@@ -898,7 +1360,50 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
     /// <param name="destinationSceneName">Name of the scene to create the duplicated item in</param>
     /// <returns>Numeric ID of the duplicated scene item</returns>
-    Task<int> DuplicateSceneItem(string sceneName, int sceneItemId, string? destinationSceneName = null);
+    Task<int> DuplicateSceneItem(
+        string sceneName,
+        int sceneItemId,
+        string destinationSceneName);
+
+    /// <summary>
+    /// Duplicates a scene item, copying all transform and crop info.
+    /// </summary>
+    /// <param name="sceneName">Name of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    /// <returns>Numeric ID of the duplicated scene item</returns>
+    Task<int> DuplicateSceneItem(string sceneName, int sceneItemId);
+
+    /// <summary>
+    /// Duplicates a scene item, copying all transform and crop info.
+    /// </summary>
+    /// <param name="sceneUuid">Name of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    /// <param name="destinationSceneName">Name of the scene to create the duplicated item in</param>
+    /// <returns>Numeric ID of the duplicated scene item</returns>
+    Task<int> DuplicateSceneItem(
+        Guid sceneUuid,
+        int sceneItemId,
+        string destinationSceneName);
+
+    /// <summary>
+    /// Duplicates a scene item, copying all transform and crop info.
+    /// </summary>
+    /// <param name="sceneUuid">Name of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    /// <returns>Numeric ID of the duplicated scene item</returns>
+    Task<int> DuplicateSceneItem(Guid sceneUuid, int sceneItemId);
+
+    /// <summary>
+    /// Duplicates a scene item, copying all transform and crop info.
+    /// </summary>
+    /// <param name="sceneUuid">Name of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    /// <param name="destinationSceneUuid">Uuid of the scene to create the duplicated item in</param>
+    /// <returns>Numeric ID of the duplicated scene item</returns>
+    Task<int> DuplicateSceneItem(
+        Guid sceneUuid,
+        int sceneItemId,
+        Guid destinationSceneUuid);
 
     /// <summary>Gets the transform and crop info of a scene item.</summary>
     /// <param name="sceneName">Name of the scene the item is in</param>
@@ -906,11 +1411,29 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <returns>Object containing scene item transform info</returns>
     Task<SceneItemTransform> GetSceneItemTransform(string sceneName, int sceneItemId);
 
+    /// <summary>Gets the transform and crop info of a scene item.</summary>
+    /// <param name="sceneUuid">Uuid of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    /// <returns>Object containing scene item transform info</returns>
+    Task<SceneItemTransform> GetSceneItemTransform(Guid sceneUuid, int sceneItemId);
+
     /// <summary>Sets the transform and crop info of a scene item.</summary>
     /// <param name="sceneName">Name of the scene the item is in</param>
     /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
     /// <param name="sceneItemTransform">Object containing scene item transform info to update</param>
-    Task SetSceneItemTransform(string sceneName, int sceneItemId, SceneItemTransform sceneItemTransform);
+    Task SetSceneItemTransform(
+        string sceneName,
+        int sceneItemId,
+        SceneItemTransform sceneItemTransform);
+
+    /// <summary>Sets the transform and crop info of a scene item.</summary>
+    /// <param name="sceneUuid">Uuid of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    /// <param name="sceneItemTransform">Object containing scene item transform info to update</param>
+    Task SetSceneItemTransform(
+        Guid sceneUuid,
+        int sceneItemId,
+        SceneItemTransform sceneItemTransform);
 
     /// <summary>Gets the enable state of a scene item.</summary>
     /// <param name="sceneName">Name of the scene the item is in</param>
@@ -918,11 +1441,23 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <returns>Whether the scene item is enabled. true for enabled, false for disabled</returns>
     Task<bool> GetSceneItemEnabled(string sceneName, int sceneItemId);
 
+    /// <summary>Gets the enable state of a scene item.</summary>
+    /// <param name="sceneUuid">Uuid of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    /// <returns>Whether the scene item is enabled. true for enabled, false for disabled</returns>
+    Task<bool> GetSceneItemEnabled(Guid sceneUuid, int sceneItemId);
+
     /// <summary>Sets the enable state of a scene item.</summary>
     /// <param name="sceneName">Name of the scene the item is in</param>
     /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
     /// <param name="sceneItemEnabled">	New enable state of the scene item</param>
     Task SetSceneItemEnabled(string sceneName, int sceneItemId, bool sceneItemEnabled);
+
+    /// <summary>Sets the enable state of a scene item.</summary>
+    /// <param name="sceneUuid">Uuid of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    /// <param name="sceneItemEnabled">	New enable state of the scene item</param>
+    Task SetSceneItemEnabled(Guid sceneUuid, int sceneItemId, bool sceneItemEnabled);
 
     /// <summary>Gets the lock state of a scene item.</summary>
     /// <param name="sceneName">Name of the scene the item is in</param>
@@ -930,11 +1465,23 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <returns>Whether the scene item is locked. true for locked, false for unlocked</returns>
     Task<bool> GetSceneItemLocked(string sceneName, int sceneItemId);
 
+    /// <summary>Gets the lock state of a scene item.</summary>
+    /// <param name="sceneUuid">Uuid of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    /// <returns>Whether the scene item is locked. true for locked, false for unlocked</returns>
+    Task<bool> GetSceneItemLocked(Guid sceneUuid, int sceneItemId);
+
     /// <summary>Sets the lock state of a scene item.</summary>
     /// <param name="sceneName">Name of the scene the item is in</param>
     /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
     /// <param name="sceneItemLocked">New lock state of the scene item</param>
     Task SetSceneItemLocked(string sceneName, int sceneItemId, bool sceneItemLocked);
+
+    /// <summary>Sets the lock state of a scene item.</summary>
+    /// <param name="sceneUuid">Uuid of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    /// <param name="sceneItemLocked">New lock state of the scene item</param>
+    Task SetSceneItemLocked(Guid sceneUuid, int sceneItemId, bool sceneItemLocked);
 
     /// <summary>Gets the index position of a scene item in a scene.</summary>
     /// <param name="sceneName">Name of the scene the item is in</param>
@@ -946,11 +1493,27 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// </remarks>
     Task<int> GetSceneItemIndex(string sceneName, int sceneItemId);
 
+    /// <summary>Gets the index position of a scene item in a scene.</summary>
+    /// <param name="sceneUuid">Uuid of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    /// <returns></returns>
+    /// <remarks>
+    /// An index of 0 is at the bottom of the source list in the UI.
+    /// Scenes and Groups
+    /// </remarks>
+    Task<int> GetSceneItemIndex(Guid sceneUuid, int sceneItemId);
+
     /// <summary>Sets the index position of a scene item in a scene.</summary>
     /// <param name="sceneName">Name of the scene the item is in</param>
     /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
     /// <param name="sceneItemIndex">New index position of the scene item (&gt;= 0)</param>
     Task SetSceneItemIndex(string sceneName, int sceneItemId, int sceneItemIndex);
+
+    /// <summary>Sets the index position of a scene item in a scene.</summary>
+    /// <param name="sceneUuid">Uuid of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    /// <param name="sceneItemIndex">New index position of the scene item (&gt;= 0)</param>
+    Task SetSceneItemIndex(Guid sceneUuid, int sceneItemId, int sceneItemIndex);
 
     /// <summary>Gets the blend mode of a scene item.</summary>
     /// <param name="sceneName">Name of the scene the item is in</param>
@@ -958,11 +1521,29 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <returns>Current blend mode</returns>
     Task<BlendMode> GetSceneItemBlendMode(string sceneName, int sceneItemId);
 
+    /// <summary>Gets the blend mode of a scene item.</summary>
+    /// <param name="sceneUuid">Uuid of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    /// <returns>Current blend mode</returns>
+    Task<BlendMode> GetSceneItemBlendMode(Guid sceneUuid, int sceneItemId);
+
     /// <summary>Sets the blend mode of a scene item.</summary>
     /// <param name="sceneName">Name of the scene the item is in</param>
     /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
     /// <param name="sceneItemBlendMode">New blend mode</param>
-    Task SetSceneItemBlendMode(string sceneName, int sceneItemId, BlendMode sceneItemBlendMode);
+    Task SetSceneItemBlendMode(
+        string sceneName,
+        int sceneItemId,
+        BlendMode sceneItemBlendMode);
+
+    /// <summary>Sets the blend mode of a scene item.</summary>
+    /// <param name="sceneUuid">Uuid of the scene the item is in</param>
+    /// <param name="sceneItemId">Numeric ID of the scene item (&gt;= 0)</param>
+    /// <param name="sceneItemBlendMode">New blend mode</param>
+    Task SetSceneItemBlendMode(
+        Guid sceneUuid,
+        int sceneItemId,
+        BlendMode sceneItemBlendMode);
 
     /// <summary>Gets an array of all scenes in OBS.</summary>
     /// <returns>A <see cref="T:OBSStudioClient.Responses.SceneListResponse" /></returns>
@@ -976,33 +1557,50 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     Task<string[]> GetGroupList();
 
     /// <summary>Gets the current program scene.</summary>
-    /// <returns>Current program scene</returns>
-    Task<string> GetCurrentProgramScene();
+    /// <returns>A <see cref="T:OBSStudioClient.Responses.CurrentProgramSceneNameResponse" /></returns>
+    Task<CurrentProgramSceneNameResponse> GetCurrentProgramScene();
 
     /// <summary>Sets the current program scene.</summary>
     /// <param name="sceneName">Scene to set as the current program scene</param>
     Task SetCurrentProgramScene(string sceneName);
 
+    /// <summary>Sets the current program scene.</summary>
+    /// <param name="sceneUuid">Scene to set as the current program scene</param>
+    Task SetCurrentProgramScene(Guid sceneUuid);
+
     /// <summary>Gets the current preview scene.</summary>
     /// <returns>Current preview scene</returns>
-    Task<string?> GetCurrentPreviewScene();
+    Task<CurrentPreviewSceneNameResponse> GetCurrentPreviewScene();
 
     /// <summary>Sets the current preview scene.</summary>
     /// <param name="sceneName">Scene to set as the current preview scene</param>
     Task SetCurrentPreviewScene(string sceneName);
 
+    /// <summary>Sets the current preview scene.</summary>
+    /// <param name="sceneUuid">Scene to set as the current preview scene</param>
+    Task SetCurrentPreviewScene(Guid sceneUuid);
+
     /// <summary>Creates a new scene in OBS.</summary>
     /// <param name="sceneName">Name for the new scene</param>
-    Task CreateScene(string sceneName);
+    Task<Guid> CreateScene(string sceneName);
 
     /// <summary>Removes a scene from OBS.</summary>
     /// <param name="sceneName">Name of the scene to remove</param>
     Task RemoveScene(string sceneName);
 
+    /// <summary>Removes a scene from OBS.</summary>
+    /// <param name="sceneUuid">UUID of the scene to remove</param>
+    Task RemoveScene(Guid sceneUuid);
+
     /// <summary>Sets the name of a scene (rename).</summary>
     /// <param name="sceneName">Name of the scene to be renamed</param>
     /// <param name="newSceneName">New name for the scene</param>
     Task SetSceneName(string sceneName, string newSceneName);
+
+    /// <summary>Sets the name of a scene (rename).</summary>
+    /// <param name="sceneUuid">uuid of the scene to be renamed</param>
+    /// <param name="newSceneName">New name for the scene</param>
+    Task SetSceneName(Guid sceneUuid, string newSceneName);
 
     /// <summary>Gets the scene transition overridden for a scene.</summary>
     /// <param name="sceneName">Name of the scene</param>
@@ -1010,16 +1608,39 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     Task<SceneTransitionResponse> GetSceneSceneTransitionOverride(string sceneName);
 
     /// <summary>Gets the scene transition overridden for a scene.</summary>
+    /// <param name="sceneUuid">Uuid of the scene</param>
+    /// <returns>A <see cref="T:OBSStudioClient.Responses.SceneTransitionResponse" /></returns>
+    Task<SceneTransitionResponse> GetSceneSceneTransitionOverride(Guid sceneUuid);
+
+    /// <summary>Gets the scene transition overridden for a scene.</summary>
     /// <param name="sceneName">Name of the scene</param>
     /// <param name="transitionName">Name of the scene transition to use as override. Specify null to remove.</param>
     /// <param name="transitionDuration">Duration to use for any overridden transition. Specify null to remove.</param>
-    Task SetSceneSceneTransitionOverride(string sceneName, string? transitionName, int? transitionDuration);
+    Task SetSceneSceneTransitionOverride(
+        string sceneName,
+        string? transitionName,
+        int? transitionDuration);
+
+    /// <summary>Gets the scene transition overridden for a scene.</summary>
+    /// <param name="sceneUuid">Uuid of the scene</param>
+    /// <param name="transitionName">Name of the scene transition to use as override. Specify null to remove.</param>
+    /// <param name="transitionDuration">Duration to use for any overridden transition. Specify null to remove.</param>
+    Task SetSceneSceneTransitionOverride(
+        Guid sceneUuid,
+        string? transitionName,
+        int? transitionDuration);
 
     /// <summary>Gets the active and show state of a source.</summary>
     /// <param name="sourceName">Name of the source to get the active state of</param>
     /// <returns>A <see cref="T:OBSStudioClient.Responses.SourceActiveResponse" /></returns>
     /// <remarks>Compatible with inputs and scenes.</remarks>
     Task<SourceActiveResponse> GetSourceActive(string sourceName);
+
+    /// <summary>Gets the active and show state of a source.</summary>
+    /// <param name="sourceUuid">Uuid of the source to get the active state of</param>
+    /// <returns>A <see cref="T:OBSStudioClient.Responses.SourceActiveResponse" /></returns>
+    /// <remarks>Compatible with inputs and scenes.</remarks>
+    Task<SourceActiveResponse> GetSourceActive(Guid sourceUuid);
 
     /// <summary>Gets a Base64-encoded screenshot of a source.</summary>
     /// <param name="sourceName">Name of the source to take a screenshot of</param>
@@ -1032,7 +1653,30 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// The imageWidth and imageHeight parameters are treated as "scale to inner", meaning the smallest ratio will be used and the aspect ratio of the original resolution is kept. If imageWidth and imageHeight are not specified, the compressed image will use the full resolution of the source.
     /// Compatible with inputs and scenes.
     /// </remarks>
-    Task<string> GetSourceScreenshot(string sourceName, string imageFormat, int? imageWidth = null, int? imageHeight = null, int? imageCompressionQuality = -1);
+    Task<string> GetSourceScreenshot(
+        string sourceName,
+        string imageFormat,
+        int? imageWidth = null,
+        int? imageHeight = null,
+        int? imageCompressionQuality = -1);
+
+    /// <summary>Gets a Base64-encoded screenshot of a source.</summary>
+    /// <param name="sourceUuid">Uuid of the source to take a screenshot of</param>
+    /// <param name="imageFormat">Image compression format to use. Use GetVersion to get compatible image formats</param>
+    /// <param name="imageWidth">Width to scale the screenshot to (between 8 and 4096)</param>
+    /// <param name="imageHeight">Height to scale the screenshot to (between 8 and 4096)</param>
+    /// <param name="imageCompressionQuality">Compression quality to use. 0 for high compression, 100 for uncompressed. -1 to use "default" (whatever that means, idk) (between -1 and 100)</param>
+    /// <returns>Base64-encoded screenshot</returns>
+    /// <remarks>
+    /// The imageWidth and imageHeight parameters are treated as "scale to inner", meaning the smallest ratio will be used and the aspect ratio of the original resolution is kept. If imageWidth and imageHeight are not specified, the compressed image will use the full resolution of the source.
+    /// Compatible with inputs and scenes.
+    /// </remarks>
+    Task<string> GetSourceScreenshot(
+        Guid sourceUuid,
+        string imageFormat,
+        int? imageWidth = null,
+        int? imageHeight = null,
+        int? imageCompressionQuality = -1);
 
     /// <summary>Saves a screenshot of a source to the filesystem.</summary>
     /// <param name="sourceName">Name of the source to take a screenshot of</param>
@@ -1045,7 +1689,32 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// The imageWidth and imageHeight parameters are treated as "scale to inner", meaning the smallest ratio will be used and the aspect ratio of the original resolution is kept. If imageWidth and imageHeight are not specified, the compressed image will use the full resolution of the source.
     /// Compatible with inputs and scenes.
     /// </remarks>
-    Task SaveSourceScreenshot(string sourceName, string imageFormat, string imageFilePath, int? imageWidth = null, int? imageHeight = null, int? imageCompressionQuality = -1);
+    Task SaveSourceScreenshot(
+        string sourceName,
+        string imageFormat,
+        string imageFilePath,
+        int? imageWidth = null,
+        int? imageHeight = null,
+        int? imageCompressionQuality = -1);
+
+    /// <summary>Saves a screenshot of a source to the filesystem.</summary>
+    /// <param name="sourceUuid">Uuid of the source to take a screenshot of</param>
+    /// <param name="imageFormat">Image compression format to use. Use GetVersion to get compatible image formats</param>
+    /// <param name="imageFilePath">Path to save the screenshot file to. Eg. C:\Users\user\Desktop\screenshot.png</param>
+    /// <param name="imageWidth">Width to scale the screenshot to (between 8 and 4096)</param>
+    /// <param name="imageHeight">Height to scale the screenshot to (between 8 and 4096)</param>
+    /// <param name="imageCompressionQuality">Compression quality to use. 0 for high compression, 100 for uncompressed. -1 to use "default" (whatever that means, idk) (between -1 and 100)</param>
+    /// <remarks>
+    /// The imageWidth and imageHeight parameters are treated as "scale to inner", meaning the smallest ratio will be used and the aspect ratio of the original resolution is kept. If imageWidth and imageHeight are not specified, the compressed image will use the full resolution of the source.
+    /// Compatible with inputs and scenes.
+    /// </remarks>
+    Task SaveSourceScreenshot(
+        Guid sourceUuid,
+        string imageFormat,
+        string imageFilePath,
+        int? imageWidth = null,
+        int? imageHeight = null,
+        int? imageCompressionQuality = -1);
 
     /// <summary>Gets the status of the stream output.</summary>
     /// <returns>A <see cref="T:OBSStudioClient.Responses.OutputStatusResponse" /></returns>
@@ -1093,7 +1762,9 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <summary>Sets the settings of the current scene transition.</summary>
     /// <param name="transitionSettings">Settings object to apply to the transition. Can be {}</param>
     /// <param name="overlay">Whether to overlay over the current settings or replace them</param>
-    Task SetCurrentSceneTransitionSettings(TransitionResponse? transitionSettings, bool overlay = true);
+    Task SetCurrentSceneTransitionSettings(
+        TransitionResponse? transitionSettings,
+        bool overlay = true);
 
     /// <summary>
     /// Gets the cursor position of the current scene transition.
@@ -1129,13 +1800,25 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     /// <param name="inputName">Name of the input to open the dialog of</param>
     Task OpenInputPropertiesDialog(string inputName);
 
+    /// <summary>Opens the properties dialog of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to open the dialog of</param>
+    Task OpenInputPropertiesDialog(Guid inputUuid);
+
     /// <summary>Opens the filters dialog of an input.</summary>
     /// <param name="inputName">Name of the input to open the dialog of</param>
     Task OpenInputFiltersDialog(string inputName);
 
+    /// <summary>Opens the filters dialog of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to open the dialog of</param>
+    Task OpenInputFiltersDialog(Guid inputUuid);
+
     /// <summary>Opens the interact dialog of an input.</summary>
     /// <param name="inputName">Name of the input to open the dialog of</param>
     Task OpenInputInteractDialog(string inputName);
+
+    /// <summary>Opens the interact dialog of an input.</summary>
+    /// <param name="inputUuid">Uuid of the input to open the dialog of</param>
+    Task OpenInputInteractDialog(Guid inputUuid);
 
     /// <summary>
     /// Gets a list of connected monitors and information about them.
@@ -1162,9 +1845,21 @@ public interface IObsClient: INotifyPropertyChanged, IDisposable {
     Task OpenSourceProjectorOnMonitor(string sourceName, int monitorIndex);
 
     /// <summary>Opens a projector for a source.</summary>
+    /// <param name="sourceUuid">Uuid of the source to open a projector for</param>
+    /// <param name="monitorIndex">Monitor index, use GetMonitorList to obtain index. Use -1 for windowed mode.</param>
+    /// <remarks>Note: This request serves to provide feature parity with 4.x. It is very likely to be changed/deprecated in a future release.</remarks>
+    Task OpenSourceProjectorOnMonitor(Guid sourceUuid, int monitorIndex);
+
+    /// <summary>Opens a projector for a source.</summary>
     /// <param name="sourceName">Name of the source to open a projector for</param>
     /// <param name="projectorGeometry">Size/Position data for a windowed projector, in Qt Base64 encoded format. See <see cref="M:OBSStudioClient.ObsClient.GetGeometry(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Boolean,System.Boolean,System.Int32)" />.</param>
     /// <remarks>Note: This request serves to provide feature parity with 4.x. It is very likely to be changed/deprecated in a future release.</remarks>
     Task OpenSourceProjectorWindow(string sourceName, string projectorGeometry);
+
+    /// <summary>Opens a projector for a source.</summary>
+    /// <param name="sourceUuid">Uuid of the source to open a projector for</param>
+    /// <param name="projectorGeometry">Size/Position data for a windowed projector, in Qt Base64 encoded format. See <see cref="M:OBSStudioClient.ObsClient.GetGeometry(System.Int32,System.Int32,System.Int32,System.Int32,System.Int32,System.Boolean,System.Boolean,System.Int32)" />.</param>
+    /// <remarks>Note: This request serves to provide feature parity with 4.x. It is very likely to be changed/deprecated in a future release.</remarks>
+    Task OpenSourceProjectorWindow(Guid sourceUuid, string projectorGeometry);
 
 }

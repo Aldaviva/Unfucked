@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 
 // ReSharper disable All
 
-namespace Unfucked.Logging.Internationalized;
+namespace Unfucked.DI.Logging.Internationalized;
 
 /**
  * Copied from .NET BCL, changed LogValuesFormatter to UnfuckedLogValuesFormatter to allow modifications in that class

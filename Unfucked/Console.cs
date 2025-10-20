@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+using System.Drawing;
+using System.Runtime.InteropServices;
 
 namespace Unfucked;
 
@@ -29,9 +30,21 @@ public static class ConsoleControl {
     [ExcludeFromCodeCoverage]
     public static void Clear() {
         if (IsColorSupported()) {
-            Console.Write("\x1b[1J\x1b[1;1H");
+            Console.Write("\e[1J\e[1;1H");
         } else {
             Console.Clear();
+        }
+    }
+
+    /// <summary>
+    /// Clear the line and most to the leftmost position
+    /// </summary>
+    [ExcludeFromCodeCoverage]
+    public static void ClearLine() {
+        if (IsColorSupported()) {
+            Console.Write("\r\e[2K");
+        } else {
+            Console.WriteLine();
         }
     }
 
@@ -45,11 +58,28 @@ public static class ConsoleControl {
     public static string Color(ConsoleColor? foregroundColor, ConsoleColor? backgroundColor = null) {
         if (IsColorSupported()) {
             bool hasForegroundAndBackground = foregroundColor != null && backgroundColor != null;
-            return $"\x1b[{foregroundColor.ToAnsiEscapeCode():D}{(hasForegroundAndBackground ? ";" : "")}{backgroundColor.ToAnsiEscapeCode() + 10:D}m";
+            return $"\e[{foregroundColor.ToAnsiEscapeCode():D}{(hasForegroundAndBackground ? ";" : "")}{backgroundColor.ToAnsiEscapeCode() + 10:D}m";
         } else {
             return string.Empty;
         }
     }
+
+    /// <inheritdoc cref="Color(System.ConsoleColor?,System.ConsoleColor?)" />
+    [Pure]
+    public static string Color(Color? foregroundColor, Color? backgroundColor = null) {
+        if (IsColorSupported()) {
+            return
+                $"{(foregroundColor != null ? $"\e[38;{fullColorToControlSequence(foregroundColor)}m" : string.Empty)}{(backgroundColor != null ? $"\e[48;{fullColorToControlSequence(backgroundColor)}m" : string.Empty)}";
+        } else {
+            return string.Empty;
+        }
+    }
+
+    private static string fullColorToControlSequence(Color? color) => color switch {
+        { A: 0 } => "1",
+        { } c    => $"2;{c.R:D};{c.G:D};{c.B:D}",
+        _        => string.Empty,
+    };
 
     /// <summary>
     /// Wrap text with ANSI control characters to change the foreground and background colors and then reset it to the default colors at the end of the string.
@@ -60,6 +90,12 @@ public static class ConsoleControl {
     /// <returns>An ANSI escape sequence that changes the text and background color, followed by <paramref name="text"/>, followed by the ANSI escape sequence to reset colors back to the console defaults.</returns>
     [Pure]
     public static string Color(string text, ConsoleColor? foregroundColor, ConsoleColor? backgroundColor = null) {
+        return Color(foregroundColor, backgroundColor) + text + ResetColor;
+    }
+
+    /// <inheritdoc cref="Color(string,System.ConsoleColor?,System.ConsoleColor?)" />
+    [Pure]
+    public static string Color(string text, Color? foregroundColor, Color? backgroundColor = null) {
         return Color(foregroundColor, backgroundColor) + text + ResetColor;
     }
 
@@ -74,6 +110,12 @@ public static class ConsoleControl {
         Console.Write(Color(text, foregroundColor, backgroundColor));
     }
 
+    /// <inheritdoc cref="Write(string,System.ConsoleColor?,System.ConsoleColor?)" />
+    [ExcludeFromCodeCoverage]
+    public static void Write(string text, Color? foregroundColor, Color? backgroundColor = null) {
+        Console.Write(Color(text, foregroundColor, backgroundColor));
+    }
+
     /// <summary>
     /// Print colored text to the console, followed by a line break. After calling this method, the console will be reset to its default colors for future text to be printed.
     /// </summary>
@@ -82,6 +124,12 @@ public static class ConsoleControl {
     /// <param name="backgroundColor">Background color, or <c>null</c> to leave unchanged</param>
     [ExcludeFromCodeCoverage]
     public static void WriteLine(string text, ConsoleColor? foregroundColor, ConsoleColor? backgroundColor = null) {
+        Console.WriteLine(Color(text, foregroundColor, backgroundColor));
+    }
+
+    /// <inheritdoc cref="WriteLine(string,System.ConsoleColor?,System.ConsoleColor?)" />
+    [ExcludeFromCodeCoverage]
+    public static void WriteLine(string text, Color? foregroundColor, Color? backgroundColor = null) {
         Console.WriteLine(Color(text, foregroundColor, backgroundColor));
     }
 

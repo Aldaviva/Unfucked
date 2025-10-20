@@ -3,14 +3,12 @@
 
 using System.Collections;
 using System.Globalization;
-#if NET8_0_OR_GREATER
 using System.Text;
-#endif
 
 // ReSharper disable All
 #pragma warning disable CS8603 // Possible null reference return.
 
-namespace Unfucked.Logging.Internationalized;
+namespace Unfucked.DI.Logging.Internationalized;
 
 /*
  * Copied from .NET BCL and extracted a field for the culture, because it always used the hardcoded invariant culture instead of letting you change the culture, which made all the percentages you logged look stupid ("100 %" instead of "100%")

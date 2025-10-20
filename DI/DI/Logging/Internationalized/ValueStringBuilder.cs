@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace Unfucked.Logging.Internationalized;
+namespace Unfucked.DI.Logging.Internationalized;
 
 /**
  * Copied unmodified from .NET BCL because it was not public

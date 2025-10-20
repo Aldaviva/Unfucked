@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Unfucked.Logging;
+namespace Unfucked.DI.Logging;
 
 /// <summary>
 /// <para>Increase the level of log messages from certain categories/classes with certain event IDs, because the original developers foolishly logged errors at the debug level in the same class that logs lots of noisy, low-severity debug messages too, so you can't just set the log level for the provider to debug for this class without getting flooded with extra garbage.</para>

@@ -3,8 +3,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 
-namespace Unfucked.Logging;
+namespace Unfucked.DI.Logging;
 
 /// <summary>
 /// <para>A console log formatter that prints messages with a level character (like 'i'), ISO 8601-like date and time with milliseconds, class (by default the simple name), message, and any stack trace, separated by vertical pipes (' | '), for example:</para>
@@ -14,7 +15,7 @@ namespace Unfucked.Logging;
 /// </summary>
 /// <param name="options">Whether the formatter should include full class names including their namespace, what character to use to separate columns, and whether to use colored output</param>
 [ExcludeFromCodeCoverage]
-public class ConsoleFormatter(IOptions<ConsoleFormatter.ConsoleFormatterOptions> options): Microsoft.Extensions.Logging.Console.ConsoleFormatter(Id) {
+public class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOptions> options): ConsoleFormatter(Id) {
 
     /// <summary>
     /// Name of this logger class, used by <see cref="ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggingBuilder,Action{ConsoleLoggerOptions})"/>.
@@ -23,21 +24,21 @@ public class ConsoleFormatter(IOptions<ConsoleFormatter.ConsoleFormatterOptions>
 
     private const string DefaultDateFormat = "yyyy'-'MM'-'dd' 'HH':'mm':'ss.fff";
     private const string Padding           = "                                ";
-    private const string AnsiReset         = "\u001b[0m";
+    private const string AnsiReset         = "\e[0m";
 
     private static readonly int    MaxPaddedCategoryLength = Padding.Length;
     private static readonly char[] LevelLabels             = ['t', 'd', 'i', 'W', 'E', 'C', ' '];
 
-    private readonly ConsoleFormatterOptions options  = options.Value;
-    private readonly bool                    useColor = options.Value.Color && ConsoleControl.IsColorSupported();
+    private readonly UnfuckedConsoleFormatterOptions options  = options.Value;
+    private readonly bool                            useColor = options.Value.Color && ConsoleControl.IsColorSupported();
 
     private readonly string[] levelColors = [
         ConsoleControl.Color(ConsoleColor.DarkGray),
+        ConsoleControl.Color(ConsoleColor.Gray),
         string.Empty,
-        ConsoleControl.Color(ConsoleColor.DarkCyan),
-        ConsoleControl.Color(ConsoleColor.Black, ConsoleColor.DarkYellow),
-        ConsoleControl.Color(ConsoleColor.White, ConsoleColor.DarkRed),
-        ConsoleControl.Color(ConsoleColor.White, ConsoleColor.DarkRed),
+        ConsoleControl.Color(Color.Black, Color.FromArgb(0xFF, 0xAA, 0x00)),
+        ConsoleControl.Color(Color.White, Color.FromArgb(0xB0, 0x3A, 0x3A)),
+        ConsoleControl.Color(Color.White, Color.FromArgb(0xB0, 0x3A, 0x3A))
     ];
 
     private int maxCategoryLength;
@@ -113,32 +114,6 @@ public class ConsoleFormatter(IOptions<ConsoleFormatter.ConsoleFormatterOptions>
             return now.ToString(DefaultDateFormat);
 #pragma warning restore Ex0100 // Member may throw undocumented exception
         }
-    }
-
-    /// <summary>
-    /// Options to control the <see cref="ConsoleFormatter"/>.
-    /// </summary>
-    [SuppressMessage("ReSharper", "PropertyCanBeMadeInitOnly.Global")] // users must be able to set these in a builder pattern call where the class instance has already been constructed for them
-    public class ConsoleFormatterOptions: Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions {
-
-        /// <summary>
-        /// <para>By default, the type name of the class that emitted the log message is printed as the class' simple name, without its namespace (such as <c>MyClass</c>).</para>
-        /// <para>By setting this to <c>true</c>, you can print the full type name including its namespace, such as <c>MyNamespace.MyClass</c>.</para>
-        /// </summary>
-        public bool IncludeNamespaces { get; set; }
-
-        /// <summary>
-        /// String that is printed between each column in log lines, <c>" | "</c> by default.
-        /// </summary>
-        public string ColumnSeparator { get; set; } = " | ";
-
-        /// <summary>
-        /// <para>By default, the console logger prints messages in color depending on the log level (errors are white text on a red background, for example).</para>
-        /// <para>You may disable this by setting this property to <c>false</c>, for example, in response to the user passing a <c>--no-color</c> option on the command line.</para>
-        /// <para>Color output will also be automatically disabled if the stdout console does not support color, such as on Windows versions before Windows 10 version 1511.</para>
-        /// </summary>
-        public bool Color { get; set; } = true;
-
     }
 
 }

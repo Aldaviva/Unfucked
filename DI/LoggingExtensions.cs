@@ -3,25 +3,25 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
-using Unfucked.Logging;
-using Unfucked.Logging.Internationalized;
+using Unfucked.DI.Logging;
+using Unfucked.DI.Logging.Internationalized;
 
 namespace Unfucked;
 
 public static class LoggingExtensions {
 
     /// <summary>
-    /// <para>Format console logging output using <see cref="ConsoleFormatter"/>, which prints messages with a level character (like 'i'), ISO 8601-like date and time with milliseconds, class (by default the simple name), message, and any stack trace, separated by vertical pipes (' | '), for example:</para>
+    /// <para>Format console logging output using <see cref="UnfuckedConsoleFormatter"/>, which prints messages with a level character (like 'i'), ISO 8601-like date and time with milliseconds, class (by default the simple name), message, and any stack trace, separated by vertical pipes (' | '), for example:</para>
     /// <para><c> i | 2024-09-08 13:27:00.000 | Program | Application starting</c></para>
     /// </summary>
     /// <param name="logging">Application builder's <see cref="HostApplicationBuilder.Logging"/>.</param>
     /// <param name="options">Options to pass to the formatter to disable colored output, show fully-qualified class names, change the column separator, or change the datetime format.</param>
-    public static ILoggingBuilder AddUnfuckedConsole(this ILoggingBuilder logging, Action<ConsoleFormatter.ConsoleFormatterOptions>? options = null) {
-        logging.AddConsole(opts => opts.FormatterName = ConsoleFormatter.Id);
+    public static ILoggingBuilder AddUnfuckedConsole(this ILoggingBuilder logging, Action<UnfuckedConsoleFormatterOptions>? options = null) {
+        logging.AddConsole(opts => opts.FormatterName = UnfuckedConsoleFormatter.Id);
         if (options != null) {
-            logging.AddConsoleFormatter<ConsoleFormatter, ConsoleFormatter.ConsoleFormatterOptions>(options);
+            logging.AddConsoleFormatter<UnfuckedConsoleFormatter, UnfuckedConsoleFormatterOptions>(options);
         } else {
-            logging.AddConsoleFormatter<ConsoleFormatter, ConsoleFormatter.ConsoleFormatterOptions>();
+            logging.AddConsoleFormatter<UnfuckedConsoleFormatter, UnfuckedConsoleFormatterOptions>();
         }
         return logging;
     }

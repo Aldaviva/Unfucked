@@ -5,26 +5,27 @@ namespace Unfucked.DI;
 /// <summary>
 /// Used with <see cref="IServiceCollection"/><c>.Add*</c> methods register not only the specified type, but also optionally its interfaces and superclasses.
 /// </summary>
-public enum SuperRegistration {
+[Flags]
+public enum SuperRegistration: ushort {
 
     /// <summary>
-    /// Don't perform any extra registrations, just register the concrete class as its own type and nothing else, like the regular DI Add* methods.
+    /// Don't perform any extra registrations, like the regular DI Add* methods.
     /// </summary>
-    THIS_CLASS_ONLY,
+    NONE = 0,
 
     /// <summary>
-    /// Register this concrete class as its own type, and also register it as all of its implemented interfaces.
+    /// Register the concrete class as its own type.
     /// </summary>
-    INTERFACES,
+    CONCRETE_CLASS = 1,
 
     /// <summary>
-    /// Register this concrete class as its own type, and also register it as all of its extended superclasses.
+    /// Register this concrete class as all of its implemented interfaces.
     /// </summary>
-    SUPERCLASSES,
+    INTERFACES = 2,
 
     /// <summary>
-    /// Register this concrete class as its own type, and also register it as all of its extended superclasses and implemented interfaces.
+    /// Register this concrete class as all of its extended superclasses.
     /// </summary>
-    SUPERCLASSES_AND_INTERFACES
+    SUPERCLASSES = 4
 
 }

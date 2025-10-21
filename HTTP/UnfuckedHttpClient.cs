@@ -74,7 +74,7 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
     /// <inheritdoc />
     public virtual Task<HttpResponseMessage> SendAsync(HttpRequest request, CancellationToken cancellationToken = default) {
 #if NET8_0_OR_GREATER
-        WireLoggingFilter.AsyncState.Value = new WireLoggingFilter.WireAsyncState();
+        WireLogFilter.AsyncState.Value = new WireLogFilter.WireAsyncState();
 #endif
 
         HttpRequestMessage req = new(request.Verb, request.Uri) {

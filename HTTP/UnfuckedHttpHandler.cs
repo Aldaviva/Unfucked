@@ -75,7 +75,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
             PooledConnectionLifetime = TimeSpan.FromHours(1),
             ConnectTimeout           = TimeSpan.FromSeconds(10),
 #if NET8_0_OR_GREATER
-            MeterFactory = new WireLoggingFilter.WireLoggingMeterFactory()
+            MeterFactory = new WireLogFilter.WireLoggingMeterFactory()
 #endif
         }
 #else

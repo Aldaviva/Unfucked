@@ -220,7 +220,7 @@ public class UrlBuilder: ICloneable {
         if (queryParameters.Count != 0) {
             built.Append('?').AppendJoin('&', queryParameters.Select(pair => ReferenceEquals(pair.Value, ValuelessQueryParam)
                 ? UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QueryParameter)
-                : $"{UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QueryParameter)}={UrlEncoder.Encode(ReplacePlaceholders(pair.Value.ToString() ?? string.Empty), UrlEncoder.Component.QueryParameter)}"));
+                : $"{UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QueryParameter)}={UrlEncoder.Encode(ReplacePlaceholders(Stringify(pair.Value) ?? string.Empty), UrlEncoder.Component.QueryParameter)}"));
         }
 
         if (_fragment != null) {
@@ -241,6 +241,13 @@ public class UrlBuilder: ICloneable {
 
     [Pure]
     public static explicit operator string(UrlBuilder builder) => builder.ToString();
+
+    /// Who the fuck uses title case booleans?
+    private static string? Stringify(object? value) => value switch {
+        true  => "true",
+        false => "false",
+        _     => value?.ToString()
+    };
 
     #endregion
 
@@ -272,7 +279,7 @@ public class UrlBuilder: ICloneable {
     }
 
     [Pure]
-    public UrlBuilder Path(object segments) => Path(segments.ToString(), false);
+    public UrlBuilder Path(object segments) => Path(Stringify(segments), false);
 
     [Pure]
     public UrlBuilder Path(params string[] segments) => Path((IEnumerable<string>) segments);
@@ -292,24 +299,24 @@ public class UrlBuilder: ICloneable {
     [Pure]
     public UrlBuilder QueryParam(string key, object? value) => new(this) {
         _queryParameters = value != null
-            ? _queryParameters.Add(new KeyValuePair<string, object>(key, value.ToString() ?? string.Empty))
+            ? _queryParameters.Add(new KeyValuePair<string, object>(key, Stringify(value) ?? string.Empty))
             : _queryParameters.RemoveAll(pair => pair.Key == key)
     };
 
     [Pure]
     public UrlBuilder QueryParam(string key, IEnumerable<object?> values) =>
-        new(this) { _queryParameters = _queryParameters.AddRange(values.Compact().Select(v => new KeyValuePair<string, object>(key, v.ToString() ?? string.Empty))) };
+        new(this) { _queryParameters = _queryParameters.AddRange(values.Compact().Select(v => new KeyValuePair<string, object>(key, Stringify(v) ?? string.Empty))) };
 
     [Pure]
     public UrlBuilder QueryParam(IEnumerable<KeyValuePair<string, string>> parameters) => new(this) {
-        _queryParameters = _queryParameters.AddRange(parameters.Select(p => new KeyValuePair<string, object>(p.Key, p.Value.ToString())))
+        _queryParameters = _queryParameters.AddRange(parameters.Select(p => new KeyValuePair<string, object>(p.Key, p.Value)))
     };
 
     [Pure]
     public UrlBuilder QueryParam(IEnumerable<KeyValuePair<string, object?>>? parameters) => new(this) {
         _queryParameters = parameters is null
             ? ImmutableList<KeyValuePair<string, object>>.Empty
-            : _queryParameters.AddRange(parameters.Compact().Select(pair => new KeyValuePair<string, object>(pair.Key, pair.Value.ToString() ?? string.Empty)))
+            : _queryParameters.AddRange(parameters.Compact().Select(pair => new KeyValuePair<string, object>(pair.Key, Stringify(pair.Value) ?? string.Empty)))
     };
 
     [Pure]
@@ -346,7 +353,7 @@ public class UrlBuilder: ICloneable {
         _templateValues.IsEmpty || !_enableTemplates ? inputWithPlaceholders : PlaceholderPattern.Replace(inputWithPlaceholders, match => {
             string key = match.Groups["key"].Value;
             _templateValues.TryGetValue(key, out object? value);
-            return value?.ToString() ?? string.Empty;
+            return Stringify(value) ?? string.Empty;
         });
 
     #endregion

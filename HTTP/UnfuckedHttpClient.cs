@@ -77,10 +77,10 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
         WireLogFilter.AsyncState.Value = new WireLogFilter.WireAsyncState();
 #endif
 
-        HttpRequestMessage req = new(request.Verb, request.Uri) {
-            Content = request.Body
+        UnfuckedHttpRequestMessage req = new(request.Verb, request.Uri) {
+            Content = request.Body,
+            Config  = request.ClientConfig
         };
-
         try {
             foreach (KeyValuePair<string, string> header in request.Headers) {
                 req.Headers.Add(header.Key, header.Value);
@@ -94,7 +94,7 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
     }
 
     /// <exception cref="ProcessingException"></exception>
-    internal static async Task<HttpResponseMessage> SendAsync(HttpClient client, HttpRequestMessage request, CancellationToken cancellationToken) {
+    internal static async Task<HttpResponseMessage> SendAsync(HttpClient client, UnfuckedHttpRequestMessage request, CancellationToken cancellationToken) {
         try {
             return await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         } catch (OperationCanceledException e) {

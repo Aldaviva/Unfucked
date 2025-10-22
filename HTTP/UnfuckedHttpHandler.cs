@@ -74,6 +74,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
         new SocketsHttpHandler {
             PooledConnectionLifetime = TimeSpan.FromHours(1),
             ConnectTimeout           = TimeSpan.FromSeconds(10),
+            // MaxConnectionsPerServer defaults to MAX_INT, so we don't need to increase it here
 #if NET8_0_OR_GREATER
             MeterFactory = new WireLogFilter.WireLoggingMeterFactory()
 #endif
@@ -125,7 +126,9 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 
     /// <inheritdoc />
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
-        foreach (ClientRequestFilter requestFilter in RequestFilters) {
+        IClientConfig? config = (request as UnfuckedHttpRequestMessage)?.Config;
+
+        foreach (ClientRequestFilter requestFilter in config?.RequestFilters ?? RequestFilters) {
             HttpRequestMessage newRequest = await requestFilter.Filter(request, filterContext, cancellationToken).ConfigureAwait(false);
             if (request != newRequest) {
                 request.Dispose();
@@ -135,7 +138,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 
         HttpResponseMessage response = await TestableSendAsync(request, cancellationToken).ConfigureAwait(false);
 
-        foreach (ClientResponseFilter responseFilter in ResponseFilters) {
+        foreach (ClientResponseFilter responseFilter in config?.ResponseFilters ?? ResponseFilters) {
             HttpResponseMessage newResponse = await responseFilter.Filter(response, filterContext, cancellationToken).ConfigureAwait(false);
             if (response != newResponse) {
                 response.Dispose();

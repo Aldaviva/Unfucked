@@ -14,10 +14,10 @@ public partial class UnfuckedWebTarget {
     public virtual Task<HttpResponseMessage> Send(HttpMethod verb, HttpContent? requestBody = null, CancellationToken cancellationToken = default) {
         Uri url = urlBuilder.ToUrl();
         if (client is IUnfuckedHttpClient u) {
-            return u.SendAsync(new HttpRequest(verb, url, Headers, requestBody), cancellationToken);
+            return u.SendAsync(new HttpRequest(verb, url, Headers, requestBody, clientConfig), cancellationToken);
         }
 
-        using HttpRequestMessage request = new(verb, url) { Content = requestBody };
+        using UnfuckedHttpRequestMessage request = new(verb, url) { Content = requestBody, Config = clientConfig };
 
         try {
             foreach (IGrouping<string, string> header in Headers.GroupBy(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase)) {

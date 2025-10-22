@@ -98,6 +98,7 @@ public partial class UnfuckedWebTarget {
             HttpStatusCode      statusCode = response.StatusCode;
             string              reason     = response.ReasonPhrase ?? statusCode.ToString();
             HttpExceptionParams p          = await CreateHttpExceptionParams(response, cancellationToken).ConfigureAwait(false);
+            response.Dispose();
             throw statusCode switch {
                 HttpStatusCode.BadRequest           => new BadRequestException(reason, p),
                 HttpStatusCode.Unauthorized         => new NotAuthorizedException(reason, p),
@@ -135,7 +136,13 @@ public partial class UnfuckedWebTarget {
             // leave responseBody null
         }
 
-        return new HttpExceptionParams(request?.Method ?? HttpMethod.Get, request?.RequestUri, response.Headers, responseBody);
+#pragma warning disable CS0618 // Type or member is obsolete - it's not obsolete in .NET Standard 2.0, which this library targets
+        return new HttpExceptionParams(request?.Method ?? HttpMethod.Get, request?.RequestUri, response.Headers, responseBody, request?.Properties
+#if NET5_0_OR_GREATER
+            , request?.Options
+#endif
+        );
+#pragma warning restore CS0618 // Type or member is obsolete
     }
 
 }

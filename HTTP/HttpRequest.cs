@@ -1,10 +1,12 @@
-﻿namespace Unfucked.HTTP;
+using Unfucked.HTTP.Config;
 
-/*
- * These crappy methods are only used for testing, so some are synchronous and inefficient
- */
-public readonly record struct HttpRequest(HttpMethod Verb, Uri Uri, IEnumerable<KeyValuePair<string, string>> Headers, HttpContent? Body) {
+namespace Unfucked.HTTP;
 
+public readonly record struct HttpRequest(HttpMethod Verb, Uri Uri, IEnumerable<KeyValuePair<string, string>> Headers, HttpContent? Body, IClientConfig? ClientConfig) {
+
+    /*
+     * These crappy methods are only used for testing, so some are synchronous and inefficient
+     */
     public bool Equals(HttpRequest other) =>
         Verb.Equals(other.Verb) &&
         Uri.Equals(other.Uri) &&

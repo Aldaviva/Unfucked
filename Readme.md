@@ -72,9 +72,23 @@
     - Match file extension against a set
 - Processes
     - Command line argument marshalling with correct escaping and quoting
-        - String to array
+        - String to array (requires [`Unfucked.Windows`](#windows) package)
+            ```cs
+            IEnumerable<string> argv = WindowsProcesses.CommandLineToEnumerable("arg1 arg2");
+            ```
         - Array to string
-    - Run program and get output and exit code
+            ```cs
+            string args = Processes.CommandLineToString(["arg1", "'argument' \"2\""]);
+            ```
+    - Run program and get output and exit code, like [Node.js' `child_process.execFile()`](https://nodejs.org/api/child_process.html#child_processexecfilefile-args-options-callback)
+        ```cs
+        (int exitCode, string stdout, string stderr)? result = 
+            await Processes.ExecFile("path/to/program.exe", ["arg1", "arg2"], extraEnv, "workDir", hideWindow: false, ct);
+        ```
+    - Determine whether the current program is a console or Windows GUI app.
+        ```cs
+        bool isWindowsGuiProgram = Processes.IsWindowsGuiProgram();
+        ```
 - Strings
     - Coerce empty strings to `null`
         ```cs
@@ -377,6 +391,15 @@
 ### Windows
 [![NuGet](https://img.shields.io/nuget/v/Unfucked.Windows?logo=nuget&label=Unfucked.Windows%20on%20NuGet)](https://www.nuget.org/packages/Unfucked.Windows)
 - For use with [Managed Windows API](https://mwinapi.sourceforge.net) ([mwinapi](https://www.nuget.org/packages/mwinapi))
+- Command line argument marshalling with correct escaping and quoting
+    - String to array
+        ```cs
+        IEnumerable<string> argv = WindowsProcesses.CommandLineToEnumerable("arg1 arg2");
+        ```
+    - Array to string
+        ```cs
+        string args = Processes.CommandLineToString(["arg1", "'argument' \"2\""]);
+        ```
 - Reliably detect when computer is entering and exiting standby
     ```cs
     using IStandbyListener standbyListener = new EventLogStandbyListener();

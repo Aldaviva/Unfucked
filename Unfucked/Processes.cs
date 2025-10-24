@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Unfucked;
@@ -20,7 +21,7 @@ public static class Processes {
     /// </remarks>
     [ExcludeFromCodeCoverage]
     [Pure]
-    public static string CommandLineToString(IEnumerable<string> args) {
+    public static string CommandLineToString(params IEnumerable<string> args) {
         StringBuilder sb = new();
         foreach (string s in args) {
             sb.Append('"');
@@ -72,7 +73,7 @@ public static class Processes {
     /// <param name="arguments">Arguments to pass to the child process</param>
     /// <returns>Tuple that contains the numeric exit code of the child process, the standard output text, and the standard error text, or <c>null</c> if the child process failed to start.</returns>
 #pragma warning disable Ex0100 // No cancellation token is passed, so it can't be canceled.
-    public static Task<(int exitCode, string standardOutput, string standardError)?> ExecFile(string file, params string[] arguments) => ExecFile(file, arguments.AsEnumerable());
+    public static Task<(int exitCode, string standardOutput, string standardError)?> ExecFile(string file, params IEnumerable<string> arguments) => ExecFile(file, arguments, extraEnvironment: null);
 #pragma warning restore Ex0100
 
     /// <summary>
@@ -86,7 +87,7 @@ public static class Processes {
     /// <param name="hideWindow"><c>true</c> on Windows to attempt to hide the child process' window, useful for console applications that force a command prompt window to appear, or <c>false</c> to use the default behavior for the child process. Has no effect on other operating systems.</param>
     /// <param name="cancellationToken">Used to stop waiting if the process is taking too long to exit. Does not kill the process on cancellation.</param>
     /// <returns>Tuple that contains the numeric exit code of the child process, the standard output text, and the standard error text, or <c>null</c> if the child process failed to start.</returns>
-    /// <exception cref="TaskCanceledException"><paramref name="cancellationToken"/> was canceled before the child process exited. The child process will still be running at this point—cancelling this method does not kill it. To get information about the running child process, for example if you want to kill it yourself, you can read the integer <c>pid</c> value from the <see cref="Exception.Data"/> dictionary to pass to <see cref="Process.GetProcessById(int)"/>.</exception>
+    /// <exception cref="TaskCanceledException"><paramref name="cancellationToken"/> was canceled before the child process exited. The child process will still be running at this pointâ€”cancelling this method does not kill it. To get information about the running child process, for example if you want to kill it yourself, you can read the integer <c>pid</c> value from the <see cref="Exception.Data"/> dictionary to pass to <see cref="Process.GetProcessById(int)"/>.</exception>
     public static async Task<(int exitCode, string standardOutput, string standardError)?> ExecFile(
         string file,
         IEnumerable<string>? arguments = null,
@@ -165,6 +166,22 @@ public static class Processes {
         }
     }
 
+    /// <summary>
+    /// Get a program's filename without the <c>.exe</c> file extension if it had one.
+    /// </summary>
+    /// <param name="processName">The filename of a program with or without a <c>.exe</c> file extension.</param>
+    /// <returns><paramref name="processName"/> without the trailing <c>.exe</c> suffix, or <paramref name="processName"/> unmodified if it did not have an <c>.exe</c> suffix.</returns>
     public static string StripExeSuffix(string processName) => processName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? processName.Substring(0, processName.Length - 4) : processName;
+
+    /// <summary>
+    /// Determine whether the current process was compiled as a console or Windows GUI program.
+    /// </summary>
+    /// <remarks>Source: <see href="https://stackoverflow.com/questions/1188658/how-can-a-c-sharp-windows-console-application-tell-if-it-is-run-interactively/8711036#8711036"/></remarks>
+    /// <returns><c>true</c> if the current process was compiled as a Windows GUI program, or <c>false</c> if it was compiled either for *nix or as a Windows console program.</returns>
+    public static bool IsWindowsGuiProgram() => Environment.OSVersion.Platform == PlatformID.Win32NT
+        && GetModuleHandleW() is var baseAddr && Marshal.ReadInt16(baseAddr, Marshal.ReadInt32(baseAddr, 0x3C) + 0x5C) == 2;
+
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GetModuleHandleW(IntPtr filename = default);
 
 }

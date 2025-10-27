@@ -11,12 +11,12 @@ namespace Unfucked.HTTP;
 /// <summary>
 /// Interface for <see cref="UnfuckedHttpClient"/>, an improved subclass of <see cref="HttpClient"/>
 /// </summary>
-public interface IUnfuckedHttpClient {
+public interface IUnfuckedHttpClient: IDisposable {
 
     /// <summary>
     /// The HTTP message handler, such as an <see cref="UnfuckedHttpHandler"/>.
     /// </summary>
-    IUnfuckedHttpHandler Handler { get; }
+    IUnfuckedHttpHandler? Handler { get; }
 
     /// <summary>
     /// <para>Send an HTTP request using a nice parameterized options struct.</para>
@@ -41,7 +41,10 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
     private static readonly TimeSpan DefaultTimeout = new(0, 0, 30);
 
     /// <inheritdoc />
-    public IUnfuckedHttpHandler Handler { get; }
+    public IUnfuckedHttpHandler? Handler { get; }
+
+    // No-arg constructor so DI gets less confused by the arguments, even though many are optional, to prevent it trying to inject a real HttpMessageHandler in a symmetric dependency
+    public UnfuckedHttpClient(): this((HttpMessageHandler?) null) { }
 
     public UnfuckedHttpClient(HttpMessageHandler? handler = null, bool disposeHandler = true, IClientConfig? configuration = null): this(
         handler as UnfuckedHttpHandler ?? new UnfuckedHttpHandler(handler, configuration), disposeHandler) { }
@@ -58,13 +61,13 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
 
     // ExceptionAdjustment: M:System.Net.Http.Headers.HttpHeaders.Add(System.String,System.Collections.Generic.IEnumerable{System.String}) -T:System.FormatException
     public UnfuckedHttpClient(HttpClient toClone, bool disposeHandler = true, IClientConfig? configuration = null): this(
-        toClone is UnfuckedHttpClient u ? u.Handler : new UnfuckedHttpHandler(toClone, configuration), disposeHandler) {
+        toClone is UnfuckedHttpClient { Handler: { } h } ? h : new UnfuckedHttpHandler(toClone, configuration), disposeHandler) {
         BaseAddress                  = toClone.BaseAddress;
         Timeout                      = toClone.Timeout;
         MaxResponseContentBufferSize = toClone.MaxResponseContentBufferSize;
 #if NETCOREAPP3_0_OR_GREATER
         DefaultRequestVersion = toClone.DefaultRequestVersion;
-        DefaultVersionPolicy  = toClone.DefaultVersionPolicy;
+        DefaultVersionPolicy = toClone.DefaultVersionPolicy;
 #endif
         foreach (KeyValuePair<string, IEnumerable<string>> wrappedDefaultHeader in toClone.DefaultRequestHeaders) {
             DefaultRequestHeaders.Add(wrappedDefaultHeader.Key, wrappedDefaultHeader.Value);
@@ -107,6 +110,40 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
         } finally {
             request.Dispose();
         }
+    }
+
+}
+
+internal class HttpClientWrapper: IUnfuckedHttpClient {
+
+    private readonly HttpClient realClient;
+
+    public IUnfuckedHttpHandler? Handler { get; }
+
+    private HttpClientWrapper(HttpClient realClient) {
+        this.realClient = realClient;
+        Handler         = UnfuckedHttpHandler.FindHandler(realClient);
+    }
+
+    public static IUnfuckedHttpClient Wrap(IUnfuckedHttpClient client) => client is HttpClient httpClient and not UnfuckedHttpClient ? new HttpClientWrapper(httpClient) : client;
+    public static IUnfuckedHttpClient Wrap(HttpClient client) => client as UnfuckedHttpClient as IUnfuckedHttpClient ?? new HttpClientWrapper(client);
+
+    /// <exception cref="ProcessingException"></exception>
+    public Task<HttpResponseMessage> SendAsync(HttpRequest request, CancellationToken cancellationToken = default) {
+        using UnfuckedHttpRequestMessage req = new(request);
+
+        try {
+            foreach (IGrouping<string, string> header in request.Headers.GroupBy(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase)) {
+                req.Headers.Add(header.Key, header);
+            }
+        } catch (FormatException e) {
+            throw new ProcessingException(e, new HttpExceptionParams(req));
+        }
+        return UnfuckedHttpClient.SendAsync(realClient, new UnfuckedHttpRequestMessage(request), cancellationToken);
+    }
+
+    public void Dispose() {
+        GC.SuppressFinalize(this);
     }
 
 }

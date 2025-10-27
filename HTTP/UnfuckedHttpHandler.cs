@@ -73,7 +73,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 #if NETCOREAPP2_1_OR_GREATER
         new SocketsHttpHandler {
             PooledConnectionLifetime = TimeSpan.FromHours(1),
-            ConnectTimeout           = TimeSpan.FromSeconds(10),
+            ConnectTimeout = TimeSpan.FromSeconds(10),
             // MaxConnectionsPerServer defaults to MAX_INT, so we don't need to increase it here
 #if NET8_0_OR_GREATER
             MeterFactory = new WireLogFilter.WireLoggingMeterFactory()

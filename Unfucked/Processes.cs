@@ -171,6 +171,7 @@ public static class Processes {
     /// </summary>
     /// <param name="processName">The filename of a program with or without a <c>.exe</c> file extension.</param>
     /// <returns><paramref name="processName"/> without the trailing <c>.exe</c> suffix, or <paramref name="processName"/> unmodified if it did not have an <c>.exe</c> suffix.</returns>
+    [Pure]
     public static string StripExeSuffix(string processName) => processName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? processName.Substring(0, processName.Length - 4) : processName;
 
     /// <summary>
@@ -178,6 +179,7 @@ public static class Processes {
     /// </summary>
     /// <remarks>Source: <see href="https://stackoverflow.com/questions/1188658/how-can-a-c-sharp-windows-console-application-tell-if-it-is-run-interactively/8711036#8711036"/></remarks>
     /// <returns><c>true</c> if the current process was compiled as a Windows GUI program, or <c>false</c> if it was compiled either for *nix or as a Windows console program.</returns>
+    [Pure]
     public static bool IsWindowsGuiProgram() => Environment.OSVersion.Platform == PlatformID.Win32NT
         && GetModuleHandleW() is var baseAddr && Marshal.ReadInt16(baseAddr, Marshal.ReadInt32(baseAddr, 0x3C) + 0x5C) == 2;
 

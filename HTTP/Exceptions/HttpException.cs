@@ -40,12 +40,12 @@ public abstract class HttpException(HttpStatusCode? status, string message, Exce
 public record HttpExceptionParams(
     HttpMethod Verb,
     Uri? RequestUrl,
-    HttpResponseHeaders? ResponseHeaders,
-    ReadOnlyMemory<byte>? ResponseBody,
-    IDictionary<string, object?>? RequestProperties
+    HttpResponseHeaders? ResponseHeaders = null,
+    ReadOnlyMemory<byte>? ResponseBody = null,
+    IDictionary<string, object?>? RequestProperties = null
 #if NET5_0_OR_GREATER
     ,
-    HttpRequestOptions? RequestOptions
+    HttpRequestOptions? RequestOptions = null
 #endif
 ) {
 

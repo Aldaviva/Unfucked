@@ -175,7 +175,8 @@ public interface WebTarget: Configurable<WebTarget> {
     WebTarget Header(IEnumerable<KeyValuePair<string, string>> headers);
 
     /// <summary>
-    /// Set the <c>Accept</c> request header
+    /// <para>Set the <c>Accept</c> request header.</para>
+    /// <para>Predefined media types are available in the <see cref="System.Net.Mime.MediaTypeNames"/> class.</para>
     /// </summary>
     /// <param name="mediaTypes">One or more media types, also called content types or MIME types</param>
     /// <returns>New immutable target instance with the changed value</returns>

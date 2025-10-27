@@ -1,5 +1,3 @@
-using Unfucked.HTTP.Exceptions;
-
 namespace Unfucked.HTTP;
 
 public partial class UnfuckedWebTarget {
@@ -11,24 +9,8 @@ public partial class UnfuckedWebTarget {
      * Must not be async so the AsyncLocal scope for wire logging is high enough in the async chain.
      */
     /// <inheritdoc />
-    public virtual Task<HttpResponseMessage> Send(HttpMethod verb, HttpContent? requestBody = null, CancellationToken cancellationToken = default) {
-        Uri url = urlBuilder.ToUrl();
-        if (client is IUnfuckedHttpClient u) {
-            return u.SendAsync(new HttpRequest(verb, url, Headers, requestBody, clientConfig), cancellationToken);
-        }
-
-        using UnfuckedHttpRequestMessage request = new(verb, url) { Content = requestBody, Config = clientConfig };
-
-        try {
-            foreach (IGrouping<string, string> header in Headers.GroupBy(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase)) {
-                request.Headers.Add(header.Key, header);
-            }
-        } catch (FormatException e) {
-            throw new ProcessingException(e, new HttpExceptionParams(request));
-        }
-
-        return UnfuckedHttpClient.SendAsync(client, request, cancellationToken);
-    }
+    public virtual Task<HttpResponseMessage> Send(HttpMethod verb, HttpContent? requestBody = null, CancellationToken cancellationToken = default) =>
+        client.SendAsync(new HttpRequest(verb, urlBuilder.ToUrl(), Headers, requestBody, clientConfig), cancellationToken);
 
     /// <inheritdoc />
     public Task<HttpResponseMessage> Get(CancellationToken cancellationToken = default) => Send(HttpMethod.Get, null, cancellationToken);

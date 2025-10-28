@@ -1,3 +1,5 @@
+using Unfucked.HTTP.Config;
+
 namespace Unfucked.HTTP.Filters;
 
-public record FilterContext(IUnfuckedHttpHandler Handler);
+public readonly record struct FilterContext(IUnfuckedHttpHandler Handler, IClientConfig? Configuration);

@@ -43,13 +43,15 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
     /// <inheritdoc />
     public IUnfuckedHttpHandler? Handler { get; }
 
-    // No-arg constructor so DI gets less confused by the arguments, even though many are optional, to prevent it trying to inject a real HttpMessageHandler in a symmetric dependency
-    public UnfuckedHttpClient(): this((HttpMessageHandler?) null) { }
+    public UnfuckedHttpClient(): this(new UnfuckedHttpHandler()) { }
 
-    public UnfuckedHttpClient(HttpMessageHandler? handler = null, bool disposeHandler = true, IClientConfig? configuration = null): this(
-        handler as UnfuckedHttpHandler ?? new UnfuckedHttpHandler(handler, configuration), disposeHandler) { }
+    // These factory methods are no longer constructors so DI gets less confused by the arguments, even though many are optional, to prevent it trying to inject a real HttpMessageHandler in a symmetric dependency. Microsoft.Extensions.DependencyInjection always picks the constructor overload with the most injectable arguments, but I want it to pick the no-arg constructor.
+    public static UnfuckedHttpClient Create(HttpMessageHandler? handler = null, bool disposeHandler = true, IClientConfig? configuration = null) =>
+        new(handler as UnfuckedHttpHandler ?? new UnfuckedHttpHandler(handler, configuration), disposeHandler);
 
-    public UnfuckedHttpClient(IUnfuckedHttpHandler unfuckedHandler, bool disposeHandler = true): base(unfuckedHandler as HttpMessageHandler ?? new IUnfuckedHttpHandlerWrapper(unfuckedHandler),
+    public static UnfuckedHttpClient Create(IUnfuckedHttpHandler unfuckedHandler, bool disposeHandler = true) => new(unfuckedHandler, disposeHandler);
+
+    protected UnfuckedHttpClient(IUnfuckedHttpHandler unfuckedHandler, bool disposeHandler = true): base(unfuckedHandler as HttpMessageHandler ?? new IUnfuckedHttpHandlerWrapper(unfuckedHandler),
         disposeHandler) {
         Handler = unfuckedHandler;
         Timeout = DefaultTimeout;
@@ -60,18 +62,22 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
     }
 
     // ExceptionAdjustment: M:System.Net.Http.Headers.HttpHeaders.Add(System.String,System.Collections.Generic.IEnumerable{System.String}) -T:System.FormatException
-    public UnfuckedHttpClient(HttpClient toClone, bool disposeHandler = true, IClientConfig? configuration = null): this(
-        toClone is UnfuckedHttpClient { Handler: { } h } ? h : new UnfuckedHttpHandler(toClone, configuration), disposeHandler) {
-        BaseAddress                  = toClone.BaseAddress;
-        Timeout                      = toClone.Timeout;
-        MaxResponseContentBufferSize = toClone.MaxResponseContentBufferSize;
+    public static UnfuckedHttpClient Create(HttpClient toClone, bool disposeHandler = true, IClientConfig? configuration = null) {
+        UnfuckedHttpClient newClient = new(toClone is UnfuckedHttpClient { Handler: { } h } ? h : new UnfuckedHttpHandler(toClone, configuration), disposeHandler) {
+            BaseAddress                  = toClone.BaseAddress,
+            Timeout                      = toClone.Timeout,
+            MaxResponseContentBufferSize = toClone.MaxResponseContentBufferSize,
 #if NETCOREAPP3_0_OR_GREATER
-        DefaultRequestVersion = toClone.DefaultRequestVersion;
-        DefaultVersionPolicy = toClone.DefaultVersionPolicy;
+            DefaultRequestVersion = toClone.DefaultRequestVersion,
+            DefaultVersionPolicy  = toClone.DefaultVersionPolicy
 #endif
+        };
+
         foreach (KeyValuePair<string, IEnumerable<string>> wrappedDefaultHeader in toClone.DefaultRequestHeaders) {
-            DefaultRequestHeaders.Add(wrappedDefaultHeader.Key, wrappedDefaultHeader.Value);
+            newClient.DefaultRequestHeaders.Add(wrappedDefaultHeader.Key, wrappedDefaultHeader.Value);
         }
+
+        return newClient;
     }
 
     /// <inheritdoc />
@@ -89,7 +95,7 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
                 req.Headers.Add(header.Key, header.Value);
             }
         } catch (FormatException e) {
-            throw new ProcessingException(e, new HttpExceptionParams(req));
+            throw new ProcessingException(e, HttpExceptionParams.FromRequest(req));
         }
 
         // Set wire logging AsyncLocal outside of this async method so it is available higher in the await chain when the response finishes
@@ -104,9 +110,9 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
             // Official documentation is wrong: .NET Framework throws a TaskCanceledException for an HTTP request timeout, not an HttpRequestException (https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpclient.sendasync)
             TimeoutException cause = e.InnerException as TimeoutException ??
                 new TimeoutException($"The request was canceled due to the configured {nameof(HttpClient)}.{nameof(Timeout)} of {client.Timeout.TotalSeconds} seconds elapsing.");
-            throw new ProcessingException(cause, new HttpExceptionParams(request));
+            throw new ProcessingException(cause, HttpExceptionParams.FromRequest(request));
         } catch (HttpRequestException e) {
-            throw new ProcessingException(e.InnerException ?? e, new HttpExceptionParams(request));
+            throw new ProcessingException(e.InnerException ?? e, HttpExceptionParams.FromRequest(request));
         } finally {
             request.Dispose();
         }
@@ -137,7 +143,7 @@ internal class HttpClientWrapper: IUnfuckedHttpClient {
                 req.Headers.Add(header.Key, header);
             }
         } catch (FormatException e) {
-            throw new ProcessingException(e, new HttpExceptionParams(req));
+            throw new ProcessingException(e, HttpExceptionParams.FromRequest(req));
         }
         return UnfuckedHttpClient.SendAsync(realClient, new UnfuckedHttpRequestMessage(request), cancellationToken);
     }

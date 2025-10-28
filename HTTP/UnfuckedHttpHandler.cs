@@ -1,6 +1,7 @@
 using System.Diagnostics.Contracts;
 using System.Reflection;
 using Unfucked.HTTP.Config;
+using Unfucked.HTTP.Exceptions;
 using Unfucked.HTTP.Filters;
 using Unfucked.HTTP.Serialization;
 #if NET8_0_OR_GREATER
@@ -27,6 +28,7 @@ public interface IUnfuckedHttpHandler: Configurable<IUnfuckedHttpHandler> {
     /// <summary>
     /// This should just delegate to <c>UnfuckedHttpHandler.SendAsync</c>, it's only here because the method was originally only specified on a superclass, not an interface.
     /// </summary>
+    /// <exception cref="ProcessingException"></exception>
     Task<HttpResponseMessage> FilterAndSendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
 
 }
@@ -38,7 +40,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
     private static readonly Lazy<FieldInfo> HttpClientHandlerField = new(() => typeof(HttpMessageInvoker).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
         .First(field => field.FieldType == typeof(HttpMessageHandler)), LazyThreadSafetyMode.PublicationOnly);
 
-    private readonly FilterContext filterContext;
+    private readonly FilterContext baseFilterContext;
 
 #if NET8_0_OR_GREATER
     private readonly IMeterFactory? wireLoggingMeterFactory;
@@ -83,8 +85,8 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
         new HttpClientHandler()
 #endif
     ) {
-        ClientConfig  = configuration ?? new ClientConfig();
-        filterContext = new FilterContext(this);
+        ClientConfig      = configuration ?? new ClientConfig();
+        baseFilterContext = new FilterContext(this, ClientConfig);
 
 #if NET8_0_OR_GREATER
         if (innerHandler == null) {
@@ -96,7 +98,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
     public UnfuckedHttpHandler(HttpClient toClone, IClientConfig? configuration = null): this((HttpMessageHandler) HttpClientHandlerField.Value.GetValue(toClone)!, configuration) { }
 
     [Pure]
-    public static HttpClient CreateClient(HttpMessageHandler? innerHandler = null) => new UnfuckedHttpClient(innerHandler);
+    public static HttpClient CreateClient(HttpMessageHandler? innerHandler = null) => UnfuckedHttpClient.Create(innerHandler);
 
     internal static IUnfuckedHttpHandler? FindHandler(HttpClient httpClient) {
         if (httpClient is IUnfuckedHttpClient client) {
@@ -125,25 +127,38 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
     public Task<HttpResponseMessage> FilterAndSendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => SendAsync(request, cancellationToken);
 
     /// <inheritdoc />
+    /// <exception cref="ProcessingException">filter error</exception>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
-        IClientConfig? config = (request as UnfuckedHttpRequestMessage)?.Config;
+        IClientConfig? config        = (request as UnfuckedHttpRequestMessage)?.Config;
+        FilterContext  filterContext = baseFilterContext with { Configuration = config ?? baseFilterContext.Configuration };
 
-        foreach (ClientRequestFilter requestFilter in config?.RequestFilters ?? RequestFilters) {
-            HttpRequestMessage newRequest = await requestFilter.Filter(request, filterContext, cancellationToken).ConfigureAwait(false);
-            if (request != newRequest) {
-                request.Dispose();
-                request = newRequest;
+        try {
+            foreach (ClientRequestFilter requestFilter in config?.RequestFilters ?? RequestFilters) {
+                HttpRequestMessage newRequest = await requestFilter.Filter(request, filterContext, cancellationToken).ConfigureAwait(false);
+                if (request != newRequest) {
+                    request.Dispose();
+                    request = newRequest;
+                }
             }
+        } catch (ProcessingException) {
+            request.Dispose();
+            throw;
         }
 
         HttpResponseMessage response = await TestableSendAsync(request, cancellationToken).ConfigureAwait(false);
 
-        foreach (ClientResponseFilter responseFilter in config?.ResponseFilters ?? ResponseFilters) {
-            HttpResponseMessage newResponse = await responseFilter.Filter(response, filterContext, cancellationToken).ConfigureAwait(false);
-            if (response != newResponse) {
-                response.Dispose();
-                response = newResponse;
+        try {
+            foreach (ClientResponseFilter responseFilter in config?.ResponseFilters ?? ResponseFilters) {
+                HttpResponseMessage newResponse = await responseFilter.Filter(response, filterContext, cancellationToken).ConfigureAwait(false);
+                if (response != newResponse) {
+                    response.Dispose();
+                    response = newResponse;
+                }
             }
+        } catch (ProcessingException) {
+            request.Dispose();
+            response.Dispose();
+            throw;
         }
 
         return response;

@@ -42,7 +42,7 @@ public class ClientConfig: IClientConfig {
         Properties = other.Properties;
     }
 
-    public UnfuckedHttpClient CreateClient(HttpMessageHandler? handler = null, bool disposeHandler = true) => new(handler, disposeHandler, this);
+    public UnfuckedHttpClient CreateClient(HttpMessageHandler? handler = null, bool disposeHandler = true) => UnfuckedHttpClient.Create(handler, disposeHandler, this);
 
     /// <inheritdoc />
     [Pure]

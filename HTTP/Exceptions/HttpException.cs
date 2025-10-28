@@ -49,11 +49,35 @@ public record HttpExceptionParams(
 #endif
 ) {
 
-    internal HttpExceptionParams(HttpRequestMessage request): this(request.Method, request.RequestUri, null, null, request.Properties
+    public static HttpExceptionParams FromRequest(HttpRequestMessage request) => new(request.Method, request.RequestUri, null, null, request.Properties
 #if NET5_0_OR_GREATER
         , request.Options
 #endif
-    ) { }
+    );
+
+    public static async Task<HttpExceptionParams> FromResponse(HttpResponseMessage response, CancellationToken cancellationToken = default) {
+        HttpRequestMessage? request = response.RequestMessage;
+
+        ReadOnlyMemory<byte>? responseBody = null;
+        try {
+            await response.Content.LoadIntoBufferAsync().ConfigureAwait(false);
+            Task<byte[]> readAsByteArrayAsync =
+#if NET5_0_OR_GREATER
+                response.Content.ReadAsByteArrayAsync(cancellationToken);
+#else
+                response.Content.ReadAsByteArrayAsync();
+#endif
+            responseBody = (await readAsByteArrayAsync.ConfigureAwait(false)).AsMemory();
+        } catch (InvalidOperationException) {
+            // leave responseBody null
+        }
+
+        return new HttpExceptionParams(request?.Method ?? HttpMethod.Get, request?.RequestUri, response.Headers, responseBody, request?.Properties
+#if NET5_0_OR_GREATER
+            , request?.Options
+#endif
+        );
+    }
 
 }
 #pragma warning restore CS0618 // Type or member is obsolete

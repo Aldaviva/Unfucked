@@ -65,6 +65,12 @@
     - Get or add to `ConcurrentDictionary` and determine whether a new value was added or an existing value was returned
     - Polyfill for `IList<T>.AsReadOnly` for .NET versions before 8, including .NET Standard
     - Factories for singleton Dictionaries, Sets, and enumerables of key-value pairs
+- Lazy
+    - Easily dispose of lazy value without all the conditional and exception handling boilerplate
+        ```cs
+        Lazy<HttpClient> httpClientHolder = new(() => new HttpClient(), LazyThreadSafetyMode.PublicationOnly);
+        httpClientHolder.TryDisposeValue();
+        ```
 - Paths
     - Trim trailing slashes
     - Create new empty temporary subdirectory in specific parent directory

@@ -45,7 +45,7 @@ public partial class UnfuckedWebTarget {
                 try {
                     return await reader.Read<T>(response.Content, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
                 } catch (Exception e) when (e is not OutOfMemoryException) {
-                    throw new ProcessingException(e, await CreateHttpExceptionParams(response, cancellationToken).ConfigureAwait(false));
+                    throw new ProcessingException(e, await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false));
                 }
             }
         }
@@ -69,7 +69,7 @@ public partial class UnfuckedWebTarget {
         try {
             prefixSize = await bodyReader.ReadAsync(prefixBuffer.AsMemory(), cancellationToken).ConfigureAwait(false);
         } catch (OperationCanceledException e) {
-            throw new ProcessingException(e, await CreateHttpExceptionParams(response, CancellationToken.None).ConfigureAwait(false));
+            throw new ProcessingException(e, await HttpExceptionParams.FromResponse(response, CancellationToken.None).ConfigureAwait(false));
         }
 #else
         prefixSize = await bodyReader.ReadAsync(prefixBuffer, 0, prefixBuffer.Length).ConfigureAwait(false);
@@ -82,12 +82,12 @@ public partial class UnfuckedWebTarget {
                 try {
                     return await reader.Read<T>(response.Content, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
                 } catch (Exception e) when (e is not OutOfMemoryException) {
-                    throw new ProcessingException(e, await CreateHttpExceptionParams(response, cancellationToken).ConfigureAwait(false));
+                    throw new ProcessingException(e, await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false));
                 }
             }
         }
 
-        HttpExceptionParams p = await CreateHttpExceptionParams(response, cancellationToken).ConfigureAwait(false);
+        HttpExceptionParams p = await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false);
         throw new ProcessingException(
             new SerializationException($"Could not determine content type of response body to deserialize (URI: {p.RequestUrl}, Content-Type: {responseContentType}, .NET type: {typeof(T)})"), p);
     }
@@ -97,7 +97,7 @@ public partial class UnfuckedWebTarget {
         if (!response.IsSuccessStatusCode) {
             HttpStatusCode      statusCode = response.StatusCode;
             string              reason     = response.ReasonPhrase ?? statusCode.ToString();
-            HttpExceptionParams p          = await CreateHttpExceptionParams(response, cancellationToken).ConfigureAwait(false);
+            HttpExceptionParams p          = await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false);
             response.Dispose();
             throw statusCode switch {
                 HttpStatusCode.BadRequest           => new BadRequestException(reason, p),
@@ -117,32 +117,6 @@ public partial class UnfuckedWebTarget {
                 _ => new WebApplicationException(statusCode, reason, p)
             };
         }
-    }
-
-    private static async Task<HttpExceptionParams> CreateHttpExceptionParams(HttpResponseMessage response, CancellationToken cancellationToken) {
-        HttpRequestMessage? request = response.RequestMessage;
-
-        ReadOnlyMemory<byte>? responseBody = null;
-        try {
-            await response.Content.LoadIntoBufferAsync().ConfigureAwait(false);
-            Task<byte[]> readAsByteArrayAsync =
-#if NET5_0_OR_GREATER
-                response.Content.ReadAsByteArrayAsync(cancellationToken);
-#else
-                response.Content.ReadAsByteArrayAsync();
-#endif
-            responseBody = (await readAsByteArrayAsync.ConfigureAwait(false)).AsMemory();
-        } catch (InvalidOperationException) {
-            // leave responseBody null
-        }
-
-#pragma warning disable CS0618 // Type or member is obsolete - it's not obsolete in .NET Standard 2.0, which this library targets
-        return new HttpExceptionParams(request?.Method ?? HttpMethod.Get, request?.RequestUri, response.Headers, responseBody, request?.Properties
-#if NET5_0_OR_GREATER
-            , request?.Options
-#endif
-        );
-#pragma warning restore CS0618 // Type or member is obsolete
     }
 
 }

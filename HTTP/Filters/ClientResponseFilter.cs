@@ -17,6 +17,6 @@ public interface ClientResponseFilter: Registrable<int> {
     /// <param name="cancellationToken">If the request is aborted during filtering.</param>
     /// <returns>The response that should continue to be handled in the chain. Usually this is the same as <paramref name="response"/>, but you can return a different <see cref="HttpResponseMessage"/> instance if you need to replay or redirect the request chain to a different destination.</returns>
     /// <exception cref="ProcessingException">An error occurred during filtering.</exception>
-    Task<HttpResponseMessage> Filter(HttpResponseMessage response, FilterContext context, CancellationToken cancellationToken);
+    ValueTask<HttpResponseMessage> Filter(HttpResponseMessage response, FilterContext context, CancellationToken cancellationToken);
 
 }

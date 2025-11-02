@@ -301,7 +301,6 @@
 - Drop-in subclasses of `HttpClient` and `HttpMessageHandler`, and extension methods
     ```cs
     HttpClient http = new UnfuckedHttpClient(); // set the subclass
-    http = new HttpClient(new UnfuckedHttpHandler()); // or set the handler
     http = new UnfuckedHttpClient(new SocketsHttpHandler(){ AllowAutoRedirect = false }); // custom handlers are wrapped automatically
     ```
 - Immutable builder pattern for HTTP request URLs, headers, verbs, and response representations that is fluent, composable, and avoids accidentally reusing stale state and sending to corrupted URLs
@@ -318,12 +317,12 @@
     http.Register((ClientResponseFilter) filter);
 
     class PrintRequests: ClientRequestFilter, ClientResponseFilter {
-        public async Task<HttpRequestMessage> Filter(HttpRequestMessage request, CancellationToken cancellationToken) {
+        public async ValueTask<HttpRequestMessage> Filter(HttpRequestMessage request, CancellationToken cancellationToken) {
             Console.WriteLine(">> {0} {1}", request.Method, request.RequestUri);
             return request;
         }
 
-        public async Task<HttpResponseMessage> Filter(HttpResponseMessage response, CancellationToken cancellationToken) {
+        public async ValueTask<HttpResponseMessage> Filter(HttpResponseMessage response, CancellationToken cancellationToken) {
             Console.WriteLine("<< {0} {1}", (int) response.StatusCode, response.RequestMessage?.RequestUri);
             return response;
         }

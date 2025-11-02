@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics.Contracts;
 using System.Reflection;
 using Unfucked.HTTP.Config;
@@ -35,7 +36,7 @@ public interface IUnfuckedHttpHandler: Configurable<IUnfuckedHttpHandler> {
 
 public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 
-    private static readonly IDictionary<int, WeakReference<IUnfuckedHttpHandler>?> HttpClientHandlerCache = new Dictionary<int, WeakReference<IUnfuckedHttpHandler>?>();
+    private static readonly ConcurrentDictionary<int, WeakReference<IUnfuckedHttpHandler>?> HttpClientHandlerCache = new();
 
     private static readonly Lazy<FieldInfo> HttpClientHandlerField = new(() => typeof(HttpMessageInvoker).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
         .First(field => field.FieldType == typeof(HttpMessageHandler)), LazyThreadSafetyMode.PublicationOnly);
@@ -195,7 +196,11 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
                 List<KeyValuePair<int, WeakReference<IUnfuckedHttpHandler>?>> evictions =
                     HttpClientHandlerCache.Where(pair => pair.Value != null && (!pair.Value.TryGetTarget(out IUnfuckedHttpHandler? handler) || handler == this)).ToList();
                 foreach (KeyValuePair<int, WeakReference<IUnfuckedHttpHandler>?> eviction in evictions) {
-                    HttpClientHandlerCache.Remove(eviction);
+#if NET5_0_OR_GREATER
+                    HttpClientHandlerCache.TryRemove(eviction);
+#else
+                    HttpClientHandlerCache.TryRemove(eviction.Key, out _);
+#endif
                 }
 
 #if NET8_0_OR_GREATER

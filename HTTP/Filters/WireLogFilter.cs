@@ -69,14 +69,14 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
     }
 
 #if NET8_0_OR_GREATER
-    private static readonly  PropertyKey<bool>          Activated = new($"{typeof(WireLogFilter).Namespace!}.{nameof(WireLogFilter)}.{nameof(Activated)}");
+    private static readonly  PropertyKey<bool>          Activated      = new($"{typeof(WireLogFilter).Namespace!}.{nameof(WireLogFilter)}.{nameof(Activated)}");
     private static readonly  object                     ActivationLock = new();
-    internal static readonly AsyncLocal<WireAsyncState> AsyncState = new();
+    internal static readonly AsyncLocal<WireAsyncState> AsyncState     = new();
 
     private static readonly Lazy<FieldInfo?> SocketsHttpHandlerField = new(() => typeof(HttpClientHandler).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
         .FirstOrDefault(field => field.FieldType == typeof(SocketsHttpHandler)), LazyThreadSafetyMode.PublicationOnly);
 
-    public Task<HttpRequestMessage> Filter(HttpRequestMessage request, FilterContext context, CancellationToken cancellationToken) {
+    public ValueTask<HttpRequestMessage> Filter(HttpRequestMessage request, FilterContext context, CancellationToken cancellationToken) {
         lock (ActivationLock) {
             if (!context.Handler.Property(Activated, out bool isActivated) || !isActivated) {
                 if (FindDescendantSocketsHandler(context.Handler as UnfuckedHttpHandler) is { } socketsHttpHandler) {
@@ -98,7 +98,7 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
                 }
             }
         }
-        return Task.FromResult(request);
+        return new ValueTask<HttpRequestMessage>(request);
     }
 
     private static SocketsHttpHandler? FindDescendantSocketsHandler(HttpMessageHandler? parent) => parent switch {
@@ -121,15 +121,15 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
         private readonly Stream     responseBuffer;
 
         private ulong requestId;
-        private bool  isNewRequest = true;
+        private bool  isNewRequest                = true;
         private bool  isFinalResponseChunkWritten = true;
         private bool  warnedAboutClientClass;
 
         public WireLoggingStream(Stream httpStream, WireConfig config) {
             this.httpStream = httpStream;
-            this.config = config;
+            this.config     = config;
 
-            requestBuffer = config.ReassembleChunks ? new MemoryStream() : Null;
+            requestBuffer  = config.ReassembleChunks ? new MemoryStream() : Null;
             responseBuffer = config.ReassembleChunks ? new MemoryStream() : Null;
 
             if (config.ReassembleChunks && AsyncState.Value != null) {
@@ -148,7 +148,7 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
                 }
 
                 if (isNewRequest) {
-                    isNewRequest = false;
+                    isNewRequest                = false;
                     isFinalResponseChunkWritten = true;
 
                     if (responseBuffer.Length != 0) { // log previously buffered response from a different request
@@ -312,7 +312,7 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
     internal class WireLoggingMeterFactory: IMeterFactory {
 
         private const string InstrumentName = "http.client.open_connections";
-        private const string TagName = "http.connection.state";
+        private const string TagName        = "http.connection.state";
 
         private readonly MeterListener meterListener = new();
 
@@ -352,7 +352,7 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
 
     }
 #else
-    public Task<HttpRequestMessage> Filter(HttpRequestMessage request, FilterContext context, CancellationToken cancellationToken) => Task.FromResult(request);
+    public ValueTask<HttpRequestMessage> Filter(HttpRequestMessage request, FilterContext context, CancellationToken cancellationToken) => new(request);
 
 #endif
 

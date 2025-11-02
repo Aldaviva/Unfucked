@@ -499,4 +499,19 @@ public static partial class Enumerables {
         new ReadOnlyCollection<T>(writableList);
 #endif
 
+    /// <summary>
+    /// Like <see cref="Enumerable.OfType{TResult}"/> but it excludes subclasses. It only includes objects which are the exact same class as <typeparamref name="T"/>.
+    /// </summary>
+    /// <typeparam name="T">Exact concrete type of objects to return.</typeparam>
+    /// <param name="source">Enumerable of zero or more objects.</param>
+    /// <returns>An enumerable that contains all the elements from <paramref name="source"/>, in order, which are exactly of type <typeparamref name="T"/>.</returns>
+    public static IEnumerable<T> OfTypeExactly<T>(this IEnumerable source) {
+        Type desiredType = typeof(T);
+        foreach (object? item in source) {
+            if (item?.GetType() == desiredType) {
+                yield return (T) item;
+            }
+        }
+    }
+
 }

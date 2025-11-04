@@ -40,7 +40,7 @@
         <None Include="Readme.md" Pack="true" PackagePath="\" Visible="true" />
         <None Include=".\*.sln.DotSettings;.\*.csproj.DotSettings" Visible="false" />
         <AdditionalFiles Include="..\ExceptionAdjustments.txt" Visible="false" />
-        <Compile Include="$(MSBuildThisFileDirectory)\Unfucked\IsExternalInit.cs" Visible="true" Condition="'$(ProjectName)' != 'Unfucked'" />
+        <Compile Include="..\Unfucked\IsExternalInit.cs" Visible="true" Condition="'$(ProjectName)' != 'Unfucked'" />
         <InternalsVisibleTo Include="Tests;DynamicProxyGenAssembly2" />
     </ItemGroup>
 

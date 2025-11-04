@@ -3,6 +3,6 @@ updates:
   - package-ecosystem: "nuget"
     directory: "/"
     exclude-paths:
-      - "Tests"
+      - "Tests/**"
     schedule:
       interval: "weekly"

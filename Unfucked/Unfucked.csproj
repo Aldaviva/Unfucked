@@ -5,7 +5,8 @@
         <Version>$(UnfuckedVersion)</Version> <!-- Defined in ..\Directory.Build.props -->
         <AssemblyName>$(MSBuildProjectName)</AssemblyName>
         <RootNamespace>$(MSBuildProjectName)</RootNamespace>
-        <Description>Fix egregiously broken or missing functionality in .NET libraries. Inspired by underscore, Apache Commons, Spring, Guava, jQuery, Prototype, Dojo, and mootools.</Description>
+        <Description>Fix egregiously broken or missing functionality in .NET libraries. Provide useful boilerplate, façades, and polyfills.</Description>
+        <NoWarn>$(NoWarn);SYSLIB1054</NoWarn>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
@@ -14,8 +15,8 @@
     </ItemGroup>
     
     <ItemGroup>
-        <None Remove="..\Unfucked\icon.png;..\Readme.md" />
-        <None Include="..\Unfucked\icon.png;..\Readme.md" Pack="true" PackagePath="\" Visible="true" />
+        <None Remove="..\Unfucked\icon.png" />
+        <None Include="..\Unfucked\icon.png" Pack="true" PackagePath="\" Visible="true" />
         <None Include="..\*.props;..\*.ps1;..\.github*\**" />
         <AdditionalFiles Include="..\ExceptionAdjustments.txt" Visible="true" />
     </ItemGroup>

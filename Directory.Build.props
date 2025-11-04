@@ -9,7 +9,7 @@
         <Authors>Ben Hutchison</Authors>
         <Copyright>© 2025 $(Authors)</Copyright>
         <Company>$(Authors)</Company>
-        <PackageTags>boilerplate polyfill common utilities helpers toolbelt swiss-army-knife</PackageTags>
+        <PackageTags>boilerplate polyfill common utilities helpers toolbelt swiss-army-knife facades</PackageTags>
         <PackageProjectUrl>https://github.com/Aldaviva/Unfucked</PackageProjectUrl>
         <RepositoryUrl>https://github.com/Aldaviva/Unfucked.git</RepositoryUrl>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -27,8 +27,8 @@
 
     <!-- Self version numbers -->
     <PropertyGroup>
-        <UnfuckedVersion>0.0.1-beta.19</UnfuckedVersion>
-        <UnfuckedCachingVersion>0.0.1-beta.1</UnfuckedCachingVersion>
+        <UnfuckedVersion>0.0.1-beta.20</UnfuckedVersion>
+        <UnfuckedCachingVersion>0.0.1-beta.2</UnfuckedCachingVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -36,7 +36,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="..\Unfucked\icon.png;..\Readme.md" Pack="true" PackagePath="\" Visible="false" />
+        <None Include="..\Unfucked\icon.png" Pack="true" PackagePath="\" Visible="false" />
+        <None Include="Readme.md" Pack="true" PackagePath="\" Visible="true" />
         <None Include=".\*.sln.DotSettings;.\*.csproj.DotSettings" Visible="false" />
         <AdditionalFiles Include="..\ExceptionAdjustments.txt" Visible="false" />
         <Compile Include="$(MSBuildThisFileDirectory)\Unfucked\IsExternalInit.cs" Visible="true" Condition="'$(ProjectName)' != 'Unfucked'" />

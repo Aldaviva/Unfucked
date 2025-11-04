@@ -1,10 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netstandard2.0</TargetFramework>
+        <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
         <Version>$(UnfuckedCachingVersion)</Version>
-        <Description>Fix egregiously broken or missing functionality in Microsoft.Extensions.Caching.Memory.MemoryCache.</Description>
+        <Description>Fix Microsoft.Extensions.Caching.Memory.MemoryCache not being typesafe or allowing loader functions.</Description>
         <PackageTags>cache caching memorycache $(PackageTags)</PackageTags>
     </PropertyGroup>
-    
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+        <PackageReference Include="System.Threading.Tasks.Extensions" />
+    </ItemGroup>
+
 </Project>

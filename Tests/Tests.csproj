@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <AssemblyName>$(MSBuildProjectName)</AssemblyName>
-        <TargetFramework>net8.0-windows</TargetFramework>
+        <TargetFrameworks>net8.0-windows;net4.8</TargetFrameworks>
         <RootNamespace>Tests</RootNamespace>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
         <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
@@ -39,12 +39,15 @@
         <ProjectReference Include="..\Windows\Windows.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-        <None Remove="..\Unfucked\icon.png" />
-        <None Remove="..\*.ps1;..\*.props;..\.github\**" />
+    <ItemGroup Condition="'$(TargetFramework)' == 'net4.8'">
+        <Compile Remove="**\*.cs" />
+        <Compile Include="GlobalUsings.cs;Unfucked\CryptographyTest.cs" />
     </ItemGroup>
-
+    
     <ItemGroup>
+        <None Remove="..\Unfucked\icon.png;Readme.md" />
+        <None Remove="..\*.ps1;..\*.props;..\.github\**" />
+        <Compile Remove="..\Unfucked\IsExternalInit.cs" />
         <None Update="Unfucked\cert.pem" CopyToOutputDirectory="PreserveNewest" />
         <None Update="Unfucked\key.pem" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>

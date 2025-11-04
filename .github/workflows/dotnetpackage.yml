@@ -1,0 +1,68 @@
+name: .NET
+
+on:
+  push:
+    branches: [ master ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    env:
+      ProjectName: Unfucked
+
+    runs-on: windows-latest
+
+    steps:
+    - name: Unfuck Git
+      run: git config set --global core.autocrlf false
+
+    - name: Clone
+      uses: actions/checkout@v4
+
+    - name: Initialize test reporting
+      uses: testspace-com/setup-testspace@v1
+      with:
+        domain: ${{github.repository_owner}}
+
+    - name: Restore
+      run: dotnet restore ${{ env.ProjectName }} -p:Configuration=Release --verbosity normal
+
+    - name: Build and pack
+      run: |
+        $binPath = [System.IO.Path]::GetFullPath("./bin/")
+        New-Item $binPath -ItemType Directory -ErrorAction SilentlyContinue
+        dotnet pack ${{ env.ProjectName }} --configuration Release --no-restore --output $binPath
+
+        dotnet restore Caching --source "https://api.nuget.org/v3/index.json" --source $binPath -p:Configuration=Release
+        dotnet pack Caching --configuration Release --no-restore --output $binPath
+        
+        dotnet restore --source "https://api.nuget.org/v3/index.json" --source $binPath -p:Configuration=Release
+        dotnet pack --configuration Release --output $binPath --no-restore
+
+    - name: Test
+      run: |
+        dotnet test Tests --configuration Release --collect:"XPlat Code Coverage" --settings Tests/Tests.runsettings --logger "trx;LogFileName=TestResults.xml" --verbosity normal
+        Out-File -InputObject "TEST_EXIT_CODE=$LASTEXITCODE" -FilePath $env:GITHUB_ENV -Append -Encoding UTF8
+        Copy-Item Tests/TestResults/*/coverage.info Tests/TestResults -ErrorAction Continue
+        exit 0
+
+    - name: Upload test report
+      run: testspace Tests/TestResults/*.xml
+
+    - name: Upload coverage
+      uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        files: Tests/TestResults/coverage.info
+        format: lcov
+
+    - name: Stop if tests failed
+      run: exit $env:TEST_EXIT_CODE
+
+    - name: Upload package
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.ProjectName }}
+        path: bin/*.*nupkg
+        if-no-files-found: error

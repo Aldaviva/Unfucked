@@ -2,8 +2,8 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
-        <Version>0.0.1-beta.1</Version>
-        <Description>Fix egregiously broken or missing functionality in SharpCompress.</Description>
+        <Version>0.0.1-beta.2</Version>
+        <Description>Fix egregiously missing functionality in SharpCompress.</Description>
         <PackageTags>SharpCompress $(PackageTags)</PackageTags>
     </PropertyGroup>
 

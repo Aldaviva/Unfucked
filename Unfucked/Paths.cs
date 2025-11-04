@@ -16,15 +16,17 @@ public static class Paths {
     [return: NotNullIfNotNull(nameof(path))]
 #endif
     [Pure]
-    public static string? TrimSlashes(string? path, bool forceTrimBackslashes = false) => path?.TrimEnd(Path.DirectorySeparatorChar, forceTrimBackslashes ? '\\' : Path.AltDirectorySeparatorChar);
+    public static string? TrimTrailingSlashes(string? path, bool forceTrimBackslashes = false) =>
+        path?.TrimEnd(Path.DirectorySeparatorChar, forceTrimBackslashes ? '\\' : Path.AltDirectorySeparatorChar);
 
     /// <summary>
     /// Create a new, empty subdirectory in a given parent directory with a random, 8-character alphanumeric name that starts with <c>temp-</c>, such as <c>temp-Hi884Xbd</c>.
     /// </summary>
-    /// <param name="parentDir">Directory in which to create this new subdirectory. If <c>null</c>, it will be created in the OS user's temporary directory (generally <c>%TEMP%</c> on Windows, <c>%TMPDIR%</c> or <c>/tmp</c> on Linux).</param>
+    /// <param name="parentDir">Directory in which to create this new subdirectory. If <c>null</c>, it will be created in the OS user's temporary directory (generally either <c>%TEMP%</c> on Windows, or <c>%TMPDIR%</c> or <c>/tmp</c> on Linux).</param>
     /// <returns>Absolute path to the newly-created, empty directory.</returns>
-    /// <seealso cref="Path.GetTempPath"/>
-    public static string GetTempDirectory(string? parentDir = null) {
+    /// <remarks>See also <see cref="Path.GetTempPath"/></remarks>
+    public static string CreateTempDir(string? parentDir = null) {
+
         parentDir ??= Path.GetTempPath();
 
         string tempDirectory;
@@ -57,11 +59,11 @@ public static class Paths {
     [Pure]
     public static bool MatchesExtensions(string filename,
 #if NET5_0_OR_GREATER
-                                         IReadOnlySet<string> allowedExtensions
+                                         IReadOnlySet<string>
 #else
-                                         ISet<string> allowedExtensions
+                                         ISet<string>
 #endif
-    ) {
+                                             allowedExtensions) {
         // don't use Contains(string, IEqualityComparer<string>) because that's an O(N) operation, in case we have a fast FrozenSet in allowedExtensions
         string actualExtensionWithLeadingPeriod = Path.GetExtension(filename).ToLowerInvariant();
         return allowedExtensions.Contains(actualExtensionWithLeadingPeriod) || allowedExtensions.Contains(actualExtensionWithLeadingPeriod.TrimStart('.'));

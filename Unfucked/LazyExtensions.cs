@@ -3,7 +3,7 @@ namespace Unfucked;
 public static class LazyExtensions {
 
     /// <summary>
-    /// Easily dispose of the lazy value without all the conditional and exception handling boilerplate
+    /// Easily dispose of the lazy value without all the conditional and exception handling boilerplate.
     /// </summary>
     /// <typeparam name="T">Type of value in the <see cref="Lazy{T}"/> instance</typeparam>
     /// <param name="lazy"><see cref="Lazy{T}"/> instance</param>

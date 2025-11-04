@@ -12,7 +12,7 @@ namespace Unfucked;
 public static class Cryptography {
 
 #if !(NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER)
-    private static readonly RandomNumberGenerator Rng = new RNGCryptoServiceProvider();
+    private static readonly RandomNumberGenerator RNG = new RNGCryptoServiceProvider();
 #endif
 
     /// <summary>
@@ -36,11 +36,12 @@ public static class Cryptography {
 
 #if NET7_0_OR_GREATER
     /// <summary>
-    /// Get a named sub-value value of a certificate's <c>Subject</c> or <c>Issuer</c>, such as the Common Name (<c>CN</c>).
+    /// Get a named sub-value of a certificate's <c>Subject</c> or <c>Issuer</c>, such as the Common Name (<c>CN</c>).
     /// </summary>
     /// <param name="name">The <see cref="X509Certificate2.SubjectName"/> or <see cref="X509Certificate2.IssuerName"/> of a certificate</param>
     /// <param name="oidFriendlyName">The abbreviation for the name value, such as <c>CN</c> (Common Name), <c>O</c> (Organization), <c>L</c> (Locality/City), <c>S</c> (State/Province), and <c>C</c> (Country)</param>
     /// <returns>The value of the named part of the issuer or subject, without the leading name or <c>=</c>, or <c>null</c> if the issuer/subject did not contain the given named value.</returns>
+    /// <exception cref="CryptographicException"></exception>
     [Pure]
     public static string? Get(this X500DistinguishedName name, string oidFriendlyName) =>
         name.EnumerateRelativeDistinguishedNames()
@@ -62,7 +63,7 @@ public static class Cryptography {
 #if NET8_0_OR_GREATER
         return RandomNumberGenerator.GetString(alphabet, (int) length);
 #else
-        char[] distinctAlphabet       = alphabet.Distinct().ToArray();
+        char[] distinctAlphabet = alphabet.Distinct().ToArray();
         int    distinctAlphabetLength = distinctAlphabet.Length;
 
 #if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
@@ -73,9 +74,9 @@ public static class Cryptography {
 
         return new string(result);
 #else
-        StringBuilder result       = new((int) length);
+        StringBuilder result = new((int) length);
         byte[]        randomBuffer = new byte[length * 4];
-        Rng.GetBytes(randomBuffer);
+        RNG.GetBytes(randomBuffer);
 
         for (int randomByteIndex = 0; randomByteIndex < length; randomByteIndex++) {
             result.Append(distinctAlphabet[BitConverter.ToUInt32(randomBuffer, randomByteIndex * 4) % distinctAlphabetLength]);

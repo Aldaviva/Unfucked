@@ -10,7 +10,7 @@ namespace Unfucked;
 /// </summary>
 public static class Strings {
 
-    internal static readonly UTF8Encoding Utf8 = new(false, true);
+    internal static readonly UTF8Encoding UTF8 = new(false, true);
 
     /// <summary>
     /// Coerce strings with length 0 to <c>null</c>, which is easier to deal with than empty strings using null coalescing.
@@ -349,7 +349,7 @@ public static class Strings {
     /// <param name="encoding">The character encoding to use, or <c>null</c> to use UTF-8.</param>
     /// <returns>A stream of bytes that represent <paramref name="str"/> in the given <paramref name="encoding"/>.</returns>
     [Pure]
-    public static Stream ToByteStream(this string str, Encoding? encoding = null) => new MemoryStream((encoding ?? Utf8).GetBytes(str), false);
+    public static Stream ToByteStream(this string str, Encoding? encoding = null) => new MemoryStream((encoding ?? UTF8).GetBytes(str), false);
 
     /// <summary>
     /// Serialize a string to an array of bytes.
@@ -358,7 +358,7 @@ public static class Strings {
     /// <param name="encoding">The character encoding to use, or <c>null</c> to use UTF-8.</param>
     /// <returns>An array of bytes that represent <paramref name="str"/> in the given <paramref name="encoding"/>.</returns>
     [Pure]
-    public static byte[] ToByteArray(this string str, Encoding? encoding = null) => (encoding ?? Utf8).GetBytes(str);
+    public static byte[] ToByteArray(this string str, Encoding? encoding = null) => (encoding ?? UTF8).GetBytes(str);
 
     /// <summary>
     /// Replace Windows-style line endings (CRLF, <c>\r\n</c>, 0x0d 0x0a) with Unix-style line endings (LF, <c>\n</c>, 0x0a)

@@ -36,9 +36,9 @@ public interface IUnfuckedHttpHandler: Configurable<IUnfuckedHttpHandler> {
 
 public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 
-    private static readonly ConcurrentDictionary<int, WeakReference<IUnfuckedHttpHandler>?> HttpClientHandlerCache = new();
+    private static readonly ConcurrentDictionary<int, WeakReference<IUnfuckedHttpHandler>?> HTTP_CLIENT_HANDLER_CACHE = new();
 
-    private static readonly Lazy<FieldInfo> HttpClientHandlerField = new(() => typeof(HttpMessageInvoker).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+    private static readonly Lazy<FieldInfo> HTTP_CLIENT_HANDLER_FIELD = new(() => typeof(HttpMessageInvoker).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
         .First(field => field.FieldType == typeof(HttpMessageHandler)), LazyThreadSafetyMode.PublicationOnly);
 
     private readonly FilterContext baseFilterContext;
@@ -96,33 +96,33 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 #endif
     }
 
-    public UnfuckedHttpHandler(HttpClient toClone, IClientConfig? configuration = null): this((HttpMessageHandler) HttpClientHandlerField.Value.GetValue(toClone)!, configuration) { }
+    public UnfuckedHttpHandler(HttpClient toClone, IClientConfig? configuration = null): this((HttpMessageHandler) HTTP_CLIENT_HANDLER_FIELD.Value.GetValue(toClone)!, configuration) { }
 
     [Pure]
     public static HttpClient CreateClient(HttpMessageHandler? innerHandler = null) => UnfuckedHttpClient.Create(innerHandler);
 
     internal static IUnfuckedHttpHandler? FindHandler(HttpClient httpClient) {
-        if (httpClient is IUnfuckedHttpClient client) {
+        if (httpClient is IHttpClient client) {
             return client.Handler;
         }
 
         IUnfuckedHttpHandler? handler = null;
-        if (!HttpClientHandlerCache.TryGetValue(httpClient.GetHashCode(), out WeakReference<IUnfuckedHttpHandler>? handlerHolder) || !(handlerHolder?.TryGetTarget(out handler) ?? true)) {
-            handler = FindDescendantUnfuckedHandler((HttpMessageHandler?) HttpClientHandlerField.Value.GetValue(httpClient));
+        if (!HTTP_CLIENT_HANDLER_CACHE.TryGetValue(httpClient.GetHashCode(), out WeakReference<IUnfuckedHttpHandler>? handlerHolder) || !(handlerHolder?.TryGetTarget(out handler) ?? true)) {
+            handler = findDescendantUnfuckedHandler((HttpMessageHandler?) HTTP_CLIENT_HANDLER_FIELD.Value.GetValue(httpClient));
             CacheClientHandler(httpClient, handler);
         }
 
         return handler;
 
-        static UnfuckedHttpHandler? FindDescendantUnfuckedHandler(HttpMessageHandler? parent) => parent switch {
+        static UnfuckedHttpHandler? findDescendantUnfuckedHandler(HttpMessageHandler? parent) => parent switch {
             UnfuckedHttpHandler f => f,
-            DelegatingHandler d   => FindDescendantUnfuckedHandler(d.InnerHandler),
+            DelegatingHandler d   => findDescendantUnfuckedHandler(d.InnerHandler),
             _                     => null
         };
     }
 
     internal static void CacheClientHandler(HttpClient client, IUnfuckedHttpHandler? handler) =>
-        HttpClientHandlerCache[client.GetHashCode()] = handler is null ? null : new WeakReference<IUnfuckedHttpHandler>(handler);
+        HTTP_CLIENT_HANDLER_CACHE[client.GetHashCode()] = handler is null ? null : new WeakReference<IUnfuckedHttpHandler>(handler);
 
     /// <inheritdoc />
     public Task<HttpResponseMessage> FilterAndSendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => SendAsync(request, cancellationToken);
@@ -194,12 +194,12 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
             disposed = true;
             if (disposing) {
                 List<KeyValuePair<int, WeakReference<IUnfuckedHttpHandler>?>> evictions =
-                    HttpClientHandlerCache.Where(pair => pair.Value != null && (!pair.Value.TryGetTarget(out IUnfuckedHttpHandler? handler) || handler == this)).ToList();
+                    HTTP_CLIENT_HANDLER_CACHE.Where(pair => pair.Value != null && (!pair.Value.TryGetTarget(out IUnfuckedHttpHandler? handler) || handler == this)).ToList();
                 foreach (KeyValuePair<int, WeakReference<IUnfuckedHttpHandler>?> eviction in evictions) {
 #if NET5_0_OR_GREATER
-                    HttpClientHandlerCache.TryRemove(eviction);
+                    HTTP_CLIENT_HANDLER_CACHE.TryRemove(eviction);
 #else
-                    HttpClientHandlerCache.TryRemove(eviction.Key, out _);
+                    HTTP_CLIENT_HANDLER_CACHE.TryRemove(eviction.Key, out _);
 #endif
                 }
 

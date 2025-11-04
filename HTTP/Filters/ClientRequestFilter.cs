@@ -5,7 +5,7 @@ namespace Unfucked.HTTP.Filters;
 
 /// <summary>
 /// <para>Hook into the client handler chain of an outgoing request before it is sent. This can inspect, modify, abort, or replace the request.</para>
-/// <para>To use a filter, register it with an <see cref="IUnfuckedHttpClient"/>, <see cref="WebTarget"/>, or <see cref="IClientConfig"/> using the <c>.Register</c> method, optionally passing a position in the filter chain to control the order of execution if multiple filters are registered.</para>
+/// <para>To use a filter, register it with an <see cref="IHttpClient"/>, <see cref="IWebTarget"/>, or <see cref="IClientConfig"/> using the <c>.Register</c> method, optionally passing a position in the filter chain to control the order of execution if multiple filters are registered.</para>
 /// </summary>
 public interface ClientRequestFilter: Registrable<int> {
 

@@ -33,7 +33,7 @@ public class ScreensaverKiller: IScreensaverKiller {
     /// screen would be turned off again immediately.
     /// </summary>
     private static void TurnOnScreenAndResetDisplayIdleTimer() {
-        SendInputNativeMethods.Input input = new() { type = SendInputNativeMethods.SendInputEventType.InputMouse };
+        SendInputNativeMethods.Input input = new() { type = SendInputNativeMethods.SendInputEventType.INPUT_MOUSE };
         try {
             SendInputNativeMethods.SendInput(input);
         } catch (Win32Exception exception) {
@@ -124,26 +124,26 @@ public class ScreensaverKiller: IScreensaverKiller {
         [Flags]
         public enum MouseEventFlags: uint {
 
-            MouseeventfMove        = 0x0001,
-            MouseeventfLeftdown    = 0x0002,
-            MouseeventfLeftup      = 0x0004,
-            MouseeventfRightdown   = 0x0008,
-            MouseeventfRightup     = 0x0010,
-            MouseeventfMiddledown  = 0x0020,
-            MouseeventfMiddleup    = 0x0040,
-            MouseeventfXdown       = 0x0080,
-            MouseeventfXup         = 0x0100,
-            MouseeventfWheel       = 0x0800,
-            MouseeventfVirtualdesk = 0x4000,
-            MouseeventfAbsolute    = 0x8000
+            MOUSEEVENTF_MOVE        = 0x0001,
+            MOUSEEVENTF_LEFTDOWN    = 0x0002,
+            MOUSEEVENTF_LEFTUP      = 0x0004,
+            MOUSEEVENTF_RIGHTDOWN   = 0x0008,
+            MOUSEEVENTF_RIGHTUP     = 0x0010,
+            MOUSEEVENTF_MIDDLEDOWN  = 0x0020,
+            MOUSEEVENTF_MIDDLEUP    = 0x0040,
+            MOUSEEVENTF_XDOWN       = 0x0080,
+            MOUSEEVENTF_XUP         = 0x0100,
+            MOUSEEVENTF_WHEEL       = 0x0800,
+            MOUSEEVENTF_VIRTUALDESK = 0x4000,
+            MOUSEEVENTF_ABSOLUTE    = 0x8000
 
         }
 
         public enum SendInputEventType {
 
-            InputMouse,
-            InputKeyboard,
-            InputHardware
+            INPUT_MOUSE,
+            INPUT_KEYBOARD,
+            INPUT_HARDWARE
 
         }
 
@@ -151,13 +151,13 @@ public class ScreensaverKiller: IScreensaverKiller {
 
     private static class ScreensaverNativeMethods {
 
-        private const int  SpiGetscreensaverrunning = 0x0072;
-        private const int  SpiSetscreensaveactive   = 0x0011;
-        private const int  SpifSendwininichange     = 0x0002;
-        private const uint DesktopWriteobjects      = 0x0080;
-        private const uint DesktopReadobjects       = 0x0001;
-        private const int  WmClose                  = 0x0010;
-        private const int  True                     = 1;
+        private const int  SPI_GETSCREENSAVERRUNNING = 0x0072;
+        private const int  SPI_SETSCREENSAVEACTIVE   = 0x0011;
+        private const int  SPIF_SENDWININICHANGE     = 0x0002;
+        private const uint DESKTOP_WRITEOBJECTS      = 0x0080;
+        private const uint DESKTOP_READOBJECTS       = 0x0001;
+        private const int  WM_CLOSE                  = 0x0010;
+        private const int  TRUE                      = 1;
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -191,7 +191,7 @@ public class ScreensaverKiller: IScreensaverKiller {
         public static bool GetScreenSaverRunning() {
             IntPtr isRunning = IntPtr.Zero;
 
-            if (!SystemParametersInfo(SpiGetscreensaverrunning, 0, ref isRunning, 0)) {
+            if (!SystemParametersInfo(SPI_GETSCREENSAVERRUNNING, 0, ref isRunning, 0)) {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
 
@@ -199,7 +199,7 @@ public class ScreensaverKiller: IScreensaverKiller {
         }
 
         public static void ActivateScreensaver() {
-            SetScreenSaverActive(True);
+            SetScreenSaverActive(TRUE);
         }
 
         private static void SetScreenSaverActive(uint active) {
@@ -209,7 +209,7 @@ public class ScreensaverKiller: IScreensaverKiller {
             // Methode is called to reset timer and to prevent possible errors 
             // as mentioned in Microsoft's Knowledge Base article #140723:
             // http://support.microsoft.com/kb/140723
-            SystemParametersInfo(SpiSetscreensaveactive, active, ref nullVar, SpifSendwininichange);
+            SystemParametersInfo(SPI_SETSCREENSAVEACTIVE, active, ref nullVar, SPIF_SENDWININICHANGE);
         }
 
         // From Microsoft's Knowledge Base article #140723: 
@@ -218,7 +218,7 @@ public class ScreensaverKiller: IScreensaverKiller {
         // in Windows NT, Windows 2000, and Windows Server 2003"
         /// <exception cref="Win32Exception"></exception>
         public static void KillScreenSaver() {
-            IntPtr hDesktop = OpenDesktop("Screen-saver", 0, false, DesktopReadobjects | DesktopWriteobjects);
+            IntPtr hDesktop = OpenDesktop("Screen-saver", 0, false, DESKTOP_READOBJECTS | DESKTOP_WRITEOBJECTS);
             if (hDesktop != IntPtr.Zero) {
                 if (!EnumDesktopWindows(hDesktop, KillScreenSaverFunc, IntPtr.Zero) || !CloseDesktop(hDesktop)) {
                     throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -239,7 +239,7 @@ public class ScreensaverKiller: IScreensaverKiller {
 
         /// <exception cref="Win32Exception"></exception>
         private static void TerminateWindow(IntPtr hWnd) {
-            if (!PostMessage(hWnd, WmClose, IntPtr.Zero, IntPtr.Zero)) {
+            if (!PostMessage(hWnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero)) {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
         }

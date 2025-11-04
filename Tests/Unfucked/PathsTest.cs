@@ -21,15 +21,15 @@ public class PathsTest {
     [InlineData(@"/abc", @"/abc")]
     [InlineData(@"\abc", @"\abc")]
     public void TrimSlashes(string? input, string? expected) {
-        Paths.TrimSlashes(input).Should().Be(expected);
+        Paths.TrimTrailingSlashes(input).Should().Be(expected);
     }
 
     [Fact]
     public void GetTempDirectory() {
-        string actual = Paths.GetTempDirectory();
+        string actual = Paths.CreateTempDir();
         try {
             Directory.Exists(actual).Should().BeTrue();
-            Path.GetDirectoryName(actual).Should().Be(Paths.TrimSlashes(Path.GetTempPath()));
+            Path.GetDirectoryName(actual).Should().Be(Paths.TrimTrailingSlashes(Path.GetTempPath()));
         } finally {
             Directory.Delete(actual);
         }
@@ -47,7 +47,7 @@ public class PathsTest {
         Paths.Dos2UnixSlashes(input).Should().Be(expected);
     }
 
-    private static readonly FrozenSet<string> FileExtensions = new HashSet<string> { ".jpg", ".jpeg", ".png", ".gif" }.ToFrozenSet();
+    private static readonly FrozenSet<string> FILE_EXTENSIONS = new HashSet<string> { ".jpg", ".jpeg", ".png", ".gif" }.ToFrozenSet();
 
     [Theory]
     [InlineData("photo.jpg")]
@@ -55,7 +55,7 @@ public class PathsTest {
     [InlineData("img.PNG")]
     [InlineData("anim.2.Gif")]
     public void MatchesExtensions(string filename) {
-        Paths.MatchesExtensions(filename, FileExtensions).Should().BeTrue();
+        Paths.MatchesExtensions(filename, FILE_EXTENSIONS).Should().BeTrue();
     }
 
     [Theory]
@@ -65,7 +65,7 @@ public class PathsTest {
     [InlineData("anim.2.Ocx")]
     [InlineData("jpg")]
     public void DoesNotMatchExtensions(string filename) {
-        Paths.MatchesExtensions(filename, FileExtensions).Should().BeFalse();
+        Paths.MatchesExtensions(filename, FILE_EXTENSIONS).Should().BeFalse();
     }
 
 }

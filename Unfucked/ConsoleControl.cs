@@ -9,20 +9,20 @@ namespace Unfucked;
 /// <summary>
 /// Methods that make it easier to control the text console.
 /// </summary>
-public static class ConsoleControl {
+public static partial class ConsoleControl {
 
-    private const string Kernel32 = "kernel32.dll";
+    private const string KERNEL32 = "kernel32.dll";
 
-    private static readonly IntPtr InvalidHandleValue = new(-1);
+    private static readonly IntPtr INVALID_HANDLE_VALUE = new(-1);
 
     /// <summary>
     /// The color that the console would have used if you never changed its color. For example, this can be used to reset the text color back to its default color (like white) after changing it to blue.
     /// </summary>
     /// <seealso cref="ResetColor"/>
-    public const ConsoleColor DefaultColor = (ConsoleColor) (-1);
+    public const ConsoleColor DEFAULT_COLOR = (ConsoleColor) (-1);
 
-    private static VirtualTerminalProcessing _virtualTerminalProcessingState =
-        Environment.OSVersion.Platform == PlatformID.Win32NT ? VirtualTerminalProcessing.Disabled : VirtualTerminalProcessing.Enabled;
+    private static VirtualTerminalProcessing virtualTerminalProcessingState =
+        Environment.OSVersion.Platform == PlatformID.Win32NT ? VirtualTerminalProcessing.DISABLED : VirtualTerminalProcessing.ENABLED;
 
     /// <summary>
     /// Clear screen and move to the top-left position
@@ -136,7 +136,7 @@ public static class ConsoleControl {
     /// <summary>
     /// Write this string to reset the foreground and background text colors to their default values.
     /// </summary>
-    public static string ResetColor { get; } = Color(DefaultColor, DefaultColor);
+    public static string ResetColor { get; } = Color(DEFAULT_COLOR, DEFAULT_COLOR);
 
     /// <summary>
     /// <para>On Windows, you have to call a method to explicitly turn on ANSI escape sequence processing, otherwise you will see the raw escape codes printed as text.</para>
@@ -146,16 +146,16 @@ public static class ConsoleControl {
     /// <returns><c>true</c> if virtual terminal processing is enabled, or <c>false</c> if it is unavailable</returns>
     [ExcludeFromCodeCoverage]
     public static bool IsColorSupported() {
-        if (_virtualTerminalProcessingState == VirtualTerminalProcessing.Disabled) {
-            IntPtr stdout = GetStdHandle(StandardHandle.StandardOutputHandle);
-            _virtualTerminalProcessingState = stdout == InvalidHandleValue
+        if (virtualTerminalProcessingState == VirtualTerminalProcessing.DISABLED) {
+            IntPtr stdout = GetStdHandle(StandardHandle.STANDARD_OUTPUT_HANDLE);
+            virtualTerminalProcessingState = stdout == INVALID_HANDLE_VALUE
                 || !GetConsoleMode(stdout, out ConsoleMode originalStdoutMode)
-                || !SetConsoleMode(stdout, originalStdoutMode | ConsoleMode.EnableVirtualTerminalProcessing)
-                    ? VirtualTerminalProcessing.Unavailable
-                    : VirtualTerminalProcessing.Enabled;
+                || !SetConsoleMode(stdout, originalStdoutMode | ConsoleMode.ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+                    ? VirtualTerminalProcessing.UNAVAILABLE
+                    : VirtualTerminalProcessing.ENABLED;
         }
 
-        return _virtualTerminalProcessingState == VirtualTerminalProcessing.Enabled;
+        return virtualTerminalProcessingState == VirtualTerminalProcessing.ENABLED;
     }
 
     private static int? ToAnsiEscapeCode(this ConsoleColor? color) => color switch {
@@ -182,9 +182,9 @@ public static class ConsoleControl {
 
     private enum VirtualTerminalProcessing {
 
-        Disabled,
-        Enabled,
-        Unavailable
+        DISABLED,
+        ENABLED,
+        UNAVAILABLE
 
     }
 
@@ -199,7 +199,7 @@ public static class ConsoleControl {
     /// <para>If the function fails, the return value is <c>INVALID_HANDLE_VALUE</c>. To get extended error information, call <see cref="Marshal.GetLastWin32Error"/>.</para>
     /// <para>If an application does not have associated standard handles, such as a service running on an interactive desktop, and has not redirected them, the return value is <c>NULL</c>.</para>
     /// </returns>
-    [DllImport(Kernel32, SetLastError = true)]
+    [DllImport(KERNEL32, SetLastError = true)]
     private static extern IntPtr GetStdHandle(StandardHandle handle);
 
     private enum StandardHandle: uint {
@@ -207,17 +207,17 @@ public static class ConsoleControl {
         /// <summary>
         /// The standard input device. Initially, this is the console input buffer, <c>CONIN$</c>.
         /// </summary>
-        StandardInputHandle = 4294967286,
+        STANDARD_INPUT_HANDLE = 4294967286,
 
         /// <summary>
-        /// 	The standard output device. Initially, this is the active console screen buffer, <c>CONOUT$</c>.
+        /// The standard output device. Initially, this is the active console screen buffer, <c>CONOUT$</c>.
         /// </summary>
-        StandardOutputHandle = 4294967285,
+        STANDARD_OUTPUT_HANDLE = 4294967285,
 
         /// <summary>
         /// The standard error device. Initially, this is the active console screen buffer, <c>CONOUT$</c>.
         /// </summary>
-        StandardErrorHandle = 4294967284
+        STANDARD_ERROR_HANDLE = 4294967284
 
     }
 
@@ -228,7 +228,7 @@ public static class ConsoleControl {
     /// <param name="consoleHandle">A handle to the console input buffer or the console screen buffer. The handle must have the <c>GENERIC_READ</c> access right. For more information, see <see href="https://learn.microsoft.com/en-us/windows/console/console-buffer-security-and-access-rights"/> Console Buffer Security and Access Rights.</param>
     /// <param name="mode">A pointer to a variable that receives the current mode of the specified buffer.</param>
     /// <returns>If the function succeeds, the return value is nonzero. If the function fails, the return value is zero. To get extended error information, call <see cref="Marshal.GetLastWin32Error"/>.</returns>
-    [DllImport(Kernel32, SetLastError = true)]
+    [DllImport(KERNEL32, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetConsoleMode(IntPtr consoleHandle, [Out] out ConsoleMode mode);
 
@@ -239,10 +239,11 @@ public static class ConsoleControl {
     /// <param name="consoleHandle">A handle to the console input buffer or the console screen buffer. The handle must have the <c>GENERIC_READ</c> access right. For more information, see <see href="https://learn.microsoft.com/en-us/windows/console/console-buffer-security-and-access-rights"/> Console Buffer Security and Access Rights.</param>
     /// <param name="mode">The input or output mode to be set.</param>
     /// <returns>If the function succeeds, the return value is nonzero. If the function fails, the return value is zero. To get extended error information, call <see cref="Marshal.GetLastWin32Error"/>.</returns>
-    [DllImport(Kernel32, SetLastError = true)]
+    [DllImport(KERNEL32, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool SetConsoleMode(IntPtr consoleHandle, ConsoleMode mode);
 
+#pragma warning disable CA1069
     /// <summary>
     /// <see href="https://learn.microsoft.com/en-us/windows/console/setconsolemode#parameters"/>
     /// </summary>
@@ -250,22 +251,23 @@ public static class ConsoleControl {
     private enum ConsoleMode: uint {
 
         // stdin
-        EnableProcessedInput       = 1 << 0,
-        EnableLineInput            = 1 << 1,
-        EnableEchoInput            = 1 << 2,
-        EnableWindowInput          = 1 << 3,
-        EnableMouseInput           = 1 << 4,
-        EnableInsertMode           = 1 << 5,
-        EnableQuickEditMode        = 1 << 6,
-        EnableVirtualTerminalInput = 1 << 9,
+        ENABLE_PROCESSED_INPUT        = 1 << 0,
+        ENABLE_LINE_INPUT             = 1 << 1,
+        ENABLE_ECHO_INPUT             = 1 << 2,
+        ENABLE_WINDOW_INPUT           = 1 << 3,
+        ENABLE_MOUSE_INPUT            = 1 << 4,
+        ENABLE_INSERT_MODE            = 1 << 5,
+        ENABLE_QUICK_EDIT_MODE        = 1 << 6,
+        ENABLE_VIRTUAL_TERMINAL_INPUT = 1 << 9,
 
         // stdout
-        EnableProcessedOutput           = 1 << 0,
-        EnableWrapAtEolOutput           = 1 << 1,
-        EnableVirtualTerminalProcessing = 1 << 2,
-        DisableNewlineAutoReturn        = 1 << 3,
-        EnableLvbGridWorldwide          = 1 << 4
+        ENABLE_PROCESSED_OUTPUT            = 1 << 0,
+        ENABLE_WRAP_AT_EOL_OUTPUT          = 1 << 1,
+        ENABLE_VIRTUAL_TERMINAL_PROCESSING = 1 << 2,
+        DISABLE_NEWLINE_AUTO_RETURN        = 1 << 3,
+        ENABLE_LVB_GRID_WORLDWIDE          = 1 << 4
 
     }
+#pragma warning restore CA1069
 
 }

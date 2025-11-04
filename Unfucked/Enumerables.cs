@@ -92,13 +92,6 @@ public static partial class Enumerables {
     /// <param name="destination">Items will be copied into here.</param>
     /// <param name="source">Items will be copied from here.</param>
     /// <typeparam name="T">Type of items in both enumerables.</typeparam>
-    public static void AddAll<T>(this ICollection<T> destination, params T[]? source) {
-        if (source is not null) {
-            AddAll(destination, (IEnumerable<T>) source);
-        }
-    }
-
-    /// <inheritdoc cref="AddAll{T}(System.Collections.Generic.ICollection{T},T[])" />
     public static void AddAll<T>(this ICollection<T> destination, params IEnumerable<T> source) {
         foreach (T item in source) {
             destination.Add(item);
@@ -113,13 +106,36 @@ public static partial class Enumerables {
     /// <typeparam name="TValue">type of <paramref name="dictionary"/> values</typeparam>
     /// <param name="dictionary">writable dictionary that may contain <paramref name="key"/></param>
     /// <param name="key">key to look up or insert into the <paramref name="dictionary"/></param>
-    /// <param name="newValue">the new value to insert if <paramref name="key"/> is not found</param>
+    /// <param name="value">the new value to insert if <paramref name="key"/> is not found</param>
     /// <param name="added">after this method returns, this will be set to <c>true</c> if the new value was added to <paramref name="dictionary"/>, or <c>false</c> if a value with key <paramref name="key"/> was already present</param>
     /// <returns>the existing value with key <paramref name="key"/>, or the new value if it was not already present</returns>
     /// <exception cref="NotSupportedException"><paramref name="dictionary"/> is read-only</exception>
-    public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue newValue, out bool added) {
+    public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value, out bool added) {
         added = !dictionary.TryGetValue(key, out TValue? oldValue);
         if (added) {
+            dictionary.Add(key, value);
+            return value;
+        } else {
+            return oldValue!;
+        }
+    }
+
+    /// <summary>
+    /// <para>Returns an existing value from a dictionary, or if it wasn't already present, add it.</para>
+    /// <para>Not atomic.</para>
+    /// </summary>
+    /// <typeparam name="TKey">type of <paramref name="dictionary"/> keys</typeparam>
+    /// <typeparam name="TValue">type of <paramref name="dictionary"/> values</typeparam>
+    /// <param name="dictionary">writable dictionary that may contain <paramref name="key"/></param>
+    /// <param name="key">key to look up or insert into the <paramref name="dictionary"/></param>
+    /// <param name="valueFactory">Function that lazily returns the new value to add if <paramref name="key"/> is not already present</param>
+    /// <param name="added">after this method returns, this will be set to <c>true</c> if the new value was added to <paramref name="dictionary"/>, or <c>false</c> if a value with key <paramref name="key"/> was already present</param>
+    /// <returns>the existing value with key <paramref name="key"/>, or the new value if it was not already present</returns>
+    /// <exception cref="NotSupportedException"><paramref name="dictionary"/> is read-only</exception>
+    public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TValue> valueFactory, out bool added) {
+        added = !dictionary.TryGetValue(key, out TValue? oldValue);
+        if (added) {
+            TValue newValue = valueFactory();
             dictionary.Add(key, newValue);
             return newValue;
         } else {
@@ -135,35 +151,12 @@ public static partial class Enumerables {
     /// <typeparam name="TValue">type of <paramref name="dictionary"/> values</typeparam>
     /// <param name="dictionary">writable dictionary that may contain <paramref name="key"/></param>
     /// <param name="key">key to look up or insert into the <paramref name="dictionary"/></param>
-    /// <param name="newValueFactory">Function that lazily returns the new value to add if <paramref name="key"/> is not already present</param>
-    /// <param name="added">after this method returns, this will be set to <c>true</c> if the new value was added to <paramref name="dictionary"/>, or <c>false</c> if a value with key <paramref name="key"/> was already present</param>
-    /// <returns>the existing value with key <paramref name="key"/>, or the new value if it was not already present</returns>
-    /// <exception cref="NotSupportedException"><paramref name="dictionary"/> is read-only</exception>
-    public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TValue> newValueFactory, out bool added) {
-        added = !dictionary.TryGetValue(key, out TValue? oldValue);
-        if (added) {
-            TValue newValue = newValueFactory();
-            dictionary.Add(key, newValue);
-            return newValue;
-        } else {
-            return oldValue!;
-        }
-    }
-
-    /// <summary>
-    /// <para>Returns an existing value from a dictionary, or if it wasn't already present, add it.</para>
-    /// <para>Not atomic.</para>
-    /// </summary>
-    /// <typeparam name="TKey">type of <paramref name="dictionary"/> keys</typeparam>
-    /// <typeparam name="TValue">type of <paramref name="dictionary"/> values</typeparam>
-    /// <param name="dictionary">writable dictionary that may contain <paramref name="key"/></param>
-    /// <param name="key">key to look up or insert into the <paramref name="dictionary"/></param>
-    /// <param name="newValueFactory">Function that lazily returns the new value to add if <paramref name="key"/> is not already present</param>
+    /// <param name="valueFactory">Function that lazily returns the new value to add if <paramref name="key"/> is not already present</param>
     /// <returns>a tuple that contains the existing value with key <paramref name="key"/>, or the new value if it was not already present, as well as a boolean that shows whether the value was added to the dictionary in this method invocation</returns>
     /// <exception cref="NotSupportedException"><paramref name="dictionary"/> is read-only</exception>
-    public static async Task<(TValue value, bool added)> GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<Task<TValue>> newValueFactory) {
+    public static async Task<(TValue value, bool added)> GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<Task<TValue>> valueFactory) {
         if (!dictionary.TryGetValue(key, out TValue? oldValue)) {
-            TValue newValue = await newValueFactory().ConfigureAwait(false);
+            TValue newValue = await valueFactory().ConfigureAwait(false);
             dictionary.Add(key, newValue);
             return (value: newValue, added: true);
         } else {
@@ -248,7 +241,7 @@ public static partial class Enumerables {
             return [];
         }
 
-        IList<T> result = new List<T> { source.Current };
+        IList<T> result = [source.Current];
         while (await source.MoveNextAsync().ConfigureAwait(false)) {
             result.Add(source.Current);
         }
@@ -395,7 +388,7 @@ public static partial class Enumerables {
     /// <param name="source">Enumerable with zero or more elements.</param>
     /// <returns>A tuple with two items. The first item, <c>head</c>, is the first element of <paramref name="source"/>, or <c>null</c> if <paramref name="source"/> is empty. The second item, <c>tail</c>, is an enumerable of the remaining elements of <paramref name="source"/>, or an empty enumerable if <paramref name="source"/> has fewer than 2 elements.</returns>
     [Pure]
-    public static (T? head, IEnumerable<T> tail) HeadAndTailValueType<T>(this IEnumerable<T> source) where T: struct {
+    public static (T? head, IEnumerable<T> tail) HeadAndTailStruct<T>(this IEnumerable<T> source) where T: struct {
         using IEnumerator<T> enumerator = source.GetEnumerator();
         return (head: enumerator.MoveNext() ? enumerator.Current : null, tail: new Enumerable<T>(enumerator));
     }
@@ -407,7 +400,7 @@ public static partial class Enumerables {
     /// <param name="source">Enumerable with zero or more elements.</param>
     /// <returns>A tuple with two items. The first item, <c>head</c>, is the first element of <paramref name="source"/>, or <c>null</c> if <paramref name="source"/> is empty. The second item, <c>tail</c>, is an enumerable of the remaining elements of <paramref name="source"/>, or an empty enumerable if <paramref name="source"/> has fewer than 2 elements.</returns>
     [Pure]
-    public static (T? head, IEnumerable<T?> tail) HeadAndTailValueType<T>(this IEnumerable<T?> source) where T: struct {
+    public static (T? head, IEnumerable<T?> tail) HeadAndTailStruct<T>(this IEnumerable<T?> source) where T: struct {
         using IEnumerator<T?> enumerator = source.GetEnumerator();
         return (head: enumerator.MoveNext() ? enumerator.Current : null, tail: new Enumerable<T?>(enumerator));
     }
@@ -505,13 +498,16 @@ public static partial class Enumerables {
     /// <typeparam name="T">Exact concrete type of objects to return.</typeparam>
     /// <param name="source">Enumerable of zero or more objects.</param>
     /// <returns>An enumerable that contains all the elements from <paramref name="source"/>, in order, which are exactly of type <typeparamref name="T"/>.</returns>
-    public static IEnumerable<T> OfTypeExactly<T>(this IEnumerable source) {
-        Type desiredType = typeof(T);
-        foreach (object? item in source) {
-            if (item?.GetType() == desiredType) {
-                yield return (T) item;
-            }
-        }
-    }
+    public static IEnumerable<T> OfTypeExactly<T>(this IEnumerable source) =>
+        OfTypeExactly(source, typeof(T)).Cast<T>();
+
+    /// <summary>
+    /// Like <see cref="Enumerable.OfType{TResult}"/> but it excludes subclasses. It only includes objects which are the exact same class as <paramref name="exactType"/>.
+    /// </summary>
+    /// <param name="source">Enumerable of zero or more objects.</param>
+    /// <param name="exactType">Exact concrete type of objects to return.</param>
+    /// <returns>An enumerable that contains all the elements from <paramref name="source"/>, in order, which are exactly of type <paramref name="exactType"/>.</returns>
+    public static IEnumerable OfTypeExactly(this IEnumerable source, Type exactType) =>
+        source.Cast<object?>().Where(item => item?.GetType() == exactType);
 
 }

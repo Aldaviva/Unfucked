@@ -1,4 +1,4 @@
-﻿using Unfucked.Caching;
+using Unfucked.Caching;
 
 // ReSharper disable AccessToDisposedClosure
 
@@ -10,11 +10,11 @@ public class InMemoryCacheTest {
 
     private event EventHandler<string>? StringLengthLoaded;
 
-    private Task<int> StringLengthLoader(string s) {
+    private ValueTask<int> StringLengthLoader(string s) {
         Interlocked.Increment(ref loads);
         int length = s.Length;
         StringLengthLoaded?.Invoke(this, s);
-        return Task.FromResult(length);
+        return new ValueTask<int>(length);
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class InMemoryCacheTest {
 
     [Fact]
     public async Task BothLoaders() {
-        using var cache = new InMemoryCache<string, int>(loader: s => Task.FromResult(s.Length + 1));
+        using var cache = new InMemoryCache<string, int>(loader: s => new ValueTask<int>(s.Length + 1));
         (await cache.Get("a", StringLengthLoader)).Should().Be(1);
     }
 
@@ -162,7 +162,7 @@ public class InMemoryCacheTest {
 
         removedKey.Should().Be("a");
         removedValue.Should().Be(1);
-        removalCause.Should().Be(RemovalCause.Expired);
+        removalCause.Should().Be(RemovalCause.EXPIRED);
         cache.Count.Should().Be(0);
     }
 

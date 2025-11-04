@@ -121,7 +121,7 @@ public static class WindowsProcesses {
         //eagerly find child processes, because once we start killing processes, their parent PIDs won't mean anything anymore
         List<Process> descendants = GetDescendantProcesses(ancestor, allProcesses).ToList();
 
-        foreach (Process nonDescendant in allProcesses.Except(descendants, ProcessIdEqualityComparer.Instance)) {
+        foreach (Process nonDescendant in allProcesses.Except(descendants, ProcessIdEqualityComparer.INSTANCE)) {
             nonDescendant.Dispose();
         }
 
@@ -145,7 +145,7 @@ public static class WindowsProcesses {
 
     private class ProcessIdEqualityComparer: IEqualityComparer<Process> {
 
-        public static readonly ProcessIdEqualityComparer Instance = new();
+        public static readonly ProcessIdEqualityComparer INSTANCE = new();
 
         public bool Equals(Process? x, Process? y) => ReferenceEquals(x, y) || (x is not null && y is not null && x.GetType() == y.GetType() && x.Id == y.Id);
 
@@ -155,9 +155,9 @@ public static class WindowsProcesses {
 
     [Pure]
     public static bool IsProcessSuspended(this Process process) {
-        uint returnCode = NtQueryInformationProcess(process.Handle, ProcessInfoClass.ProcessBasicInformation, out ProcessExtendedBasicInformation info,
+        uint returnCode = NtQueryInformationProcess(process.Handle, ProcessInfoClass.PROCESS_BASIC_INFORMATION, out ProcessExtendedBasicInformation info,
             Marshal.SizeOf<ProcessExtendedBasicInformation>(), out int _);
-        return returnCode == 0 && (info.Flags & ProcessExtendedBasicInformation.ProcessFlags.IsFrozen) != 0;
+        return returnCode == 0 && (info.Flags & ProcessExtendedBasicInformation.ProcessFlags.IS_FROZEN) != 0;
     }
 
     [DllImport("ntdll.dll", SetLastError = true)]
@@ -176,16 +176,16 @@ public static class WindowsProcesses {
         [Flags]
         public enum ProcessFlags: uint {
 
-            IsProtectedProcess   = 1 << 0,
-            IsWow64Process       = 1 << 1,
-            IsProcessDeleting    = 1 << 2,
-            IsCrossSessionCreate = 1 << 3,
-            IsFrozen             = 1 << 4,
-            IsBackground         = 1 << 5,
-            IsStronglyNamed      = 1 << 6,
-            IsSecureProcess      = 1 << 7,
-            IsSubsystemProcess   = 1 << 8,
-            SpareBits            = 1 << 9
+            IS_PROTECTED_PROCESS    = 1 << 0,
+            IS_WOW64_PROCESS        = 1 << 1,
+            IS_PROCESS_DELETING     = 1 << 2,
+            IS_CROSS_SESSION_CREATE = 1 << 3,
+            IS_FROZEN               = 1 << 4,
+            IS_BACKGROUND           = 1 << 5,
+            IS_STRONGLY_NAMED       = 1 << 6,
+            IS_SECURE_PROCESS       = 1 << 7,
+            IS_SUBSYSTEM_PROCESS    = 1 << 8,
+            SPARE_BITS              = 1 << 9
 
         }
 
@@ -205,107 +205,107 @@ public static class WindowsProcesses {
 
     private enum ProcessInfoClass: uint {
 
-        ProcessBasicInformation                     = 0x00,
-        ProcessQuotaLimits                          = 0x01,
-        ProcessIoCounters                           = 0x02,
-        ProcessVMCounters                           = 0x03,
-        ProcessTimes                                = 0x04,
-        ProcessBasePriority                         = 0x05,
-        ProcessRaisePriority                        = 0x06,
-        ProcessDebugPort                            = 0x07,
-        ProcessExceptionPort                        = 0x08,
-        ProcessAccessToken                          = 0x09,
-        ProcessLdtInformation                       = 0x0A,
-        ProcessLdtSize                              = 0x0B,
-        ProcessDefaultHardErrorMode                 = 0x0C,
-        ProcessIoPortHandlers                       = 0x0D,
-        ProcessPooledUsageAndLimits                 = 0x0E,
-        ProcessWorkingSetWatch                      = 0x0F,
-        ProcessUserModeIopl                         = 0x10,
-        ProcessEnableAlignmentFaultFixup            = 0x11,
-        ProcessPriorityClass                        = 0x12,
-        ProcessWx86Information                      = 0x13,
-        ProcessHandleCount                          = 0x14,
-        ProcessAffinityMask                         = 0x15,
-        ProcessPriorityBoost                        = 0x16,
-        ProcessDeviceMap                            = 0x17,
-        ProcessSessionInformation                   = 0x18,
-        ProcessForegroundInformation                = 0x19,
-        ProcessWow64Information                     = 0x1A,
-        ProcessImageFileName                        = 0x1B,
-        ProcessLuidDeviceMapsEnabled                = 0x1C,
-        ProcessBreakOnTermination                   = 0x1D,
-        ProcessDebugObjectHandle                    = 0x1E,
-        ProcessDebugFlags                           = 0x1F,
-        ProcessHandleTracing                        = 0x20,
-        ProcessIoPriority                           = 0x21,
-        ProcessExecuteFlags                         = 0x22,
-        ProcessResourceManagement                   = 0x23,
-        ProcessCookie                               = 0x24,
-        ProcessImageInformation                     = 0x25,
-        ProcessCycleTime                            = 0x26,
-        ProcessPagePriority                         = 0x27,
-        ProcessInstrumentationCallback              = 0x28,
-        ProcessThreadStackAllocation                = 0x29,
-        ProcessWorkingSetWatchEx                    = 0x2A,
-        ProcessImageFileNameWin32                   = 0x2B,
-        ProcessImageFileMapping                     = 0x2C,
-        ProcessAffinityUpdateMode                   = 0x2D,
-        ProcessMemoryAllocationMode                 = 0x2E,
-        ProcessGroupInformation                     = 0x2F,
-        ProcessTokenVirtualizationEnabled           = 0x30,
-        ProcessConsoleHostProcess                   = 0x31,
-        ProcessWindowInformation                    = 0x32,
-        ProcessHandleInformation                    = 0x33,
-        ProcessMitigationPolicy                     = 0x34,
-        ProcessDynamicFunctionTableInformation      = 0x35,
-        ProcessHandleCheckingMode                   = 0x36,
-        ProcessKeepAliveCount                       = 0x37,
-        ProcessRevokeFileHandles                    = 0x38,
-        ProcessWorkingSetControl                    = 0x39,
-        ProcessHandleTable                          = 0x3A,
-        ProcessCheckStackExtentsMode                = 0x3B,
-        ProcessCommandLineInformation               = 0x3C,
-        ProcessProtectionInformation                = 0x3D,
-        ProcessMemoryExhaustion                     = 0x3E,
-        ProcessFaultInformation                     = 0x3F,
-        ProcessTelemetryIdInformation               = 0x40,
-        ProcessCommitReleaseInformation             = 0x41,
-        ProcessDefaultCpuSetsInformation            = 0x42,
-        ProcessAllowedCpuSetsInformation            = 0x43,
-        ProcessSubsystemProcess                     = 0x44,
-        ProcessJobMemoryInformation                 = 0x45,
-        ProcessInPrivate                            = 0x46,
-        ProcessRaiseUmExceptionOnInvalidHandleClose = 0x47,
-        ProcessIumChallengeResponse                 = 0x48,
-        ProcessChildProcessInformation              = 0x49,
-        ProcessHighGraphicsPriorityInformation      = 0x4A,
-        ProcessSubsystemInformation                 = 0x4B,
-        ProcessEnergyValues                         = 0x4C,
-        ProcessActivityThrottleState                = 0x4D,
-        ProcessActivityThrottlePolicy               = 0x4E,
-        ProcessWin32KSyscallFilterInformation       = 0x4F,
-        ProcessDisableSystemAllowedCpuSets          = 0x50,
-        ProcessWakeInformation                      = 0x51,
-        ProcessEnergyTrackingState                  = 0x52,
-        ProcessManageWritesToExecutableMemory       = 0x53,
-        ProcessCaptureTrustletLiveDump              = 0x54,
-        ProcessTelemetryCoverage                    = 0x55,
-        ProcessEnclaveInformation                   = 0x56,
-        ProcessEnableReadWriteVMLogging             = 0x57,
-        ProcessUptimeInformation                    = 0x58,
-        ProcessImageSection                         = 0x59,
-        ProcessDebugAuthInformation                 = 0x5A,
-        ProcessSystemResourceManagement             = 0x5B,
-        ProcessSequenceNumber                       = 0x5C,
-        ProcessLoaderDetour                         = 0x5D,
-        ProcessSecurityDomainInformation            = 0x5E,
-        ProcessCombineSecurityDomainsInformation    = 0x5F,
-        ProcessEnableLogging                        = 0x60,
-        ProcessLeapSecondInformation                = 0x61,
-        ProcessFiberShadowStackAllocation           = 0x62,
-        ProcessFreeFiberShadowStackAllocation       = 0x63,
-        MaxProcessInfoClass                         = 0x64
+        PROCESS_BASIC_INFORMATION                          = 0x00,
+        PROCESS_QUOTA_LIMITS                               = 0x01,
+        PROCESS_IO_COUNTERS                                = 0x02,
+        PROCESS_VM_COUNTERS                                = 0x03,
+        PROCESS_TIMES                                      = 0x04,
+        PROCESS_BASE_PRIORITY                              = 0x05,
+        PROCESS_RAISE_PRIORITY                             = 0x06,
+        PROCESS_DEBUG_PORT                                 = 0x07,
+        PROCESS_EXCEPTION_PORT                             = 0x08,
+        PROCESS_ACCESS_TOKEN                               = 0x09,
+        PROCESS_LDT_INFORMATION                            = 0x0A,
+        PROCESS_LDT_SIZE                                   = 0x0B,
+        PROCESS_DEFAULT_HARD_ERROR_MODE                    = 0x0C,
+        PROCESS_IO_PORT_HANDLERS                           = 0x0D,
+        PROCESS_POOLED_USAGE_AND_LIMITS                    = 0x0E,
+        PROCESS_WORKING_SET_WATCH                          = 0x0F,
+        PROCESS_USER_MODE_IOPL                             = 0x10,
+        PROCESS_ENABLE_ALIGNMENT_FAULT_FIXUP               = 0x11,
+        PROCESS_PRIORITY_CLASS                             = 0x12,
+        PROCESS_WX86_INFORMATION                           = 0x13,
+        PROCESS_HANDLE_COUNT                               = 0x14,
+        PROCESS_AFFINITY_MASK                              = 0x15,
+        PROCESS_PRIORITY_BOOST                             = 0x16,
+        PROCESS_DEVICE_MAP                                 = 0x17,
+        PROCESS_SESSION_INFORMATION                        = 0x18,
+        PROCESS_FOREGROUND_INFORMATION                     = 0x19,
+        PROCESS_WOW64_INFORMATION                          = 0x1A,
+        PROCESS_IMAGE_FILE_NAME                            = 0x1B,
+        PROCESS_LUID_DEVICE_MAPS_ENABLED                   = 0x1C,
+        PROCESS_BREAK_ON_TERMINATION                       = 0x1D,
+        PROCESS_DEBUG_OBJECT_HANDLE                        = 0x1E,
+        PROCESS_DEBUG_FLAGS                                = 0x1F,
+        PROCESS_HANDLE_TRACING                             = 0x20,
+        PROCESS_IO_PRIORITY                                = 0x21,
+        PROCESS_EXECUTE_FLAGS                              = 0x22,
+        PROCESS_RESOURCE_MANAGEMENT                        = 0x23,
+        PROCESS_COOKIE                                     = 0x24,
+        PROCESS_IMAGE_INFORMATION                          = 0x25,
+        PROCESS_CYCLE_TIME                                 = 0x26,
+        PROCESS_PAGE_PRIORITY                              = 0x27,
+        PROCESS_INSTRUMENTATION_CALLBACK                   = 0x28,
+        PROCESS_THREAD_STACK_ALLOCATION                    = 0x29,
+        PROCESS_WORKING_SET_WATCH_EX                       = 0x2A,
+        PROCESS_IMAGE_FILE_NAME_WIN32                      = 0x2B,
+        PROCESS_IMAGE_FILE_MAPPING                         = 0x2C,
+        PROCESS_AFFINITY_UPDATE_MODE                       = 0x2D,
+        PROCESS_MEMORY_ALLOCATION_MODE                     = 0x2E,
+        PROCESS_GROUP_INFORMATION                          = 0x2F,
+        PROCESS_TOKEN_VIRTUALIZATION_ENABLED               = 0x30,
+        PROCESS_CONSOLE_HOST_PROCESS                       = 0x31,
+        PROCESS_WINDOW_INFORMATION                         = 0x32,
+        PROCESS_HANDLE_INFORMATION                         = 0x33,
+        PROCESS_MITIGATION_POLICY                          = 0x34,
+        PROCESS_DYNAMIC_FUNCTION_TABLE_INFORMATION         = 0x35,
+        PROCESS_HANDLE_CHECKING_MODE                       = 0x36,
+        PROCESS_KEEP_ALIVE_COUNT                           = 0x37,
+        PROCESS_REVOKE_FILE_HANDLES                        = 0x38,
+        PROCESS_WORKING_SET_CONTROL                        = 0x39,
+        PROCESS_HANDLE_TABLE                               = 0x3A,
+        PROCESS_CHECK_STACK_EXTENTS_MODE                   = 0x3B,
+        PROCESS_COMMAND_LINE_INFORMATION                   = 0x3C,
+        PROCESS_PROTECTION_INFORMATION                     = 0x3D,
+        PROCESS_MEMORY_EXHAUSTION                          = 0x3E,
+        PROCESS_FAULT_INFORMATION                          = 0x3F,
+        PROCESS_TELEMETRY_ID_INFORMATION                   = 0x40,
+        PROCESS_COMMIT_RELEASE_INFORMATION                 = 0x41,
+        PROCESS_DEFAULT_CPU_SETS_INFORMATION               = 0x42,
+        PROCESS_ALLOWED_CPU_SETS_INFORMATION               = 0x43,
+        PROCESS_SUBSYSTEM_PROCESS                          = 0x44,
+        PROCESS_JOB_MEMORY_INFORMATION                     = 0x45,
+        PROCESS_IN_PRIVATE                                 = 0x46,
+        PROCESS_RAISE_UM_EXCEPTION_ON_INVALID_HANDLE_CLOSE = 0x47,
+        PROCESS_IUM_CHALLENGE_RESPONSE                     = 0x48,
+        PROCESS_CHILD_PROCESS_INFORMATION                  = 0x49,
+        PROCESS_HIGH_GRAPHICS_PRIORITY_INFORMATION         = 0x4A,
+        PROCESS_SUBSYSTEM_INFORMATION                      = 0x4B,
+        PROCESS_ENERGY_VALUES                              = 0x4C,
+        PROCESS_ACTIVITY_THROTTLE_STATE                    = 0x4D,
+        PROCESS_ACTIVITY_THROTTLE_POLICY                   = 0x4E,
+        PROCESS_WIN32_K_SYSCALL_FILTER_INFORMATION         = 0x4F,
+        PROCESS_DISABLE_SYSTEM_ALLOWED_CPU_SETS            = 0x50,
+        PROCESS_WAKE_INFORMATION                           = 0x51,
+        PROCESS_ENERGY_TRACKING_STATE                      = 0x52,
+        PROCESS_MANAGE_WRITES_TO_EXECUTABLE_MEMORY         = 0x53,
+        PROCESS_CAPTURE_TRUSTLET_LIVE_DUMP                 = 0x54,
+        PROCESS_TELEMETRY_COVERAGE                         = 0x55,
+        PROCESS_ENCLAVE_INFORMATION                        = 0x56,
+        PROCESS_ENABLE_READ_WRITE_VM_LOGGING               = 0x57,
+        PROCESS_UPTIME_INFORMATION                         = 0x58,
+        PROCESS_IMAGE_SECTION                              = 0x59,
+        PROCESS_DEBUG_AUTH_INFORMATION                     = 0x5A,
+        PROCESS_SYSTEM_RESOURCE_MANAGEMENT                 = 0x5B,
+        PROCESS_SEQUENCE_NUMBER                            = 0x5C,
+        PROCESS_LOADER_DETOUR                              = 0x5D,
+        PROCESS_SECURITY_DOMAIN_INFORMATION                = 0x5E,
+        PROCESS_COMBINE_SECURITY_DOMAINS_INFORMATION       = 0x5F,
+        PROCESS_ENABLE_LOGGING                             = 0x60,
+        PROCESS_LEAP_SECOND_INFORMATION                    = 0x61,
+        PROCESS_FIBER_SHADOW_STACK_ALLOCATION              = 0x62,
+        PROCESS_FREE_FIBER_SHADOW_STACK_ALLOCATION         = 0x63,
+        MAX_PROCESS_INFO_CLASS                             = 0x64
 
     }
 
@@ -331,7 +331,7 @@ public static class WindowsProcesses {
             FreeConsole();
         } else {
             // https://codingvision.net/c-inject-a-dll-into-a-process-w-createremotethread
-            using SafeProcessHandle safeProcessHandle = OpenProcess(ProcessSecurityAndAccessRight.ProcessCreateThread, false, targetPid);
+            using SafeProcessHandle safeProcessHandle = OpenProcess(ProcessSecurityAndAccessRight.PROCESS_CREATE_THREAD, false, targetPid);
 
             IntPtr methodAddr = GetProcAddress(GetModuleHandle("kernel32.dll"), "FreeConsole");
             CreateRemoteThread(safeProcessHandle, IntPtr.Zero, 0, methodAddr, IntPtr.Zero, 0, IntPtr.Zero);
@@ -341,11 +341,11 @@ public static class WindowsProcesses {
     [Flags]
     private enum ProcessSecurityAndAccessRight: uint {
 
-        ProcessCreateThread     = 0x2,
-        ProcessQueryInformation = 0x400,
-        ProcessVMOperation      = 0x8,
-        ProcessVMWrite          = 0x20,
-        ProcessVMRead           = 0x10
+        PROCESS_CREATE_THREAD     = 0x2,
+        PROCESS_QUERY_INFORMATION = 0x400,
+        PROCESS_VM_OPERATION      = 0x8,
+        PROCESS_VM_WRITE          = 0x20,
+        PROCESS_VM_READ           = 0x10
 
     }
 

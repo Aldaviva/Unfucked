@@ -49,16 +49,16 @@ internal class ShellEventArgs: EventArgs {
 
     public enum ShellEvent {
 
-        WindowCreated = 1,
-        WindowDestroyed,
-        ActivateShellWindow,
-        WindowActivated,
-        GetMinRect,
-        Redraw,
-        Taskman,
-        Language,
-        AccessibilityState = 11,
-        AppCommand
+        WINDOW_CREATED = 1,
+        WINDOW_DESTROYED,
+        ACTIVATE_SHELL_WINDOW,
+        WINDOW_ACTIVATED,
+        GET_MIN_RECT,
+        REDRAW,
+        TASKMAN,
+        LANGUAGE,
+        ACCESSIBILITY_STATE = 11,
+        APP_COMMAND
 
     }
 

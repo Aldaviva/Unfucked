@@ -69,16 +69,16 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
     }
 
 #if NET8_0_OR_GREATER
-    private static readonly  PropertyKey<bool>          Activated      = new($"{typeof(WireLogFilter).Namespace!}.{nameof(WireLogFilter)}.{nameof(Activated)}");
-    private static readonly  object                     ActivationLock = new();
-    internal static readonly AsyncLocal<WireAsyncState> AsyncState     = new();
+    private static readonly  PropertyKey<bool>          ACTIVATED = new($"{typeof(WireLogFilter).Namespace!}.{nameof(WireLogFilter)}.{nameof(ACTIVATED)}");
+    private static readonly  object                     ACTIVATION_LOCK = new();
+    internal static readonly AsyncLocal<WireAsyncState> ASYNC_STATE = new();
 
-    private static readonly Lazy<FieldInfo?> SocketsHttpHandlerField = new(() => typeof(HttpClientHandler).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+    private static readonly Lazy<FieldInfo?> SOCKETS_HTTP_HANDLER_FIELD = new(() => typeof(HttpClientHandler).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
         .FirstOrDefault(field => field.FieldType == typeof(SocketsHttpHandler)), LazyThreadSafetyMode.PublicationOnly);
 
     public ValueTask<HttpRequestMessage> Filter(HttpRequestMessage request, FilterContext context, CancellationToken cancellationToken) {
-        lock (ActivationLock) {
-            if (!context.Handler.Property(Activated, out bool isActivated) || !isActivated) {
+        lock (ACTIVATION_LOCK) {
+            if (!context.Handler.Property(ACTIVATED, out bool isActivated) || !isActivated) {
                 if (FindDescendantSocketsHandler(context.Handler as UnfuckedHttpHandler) is { } socketsHttpHandler) {
                     socketsHttpHandler.PlaintextStreamFilter = socketsHttpHandler.PlaintextStreamFilter is { } existingStreamProvider
                         ? async (ctx, ct) => new WireLoggingStream(await existingStreamProvider(ctx, ct).ConfigureAwait(false), config)
@@ -92,9 +92,9 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
                             // handler has already sent a request, leave the meterfactory intact and don't worry about this minor performance improvement
                         }
                     }
-                    context.Handler.Property(Activated, true);
+                    context.Handler.Property(ACTIVATED, true);
                 } else {
-                    context.Handler.Property(Activated, false);
+                    context.Handler.Property(ACTIVATED, false);
                 }
             }
         }
@@ -104,16 +104,16 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
     private static SocketsHttpHandler? FindDescendantSocketsHandler(HttpMessageHandler? parent) => parent switch {
         SocketsHttpHandler s => s,
         DelegatingHandler d  => FindDescendantSocketsHandler(d.InnerHandler),
-        HttpClientHandler h  => SocketsHttpHandlerField.Value?.GetValue(h) as SocketsHttpHandler,
+        HttpClientHandler h  => SOCKETS_HTTP_HANDLER_FIELD.Value?.GetValue(h) as SocketsHttpHandler,
         _                    => null
     };
 
     internal class WireLoggingStream: Stream {
 
-        private static readonly Encoding MessageEncoding = new UTF8Encoding(false, false); // MaxMessageSize might truncate trailing bytes of a multi-byte character
-        private static readonly byte[]   LineEndingsUtf8 = "\r\n"u8.ToArray();
+        private static readonly Encoding MESSAGE_ENCODING = new UTF8Encoding(false, false); // MaxMessageSize might truncate trailing bytes of a multi-byte character
+        private static readonly byte[]   LINE_ENDINGS_UTF8 = "\r\n"u8.ToArray();
 
-        private static ulong _mostRecentRequestId;
+        private static ulong mostRecentRequestId;
 
         private readonly Stream     httpStream;
         private readonly WireConfig config;
@@ -121,19 +121,19 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
         private readonly Stream     responseBuffer;
 
         private ulong requestId;
-        private bool  isNewRequest                = true;
+        private bool  isNewRequest = true;
         private bool  isFinalResponseChunkWritten = true;
         private bool  warnedAboutClientClass;
 
         public WireLoggingStream(Stream httpStream, WireConfig config) {
             this.httpStream = httpStream;
-            this.config     = config;
+            this.config = config;
 
-            requestBuffer  = config.ReassembleChunks ? new MemoryStream() : Null;
+            requestBuffer = config.ReassembleChunks ? new MemoryStream() : Null;
             responseBuffer = config.ReassembleChunks ? new MemoryStream() : Null;
 
-            if (config.ReassembleChunks && AsyncState.Value != null) {
-                AsyncState.Value.wireStream = this;
+            if (config.ReassembleChunks && ASYNC_STATE.Value != null) {
+                ASYNC_STATE.Value.WireStream = this;
             }
         }
 
@@ -143,34 +143,34 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
         /// <exception cref="OperationCanceledException"></exception>
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) {
             if (config.ReassembleChunks) {
-                if (AsyncState.Value != null) {
-                    AsyncState.Value.wireStream = this;
+                if (ASYNC_STATE.Value != null) {
+                    ASYNC_STATE.Value.WireStream = this;
                 }
 
                 if (isNewRequest) {
-                    isNewRequest                = false;
+                    isNewRequest = false;
                     isFinalResponseChunkWritten = true;
 
                     if (responseBuffer.Length != 0) { // log previously buffered response from a different request
                         if (config.IsLogEnabled()) {
                             TrimTrailingLineEndings(responseBuffer);
-                            using StreamReader reader = new(responseBuffer, MessageEncoding, leaveOpen: true);
+                            using StreamReader reader = new(responseBuffer, MESSAGE_ENCODING, leaveOpen: true);
                             // ReSharper disable once MethodHasAsyncOverloadWithCancellation - the source is already in memory because it's a MemoryStream, so there is no reason to use async or cancellations
                             config.LogResponseReceived(reader.ReadToEnd(), requestId);
                         }
                         responseBuffer.SetLength(0);
                     }
 
-                    requestId = Interlocked.Increment(ref _mostRecentRequestId);
+                    requestId = Interlocked.Increment(ref mostRecentRequestId);
                 }
 
                 if (config.IsLogEnabled()) {
                     requestBuffer.Write(buffer.Span[..(config.MaxMessageSize > 0 ? (Index) (config.MaxMessageSize - requestBuffer.Length).Clip(0, buffer.Length) : ^0)]);
                 }
             } else {
-                requestId = Interlocked.Increment(ref _mostRecentRequestId);
+                requestId = Interlocked.Increment(ref mostRecentRequestId);
                 if (config.IsLogEnabled()) {
-                    config.LogRequestTransmitted(MessageEncoding.GetString(buffer.Span[..(config.MaxMessageSize > 0 ? (Index) config.MaxMessageSize : ^0)].TrimEnd(LineEndingsUtf8)), requestId);
+                    config.LogRequestTransmitted(MESSAGE_ENCODING.GetString(buffer.Span[..(config.MaxMessageSize > 0 ? (Index) config.MaxMessageSize : ^0)].TrimEnd(LINE_ENDINGS_UTF8)), requestId);
                 }
             }
 
@@ -185,8 +185,8 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
             int bytesRead = await httpStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
 
             if (config.ReassembleChunks) {
-                if (AsyncState.Value != null) {
-                    AsyncState.Value.wireStream = this;
+                if (ASYNC_STATE.Value != null) {
+                    ASYNC_STATE.Value.WireStream = this;
                 } else if (!warnedAboutClientClass) {
                     warnedAboutClientClass = true;
                     config.LogResponseReceived(
@@ -197,7 +197,7 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
                 if (requestBuffer.Length != 0) { // log previous buffered request for this response
                     if (config.IsLogEnabled()) {
                         TrimTrailingLineEndings(requestBuffer);
-                        using StreamReader reader = new(requestBuffer, MessageEncoding, leaveOpen: true);
+                        using StreamReader reader = new(requestBuffer, MESSAGE_ENCODING, leaveOpen: true);
                         // ReSharper disable once MethodHasAsyncOverloadWithCancellation - the source is already in memory because it's a MemoryStream, so there is no reason to use async or cancellations
                         config.LogRequestTransmitted(reader.ReadToEnd(), requestId);
                     }
@@ -213,7 +213,7 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
                 isFinalResponseChunkWritten = false;
             } else if (config.IsLogEnabled()) {
                 config.LogResponseReceived(
-                    MessageEncoding.GetString(buffer.Span[.. (Index) (config.MaxMessageSize > 0 ? config.MaxMessageSize.Clip(0, bytesRead) : bytesRead)].TrimEnd(LineEndingsUtf8)), requestId);
+                    MESSAGE_ENCODING.GetString(buffer.Span[.. (Index) (config.MaxMessageSize > 0 ? config.MaxMessageSize.Clip(0, bytesRead) : bytesRead)].TrimEnd(LINE_ENDINGS_UTF8)), requestId);
             }
 
             return bytesRead;
@@ -230,7 +230,7 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
                 if (responseBuffer.Length != 0) { // log response because this is the last chunk
                     if (config.IsLogEnabled()) {
                         TrimTrailingLineEndings(responseBuffer);
-                        using StreamReader reader = new(responseBuffer, MessageEncoding, leaveOpen: true);
+                        using StreamReader reader = new(responseBuffer, MESSAGE_ENCODING, leaveOpen: true);
                         config.LogResponseReceived(reader.ReadToEnd(), requestId);
                     }
 
@@ -305,14 +305,14 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
 
     internal class WireAsyncState {
 
-        public WireLoggingStream? wireStream { get; set; }
+        public WireLoggingStream? WireStream { get; set; }
 
     }
 
     internal class WireLoggingMeterFactory: IMeterFactory {
 
-        private const string InstrumentName = "http.client.open_connections";
-        private const string TagName        = "http.connection.state";
+        private const string INSTRUMENT_NAME = "http.client.open_connections";
+        private const string TAG_NAME = "http.connection.state";
 
         private readonly MeterListener meterListener = new();
 
@@ -324,23 +324,23 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
         public Meter Create(MeterOptions options) {
             Meter myMeter = new(options);
             UpDownCounter<long> openConnectionsInstrument =
-                myMeter.CreateUpDownCounter<long>(InstrumentName, "{connection}", "Number of outbound HTTP connections that are currently active or idle on the client.");
+                myMeter.CreateUpDownCounter<long>(INSTRUMENT_NAME, "{connection}", "Number of outbound HTTP connections that are currently active or idle on the client.");
             meterListener.EnableMeasurementEvents(openConnectionsInstrument);
             return myMeter;
         }
 
         private static void OnMeasurement(Instrument instrument, long measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state) {
-            if (instrument.Name == InstrumentName && measurement == 1) {
+            if (instrument.Name == INSTRUMENT_NAME && measurement == 1) {
                 bool isIdleConnection = false;
                 foreach (KeyValuePair<string, object?> tag in tags) {
-                    if (tag.Key == TagName) {
+                    if (tag.Key == TAG_NAME) {
                         isIdleConnection = tag.Value is "idle";
                         break;
                     }
                 }
 
                 if (isIdleConnection) {
-                    AsyncState.Value?.wireStream?.OnResponseFinished();
+                    ASYNC_STATE.Value?.WireStream?.OnResponseFinished();
                 }
             }
         }

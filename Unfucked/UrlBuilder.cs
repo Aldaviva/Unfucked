@@ -13,12 +13,12 @@ namespace Unfucked;
 
 public class UrlBuilder: ICloneable {
 
-    public static readonly object ValuelessQueryParam = new();
+    public static readonly object VALUELESS_QUERY_PARAM = new();
 
-    private static readonly Regex  PlaceholderPattern           = new(@"\{(?<key>\w+?)\}");
-    private static readonly char[] QueryParamSeparators         = ['&'];
-    private static readonly char[] QueryParamKeyValueSeparators = ['='];
-    private static readonly char[] PathSeparators               = ['/'];
+    private static readonly Regex  PLACEHOLDER_PATTERN              = new(@"\{(?<key>\w+?)\}");
+    private static readonly char[] QUERY_PARAM_SEPARATORS           = ['&'];
+    private static readonly char[] QUERY_PARAM_KEY_VALUE_SEPARATORS = ['='];
+    private static readonly char[] PATH_SEPARATORS                  = ['/'];
 
     // ReSharper disable InconsistentNaming - don't collide with method names
     private string? _scheme { get; init; }
@@ -50,7 +50,7 @@ public class UrlBuilder: ICloneable {
         _path          = uri.Segments.SkipWhile(s => s == "/").Select(s => s.TrimEnd('/')).ToImmutableList();
         _trailingSlash = uri.Segments.LastOrDefault()?.EndsWith('/') ?? false;
         _queryParameters = uri.GetQuery() is var originalQuery
-            ? originalQuery.Keys.Cast<string>().Select(k => new KeyValuePair<string, object>(k, originalQuery[k] ?? ValuelessQueryParam)).ToImmutableList()
+            ? originalQuery.Keys.Cast<string>().Select(k => new KeyValuePair<string, object>(k, originalQuery[k] ?? VALUELESS_QUERY_PARAM)).ToImmutableList()
             : ImmutableList<KeyValuePair<string, object>>.Empty;
         _fragment = uri.Fragment.TrimStart(1, '#').EmptyToNull();
     }
@@ -60,11 +60,11 @@ public class UrlBuilder: ICloneable {
         _userInfo      = uriBuilder.UserName.HasLength() || uriBuilder.Password.HasLength() ? $"{uriBuilder.UserName}:{uriBuilder.Password}" : null;
         _hostname      = uriBuilder.Host.EmptyToNull();
         _port          = uriBuilder.Port == -1 ? null : (ushort?) uriBuilder.Port;
-        _path          = uriBuilder.Path.TrimStart('/').Split(PathSeparators, StringSplitOptions.RemoveEmptyEntries).ToImmutableList();
+        _path          = uriBuilder.Path.TrimStart('/').Split(PATH_SEPARATORS, StringSplitOptions.RemoveEmptyEntries).ToImmutableList();
         _trailingSlash = uriBuilder.Path.EndsWith('/');
-        _queryParameters = uriBuilder.Query.TrimStart('?').Split(QueryParamSeparators, StringSplitOptions.RemoveEmptyEntries).Select(p => {
-            string[] split = p.Split(QueryParamKeyValueSeparators, 2);
-            return new KeyValuePair<string, object>(split[0], split.ElementAtOrDefault(1) ?? ValuelessQueryParam);
+        _queryParameters = uriBuilder.Query.TrimStart('?').Split(QUERY_PARAM_SEPARATORS, StringSplitOptions.RemoveEmptyEntries).Select(p => {
+            string[] split = p.Split(QUERY_PARAM_KEY_VALUE_SEPARATORS, 2);
+            return new KeyValuePair<string, object>(split[0], split.ElementAtOrDefault(1) ?? VALUELESS_QUERY_PARAM);
         }).ToImmutableList();
         _fragment = uriBuilder.Fragment.TrimStart(1, '#').EmptyToNull();
     }
@@ -110,44 +110,44 @@ public class UrlBuilder: ICloneable {
                 case "&":
                     StringBuilder replacement = new();
                     foreach (string realName in match.Groups["names"].Value.Split(',')) {
-                        fakeName = GenerateFakeName();
+                        fakeName = generateFakeName();
                         fakeToRealTemplateNames.Add(fakeName, realName);
                         queryParameterRealNames.Add(realName);
                         replacement.Append(replacement.Length == 0 && prefix == "?" ? '?' : '&').Append(realName).Append('=').Append(fakeName);
                     }
                     return replacement.ToString();
                 default:
-                    fakeName = GenerateFakeName();
+                    fakeName = generateFakeName();
                     fakeToRealTemplateNames.Add(fakeName, match.Groups["names"].Value);
                     return $"{prefix}{fakeName}";
             }
         });
 
         UrlBuilder urlBuilder = new(templateWithFakePlaceholders) { _unusedTemplateQueryParameterRealNames = queryParameterRealNames.ToImmutableHashSet() };
-        if (RestoreRealName(urlBuilder._scheme) is { } realScheme) {
+        if (restoreRealName(urlBuilder._scheme) is { } realScheme) {
             urlBuilder = urlBuilder.Scheme(realScheme);
         }
-        if (RestoreRealName(urlBuilder._hostname) is { } realHostname) {
+        if (restoreRealName(urlBuilder._hostname) is { } realHostname) {
             urlBuilder = urlBuilder.Hostname(realHostname);
         }
         for (int i = 0; i < urlBuilder._path.Count; i++) {
-            if (RestoreRealName(urlBuilder._path[i]) is { } realPathSegment) {
+            if (restoreRealName(urlBuilder._path[i]) is { } realPathSegment) {
                 urlBuilder = new UrlBuilder(urlBuilder) { _path = urlBuilder._path.SetItem(i, realPathSegment) };
             }
         }
         for (int i = 0; i < urlBuilder._queryParameters.Count; i++) {
-            if (urlBuilder._queryParameters[i].Value is string value && RestoreRealName(value) is { } realQueryParam) {
+            if (urlBuilder._queryParameters[i].Value is string value && restoreRealName(value) is { } realQueryParam) {
                 urlBuilder = new UrlBuilder(urlBuilder)
                     { _queryParameters = urlBuilder._queryParameters.SetItem(i, new KeyValuePair<string, object>(urlBuilder._queryParameters[i].Key, realQueryParam)) };
             }
         }
-        if (RestoreRealName(urlBuilder._fragment) is { } realFragment) {
+        if (restoreRealName(urlBuilder._fragment) is { } realFragment) {
             urlBuilder = urlBuilder.Fragment(realFragment);
         }
 
         return urlBuilder;
 
-        string GenerateFakeName() {
+        string generateFakeName() {
             string fakeName;
             do {
                 fakeName = "template" + Cryptography.GenerateRandomString(16, alphabet);
@@ -155,7 +155,7 @@ public class UrlBuilder: ICloneable {
             return fakeName;
         }
 
-        string? RestoreRealName(string? haystack) {
+        string? restoreRealName(string? haystack) {
             if (haystack == null) return null;
             bool wasReplaced = false;
             string replaced = fakeTemplatePattern.Replace(haystack, match => {
@@ -188,7 +188,7 @@ public class UrlBuilder: ICloneable {
         }
 
         if (_userInfo != null) {
-            built.Append(UrlEncoder.Encode(ReplacePlaceholders(_userInfo), UrlEncoder.Component.UserInfo)).Append('@');
+            built.Append(UrlEncoder.Encode(ReplacePlaceholders(_userInfo), UrlEncoder.Component.USER_INFO)).Append('@');
         }
 
         if (_hostname is { } hostname) {
@@ -206,7 +206,7 @@ public class UrlBuilder: ICloneable {
 
         if (!_path.IsEmpty) {
             built.Append('/').AppendJoin('/',
-                _path.Select(p => UrlEncoder.Encode(ReplacePlaceholders(p.Trim('/')), UrlEncoder.Component.PathSegment)));
+                _path.Select(p => UrlEncoder.Encode(ReplacePlaceholders(p.Trim('/')), UrlEncoder.Component.PATH_SEGMENT)));
 
 #pragma warning disable IDE0056 // Use index operator - not available when targeting .NET Standard 2
             if (_trailingSlash && built[built.Length - 1] != '/') {
@@ -218,13 +218,13 @@ public class UrlBuilder: ICloneable {
         IList<KeyValuePair<string, object>> queryParameters = _unusedTemplateQueryParameterRealNames != null
             ? _queryParameters.Where(pair => !_unusedTemplateQueryParameterRealNames.Contains(pair.Key)).ToList() : _queryParameters;
         if (queryParameters.Count != 0) {
-            built.Append('?').AppendJoin('&', queryParameters.Select(pair => ReferenceEquals(pair.Value, ValuelessQueryParam)
-                ? UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QueryParameter)
-                : $"{UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QueryParameter)}={UrlEncoder.Encode(ReplacePlaceholders(Stringify(pair.Value) ?? string.Empty), UrlEncoder.Component.QueryParameter)}"));
+            built.Append('?').AppendJoin('&', queryParameters.Select(pair => ReferenceEquals(pair.Value, VALUELESS_QUERY_PARAM)
+                ? UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QUERY_PARAMETER)
+                : $"{UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QUERY_PARAMETER)}={UrlEncoder.Encode(ReplacePlaceholders(Stringify(pair.Value) ?? string.Empty), UrlEncoder.Component.QUERY_PARAMETER)}"));
         }
 
         if (_fragment != null) {
-            built.Append('#').Append(UrlEncoder.Encode(ReplacePlaceholders(_fragment), UrlEncoder.Component.Fragment));
+            built.Append('#').Append(UrlEncoder.Encode(ReplacePlaceholders(_fragment), UrlEncoder.Component.FRAGMENT));
         }
 
         return new Uri(built.ToString(), UriKind.Absolute);
@@ -269,7 +269,7 @@ public class UrlBuilder: ICloneable {
         }
 
         if (autoSplit) {
-            string[] paths = segments.Split(PathSeparators, StringSplitOptions.RemoveEmptyEntries);
+            string[] paths = segments.Split(PATH_SEPARATORS, StringSplitOptions.RemoveEmptyEntries);
             newPath = newPath.AddRange(paths);
         } else {
             newPath = newPath.Add(segments);
@@ -350,7 +350,7 @@ public class UrlBuilder: ICloneable {
         ResolveTemplate(anonymousType.GetType().GetProperties().Select(property => new KeyValuePair<string, object?>(property.Name, property.GetValue(anonymousType))));
 
     private string ReplacePlaceholders(string inputWithPlaceholders) =>
-        _templateValues.IsEmpty || !_enableTemplates ? inputWithPlaceholders : PlaceholderPattern.Replace(inputWithPlaceholders, match => {
+        _templateValues.IsEmpty || !_enableTemplates ? inputWithPlaceholders : PLACEHOLDER_PATTERN.Replace(inputWithPlaceholders, match => {
             string key = match.Groups["key"].Value;
             _templateValues.TryGetValue(key, out object? value);
             return Stringify(value) ?? string.Empty;
@@ -362,47 +362,47 @@ public class UrlBuilder: ICloneable {
 
 internal static class UrlEncoder {
 
-    private static readonly ArrayPool<byte> EscapingUtfBuffers = ArrayPool<byte>.Create(4, 50);
+    private static readonly ArrayPool<byte> ESCAPING_UTF_BUFFERS = ArrayPool<byte>.Create(4, 50);
 
     public static string Encode(string raw, Component component) => component switch {
-        Component.UserInfo       => CharCategories.UserInfoIllegal.Replace(raw, EscapeMatch),
-        Component.PathSegment    => CharCategories.PathSegmentIllegal.Replace(raw, EscapeMatch),
-        Component.QueryParameter => CharCategories.QueryParameterIllegal.Replace(raw, EscapeMatch),
+        Component.USER_INFO       => CharCategories.USER_INFO_ILLEGAL.Replace(raw, EscapeMatch),
+        Component.PATH_SEGMENT    => CharCategories.PATH_SEGMENT_ILLEGAL.Replace(raw, EscapeMatch),
+        Component.QUERY_PARAMETER => CharCategories.QUERY_PARAMETER_ILLEGAL.Replace(raw, EscapeMatch),
         // case UrlPart.SchemeSpecificPart:
-        Component.Fragment => CharCategories.UriIllegal.Replace(raw, EscapeMatch),
-        _                  => CharCategories.UriIllegal.Replace(raw, EscapeMatch)
+        Component.FRAGMENT => CharCategories.URI_ILLEGAL.Replace(raw, EscapeMatch),
+        _                  => CharCategories.URI_ILLEGAL.Replace(raw, EscapeMatch)
     };
 
     private static string EscapeMatch(Match match) {
-        byte[] utf8Buffer = EscapingUtfBuffers.Rent(4);
+        byte[] utf8Buffer = ESCAPING_UTF_BUFFERS.Rent(4);
 
         int utf8BytesUsed;
 #if NET6_0_OR_GREATER
-        utf8BytesUsed = Strings.Utf8.GetBytes(match.ValueSpan, utf8Buffer);
+        utf8BytesUsed = Strings.UTF8.GetBytes(match.ValueSpan, utf8Buffer);
 #else
-        utf8BytesUsed = Strings.Utf8.GetBytes(match.Value, 0, match.Length, utf8Buffer, 0);
+        utf8BytesUsed = Strings.UTF8.GetBytes(match.Value, 0, match.Length, utf8Buffer, 0);
 #endif
 
         string escaped = string.Join(null, utf8Buffer.Take(utf8BytesUsed).Select(b => $"%{b:X2}"));
-        EscapingUtfBuffers.Return(utf8Buffer);
+        ESCAPING_UTF_BUFFERS.Return(utf8Buffer);
         return escaped;
     }
 
     private static class CharCategories {
 
-        public static readonly Regex UriIllegal            = new(@"[^a-z0-9_\-!.~'()*,;:$&+=?/\[\]@]", RegexOptions.IgnoreCase);
-        public static readonly Regex UserInfoIllegal       = new(@"[^a-z0-9_\-!.~'()*,;:$&+=]", RegexOptions.IgnoreCase);
-        public static readonly Regex PathSegmentIllegal    = new(@"[^a-z0-9_\-!.~'()*,;:$&+=@]", RegexOptions.IgnoreCase);
-        public static readonly Regex QueryParameterIllegal = new(@"[^a-z0-9_\-!.~'()*,;:$+=/\[\]@]", RegexOptions.IgnoreCase);
+        public static readonly Regex URI_ILLEGAL             = new(@"[^a-z0-9_\-!.~'()*,;:$&+=?/\[\]@]", RegexOptions.IgnoreCase);
+        public static readonly Regex USER_INFO_ILLEGAL       = new(@"[^a-z0-9_\-!.~'()*,;:$&+=]", RegexOptions.IgnoreCase);
+        public static readonly Regex PATH_SEGMENT_ILLEGAL    = new(@"[^a-z0-9_\-!.~'()*,;:$&+=@]", RegexOptions.IgnoreCase);
+        public static readonly Regex QUERY_PARAMETER_ILLEGAL = new(@"[^a-z0-9_\-!.~'()*,;:$+=/\[\]@]", RegexOptions.IgnoreCase);
 
     }
 
     public enum Component {
 
-        UserInfo,
-        PathSegment,
-        QueryParameter,
-        Fragment
+        USER_INFO,
+        PATH_SEGMENT,
+        QUERY_PARAMETER,
+        FRAGMENT
 
     }
 

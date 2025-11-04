@@ -2,6 +2,6 @@
 
 public struct StunOptions {
 
-    public IEnumerable<string>? serverHostnameBlacklist;
+    public IEnumerable<string>? ServerHostnameBlacklist;
 
 }

@@ -9,7 +9,7 @@ namespace Tests.HTTP;
 
 public class UnfuckedHttpClientTests {
 
-    private static readonly Encoding Utf8 = new UTF8Encoding(false, true);
+    private static readonly Encoding UTF8 = new UTF8Encoding(false, true);
 
     private readonly UnfuckedHttpClient httpClient = A.Fake<UnfuckedHttpClient>();
 
@@ -40,11 +40,11 @@ public class UnfuckedHttpClientTests {
     [InlineData("a\nb\n", "a\nb")]
     public void TrimTrailingLineEndings(string input, string expected) {
         using MemoryStream stream = new();
-        using (StreamWriter streamWriter = new(stream, Utf8, leaveOpen: true)) {
+        using (StreamWriter streamWriter = new(stream, UTF8, leaveOpen: true)) {
             streamWriter.Write(input);
         }
         WireLogFilter.WireLoggingStream.TrimTrailingLineEndings(stream);
-        using (StreamReader streamReader = new(stream, Utf8, leaveOpen: true)) {
+        using (StreamReader streamReader = new(stream, UTF8, leaveOpen: true)) {
             string actual = streamReader.ReadToEnd();
             actual.Should().Be(expected);
         }

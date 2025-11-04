@@ -1,5 +1,4 @@
 using SharpCompress.Common;
-using SharpCompress.Writers;
 using System.Buffers.Binary;
 using System.Text;
 using Unfucked.Compression.Writers.Tar;
@@ -14,7 +13,7 @@ namespace Unfucked.Compression.Common.Tar.Headers;
 /// <summary>
 /// <para>Like <c>SharpCompress.Common.Tar.Headers.TarHeader</c> except you're not prevented from setting the file mode, owner, and group, or from adding symlinks.</para>
 /// <para>This is generally used inside <see cref="TarWriter"/>, but if you're subclassing it, you may need to create an instance of this yourself.</para>
-/// <para>Usage: construct a new instance and set all the properties you want like <see cref="Name"/> and <see cref="EntryType"/>, then call <see cref="Write"/>, passing the <see cref="Stream"/> from <see cref="AbstractWriter.OutputStream"/>.</para>
+/// <para>Usage: construct a new instance and set all the properties you want like <see cref="Name"/> and <see cref="EntryType"/>, then call <see cref="Write"/>, passing the <see cref="Stream"/> from <c>TarWriter.OutputStream</c>.</para>
 /// </summary>
 public class TarHeader(ArchiveEncoding archiveEncoding) {
 
@@ -54,7 +53,7 @@ public class TarHeader(ArchiveEncoding archiveEncoding) {
     /// <summary>
     /// Serialize the file into the TAR archive.
     /// </summary>
-    /// <param name="output">TAR archive output stream, usually provided by <see cref="AbstractWriter.OutputStream"/> in <see cref="TarWriter"/>.</param>
+    /// <param name="output">TAR archive output stream, usually provided by <c>TarWriter.OutputStream</c> in <see cref="TarWriter"/>.</param>
     protected internal virtual void Write(Stream output) {
         byte[] buffer = new byte[BLOCK_SIZE];
 
@@ -366,7 +365,7 @@ public enum EntryType: byte {
     Fifo = (byte) '6',
 
     /// <summary>
-    /// The data for this entry is a long linkname for the following regular entry.
+    /// The data for this entry is a long link name for the following regular entry.
     /// </summary>
     LongLink = (byte) 'K',
 
@@ -376,7 +375,7 @@ public enum EntryType: byte {
     LongName = (byte) 'L',
 
     /// <summary>
-    /// This is a "sparse" regular file. Sparse files are stored as a series of fragments. The header contains a list of fragment offset/length pairs. If more than four such entries are required, the header is extended as necessary with ìextraî header extensions (an older format that is no longer used), or "sparse" extensions.
+    /// This is a "sparse" regular file. Sparse files are stored as a series of fragments. The header contains a list of fragment offset/length pairs. If more than four such entries are required, the header is extended as necessary with ‚Äúextra‚Äù header extensions (an older format that is no longer used), or "sparse" extensions.
     /// </summary>
     SparseFile = (byte) 'S',
 

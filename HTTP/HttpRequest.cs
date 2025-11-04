@@ -11,8 +11,8 @@ public readonly record struct HttpRequest(HttpMethod Verb, Uri Uri, IEnumerable<
         Verb.Equals(other.Verb) &&
         Uri.Equals(other.Uri) &&
         Headers.Count() == other.Headers.Count() &&
-        new HashSet<KeyValuePair<string, string>>(Headers, HeaderNameEqualityComparer.Instance).SetEquals(new HashSet<KeyValuePair<string, string>>(other.Headers,
-            HeaderNameEqualityComparer.Instance)) &&
+        new HashSet<KeyValuePair<string, string>>(Headers, HeaderNameEqualityComparer.INSTANCE).SetEquals(new HashSet<KeyValuePair<string, string>>(other.Headers,
+            HeaderNameEqualityComparer.INSTANCE)) &&
         ((Body is null && other.Body is null) ||
             (Body is not null && other.Body is not null && (SerializeBodySync()?.Equals(other.SerializeBodySync(), StringComparison.InvariantCulture) ?? true)));
 
@@ -38,7 +38,7 @@ public readonly record struct HttpRequest(HttpMethod Verb, Uri Uri, IEnumerable<
 
     private class HeaderNameEqualityComparer: IEqualityComparer<KeyValuePair<string, string>> {
 
-        public static readonly HeaderNameEqualityComparer Instance = new();
+        public static readonly HeaderNameEqualityComparer INSTANCE = new();
 
         public bool Equals(KeyValuePair<string, string> x, KeyValuePair<string, string> y) {
             return string.Equals(x.Key, y.Key, StringComparison.InvariantCultureIgnoreCase);

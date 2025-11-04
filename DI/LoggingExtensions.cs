@@ -17,7 +17,7 @@ public static class LoggingExtensions {
     /// <param name="logging">Application builder's <see cref="HostApplicationBuilder.Logging"/>.</param>
     /// <param name="options">Options to pass to the formatter to disable colored output, show fully-qualified class names, change the column separator, or change the datetime format.</param>
     public static ILoggingBuilder AddUnfuckedConsole(this ILoggingBuilder logging, Action<UnfuckedConsoleFormatterOptions>? options = null) {
-        logging.AddConsole(opts => opts.FormatterName = UnfuckedConsoleFormatter.Id);
+        logging.AddConsole(opts => opts.FormatterName = UnfuckedConsoleFormatter.ID);
         if (options != null) {
             logging.AddConsoleFormatter<UnfuckedConsoleFormatter, UnfuckedConsoleFormatterOptions>(options);
         } else {

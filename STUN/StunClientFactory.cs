@@ -21,9 +21,9 @@ public interface IStunClientFactory {
 /// </summary>
 public class StunClient5389Factory: IStunClientFactory {
 
-    private static readonly IPEndPoint LocalHost = new(IPAddress.Any, 0);
+    private static readonly IPEndPoint LOCAL_HOST = new(IPAddress.Any, 0);
 
     /// <inheritdoc />
-    public async Task<IStunClient5389?> CreateStunClient(DnsEndPoint server) => await server.Resolve().ConfigureAwait(false) is { } addr ? new StunClient5389UDP(addr, server.Host, LocalHost) : null;
+    public async Task<IStunClient5389?> CreateStunClient(DnsEndPoint server) => await server.Resolve().ConfigureAwait(false) is { } addr ? new StunClient5389UDP(addr, server.Host, LOCAL_HOST) : null;
 
 }

@@ -9,9 +9,9 @@ using NotSupportedException = Unfucked.HTTP.Exceptions.NotSupportedException;
 
 namespace Unfucked.HTTP;
 
-public partial class UnfuckedWebTarget {
+public partial class WebTarget {
 
-    private static readonly IReadOnlyList<MessageBodyReader> DefaultMessageBodyReaders = [
+    private static readonly IReadOnlyList<MessageBodyReader> DEFAULT_MESSAGE_BODY_READERS = [
         new StreamBodyReader(),
         new ByteArrayBodyReader(),
         new ByteArrayBodyReader.MemoryBodyReader(),
@@ -37,7 +37,7 @@ public partial class UnfuckedWebTarget {
             responseEncoding = responseContentType?.CharSet is { } responseEncodingName ? Encoding.GetEncoding(responseEncodingName) : null;
         } catch (ArgumentException) { }
 
-        IEnumerable<MessageBodyReader> messageBodyReaders = (clientConfig?.MessageBodyReaders ?? []).Concat(DefaultMessageBodyReaders).ToList();
+        IEnumerable<MessageBodyReader> messageBodyReaders = (clientConfig?.MessageBodyReaders ?? []).Concat(DEFAULT_MESSAGE_BODY_READERS).ToList();
 
         foreach (MessageBodyReader reader in messageBodyReaders) {
             // not sure if the read stream needs to be rewound between attempts

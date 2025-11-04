@@ -1,8 +1,8 @@
-﻿using System.Text;
+using System.Text;
 
 namespace Unfucked;
 
-public static class Exceptions {
+public static class ExceptionExtensions {
 
     public static string MessageChain(this Exception exception, bool includeClassNames = true) {
         StringBuilder messageChain = new();

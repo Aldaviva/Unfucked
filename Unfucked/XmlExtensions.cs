@@ -9,7 +9,7 @@ namespace Unfucked;
 /// <summary>
 /// Methods that make it easier to work with Extensible Markup Language.
 /// </summary>
-public static class XML {
+public static class XmlExtensions {
 
     /// <summary>
     /// Parse an XML LINQ document (not mapping to an object or DOM) from an HTTP response body.
@@ -31,8 +31,14 @@ public static class XML {
         using Stream contentStream = await content.ReadAsStreamAsync().ConfigureAwait(false);
 #endif
 
-        using StreamReader streamReader = new(contentStream, encoding ?? Strings.Utf8, encoding == null);
+#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+        xmlReaderSettings       ??= new XmlReaderSettings();
+        xmlReaderSettings.Async =   true;
+#endif
+
+        using StreamReader streamReader = new(contentStream, encoding ?? Strings.UTF8, encoding == null);
         using XmlReader    xmlReader    = XmlReader.Create(streamReader, xmlReaderSettings);
+
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
         return await XDocument.LoadAsync(xmlReader, xmlLoadOptions, cancellationToken).ConfigureAwait(false);
 #else
@@ -40,7 +46,7 @@ public static class XML {
 #endif
     }
 
-    private static readonly IDictionary<Type, XmlSerializer> XmlSerializerCache = new Dictionary<Type, XmlSerializer>();
+    private static readonly IDictionary<Type, XmlSerializer> XML_SERIALIZER_CACHE = new Dictionary<Type, XmlSerializer>();
 
     /// <summary>
     /// Parse an XML document and map it to an object (not as DOM or LINQ) from an HTTP response body.
@@ -52,14 +58,14 @@ public static class XML {
     /// <typeparam name="T">Type of the object to map the XML document to.</typeparam>
     /// <returns>An object that was mapped from the XML document.</returns>
     public static async Task<T> ReadObjectFromXmlAsync<T>(this HttpContent content, Encoding? encoding = null, string? defaultNamespace = null, CancellationToken cancellationToken = default) {
-        XmlSerializer xmlSerializer = XmlSerializerCache.GetOrAdd(typeof(T), () => new XmlSerializer(typeof(T), defaultNamespace), out _);
+        XmlSerializer xmlSerializer = XML_SERIALIZER_CACHE.GetOrAdd(typeof(T), () => new XmlSerializer(typeof(T), defaultNamespace), out _);
         Task<Stream> readStreamTask = // stream is disposed automatically by StreamReader
 #if NET6_0_OR_GREATER
             content.ReadAsStreamAsync(cancellationToken);
 #else
             content.ReadAsStreamAsync();
 #endif
-        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.Utf8, encoding == null);
+        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.UTF8, encoding == null);
         return (T) xmlSerializer.Deserialize(textReader)!;
     }
 
@@ -70,6 +76,7 @@ public static class XML {
     /// <param name="encoding">Character encoding of the HTTP response body.</param>
     /// <param name="cancellationToken">If you want to cancel the operation before it completes.</param>
     /// <returns>An XML DOM document parsed from the HTTP response.</returns>
+    /// <exception cref="XmlException"></exception>
     public static async Task<XmlDocument> ReadDomFromXmlAsync(this HttpContent content, Encoding? encoding = null, CancellationToken cancellationToken = default) {
         XmlDocument doc = new();
         Task<Stream> readStreamTask =
@@ -78,7 +85,7 @@ public static class XML {
 #else
             content.ReadAsStreamAsync();
 #endif
-        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.Utf8, encoding == null);
+        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.UTF8, encoding == null);
         doc.Load(textReader);
         return doc;
     }
@@ -90,6 +97,7 @@ public static class XML {
     /// <param name="encoding">Character encoding of the HTTP response body.</param>
     /// <param name="cancellationToken">If you want to cancel the operation before it completes.</param>
     /// <returns>An XPath navigator on an XML document parsed from the HTTP response.</returns>
+    /// <exception cref="XmlException"></exception>
     public static async Task<XPathNavigator> ReadXPathFromXmlAsync(this HttpContent content, Encoding? encoding = null, CancellationToken cancellationToken = default) {
         Task<Stream> readStreamTask =
 #if NET6_0_OR_GREATER
@@ -97,7 +105,7 @@ public static class XML {
 #else
             content.ReadAsStreamAsync();
 #endif
-        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.Utf8, encoding == null);
+        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.UTF8, encoding == null);
         return new XPathDocument(textReader).CreateNavigator();
     }
 
@@ -108,8 +116,6 @@ public static class XML {
     /// <param name="names">Array of tag names to find</param>
     /// <returns>Sequence of XML elements that are descendants of <paramref name="ancestor"/> and whose name is one of the items of <paramref name="names"/></returns>
     [Pure]
-    public static IEnumerable<XElement> Descendants(this XContainer ancestor, params XName[] names) {
-        return names.SelectMany(ancestor.Descendants);
-    }
+    public static IEnumerable<XElement> Descendants(this XContainer ancestor, params IEnumerable<XName> names) => names.SelectMany(ancestor.Descendants);
 
 }

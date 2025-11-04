@@ -29,9 +29,9 @@ public class ObsClientFactory: IObsClientFactory {
         obsHost ??= new Uri("ws://localhost:4455/");
 
         TaskCompletionSource<bool> authenticated = new();
-        obs.PropertyChanged += OnObsPropertyChanged;
+        obs.PropertyChanged += onObsPropertyChanged;
 
-        void OnObsPropertyChanged(object? _, PropertyChangedEventArgs eventArgs) {
+        void onObsPropertyChanged(object? _, PropertyChangedEventArgs eventArgs) {
             if (eventArgs.PropertyName == nameof(IObsClient.ConnectionState)) {
                 switch (obs.ConnectionState) {
                     case ConnectionState.Connected:
@@ -59,7 +59,7 @@ public class ObsClientFactory: IObsClientFactory {
 
             return connected ? obs : null;
         } finally {
-            obs.PropertyChanged -= OnObsPropertyChanged;
+            obs.PropertyChanged -= onObsPropertyChanged;
             if (!connected) {
                 obs.Dispose();
             }

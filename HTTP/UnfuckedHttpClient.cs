@@ -9,9 +9,9 @@ using Unfucked.HTTP.Filters;
 namespace Unfucked.HTTP;
 
 /// <summary>
-/// Interface for <see cref="UnfuckedHttpClient"/>, an improved subclass of <see cref="HttpClient"/>
+/// Interface for <see cref="UnfuckedHttpClient"/>, an improved subclass of <see cref="HttpClient"/>.
 /// </summary>
-public interface IUnfuckedHttpClient: IDisposable {
+public interface IHttpClient: IDisposable {
 
     /// <summary>
     /// The HTTP message handler, such as an <see cref="UnfuckedHttpHandler"/>.
@@ -20,7 +20,7 @@ public interface IUnfuckedHttpClient: IDisposable {
 
     /// <summary>
     /// <para>Send an HTTP request using a nice parameterized options struct.</para>
-    /// <para>Generally, this is called internally by the <see cref="WebTarget"/> builder, which is more fluent (<c>HttpClient.Target(url).Get&lt;string&gt;()</c>, for example).</para>
+    /// <para>Generally, this is called internally by the <see cref="IWebTarget"/> builder, which is more fluent (<c>HttpClient.Target(url).Get&lt;string&gt;()</c>, for example).</para>
     /// </summary>
     /// <param name="request">the HTTP verb, URL, headers, and optional body to send</param>
     /// <param name="cancellationToken">cancel the request</param>
@@ -36,9 +36,9 @@ public interface IUnfuckedHttpClient: IDisposable {
 /// <para><c>using HttpClient client = new UnfuckedHttpClient();
 /// MyObject response = await client.Target(url).Get&lt;MyObject&gt;();</c></para>
 /// </summary>
-public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
+public class UnfuckedHttpClient: HttpClient, IHttpClient {
 
-    private static readonly TimeSpan DefaultTimeout = new(0, 0, 30);
+    private static readonly TimeSpan DEFAULT_TIMEOUT = new(0, 0, 30);
 
     /// <inheritdoc />
     public IUnfuckedHttpHandler? Handler { get; }
@@ -54,7 +54,7 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
     protected UnfuckedHttpClient(IUnfuckedHttpHandler unfuckedHandler, bool disposeHandler = true): base(unfuckedHandler as HttpMessageHandler ?? new IUnfuckedHttpHandlerWrapper(unfuckedHandler),
         disposeHandler) {
         Handler = unfuckedHandler;
-        Timeout = DefaultTimeout;
+        Timeout = DEFAULT_TIMEOUT;
         if (Assembly.GetEntryAssembly()?.GetName() is { Name: { } programName, Version: { } programVersion }) {
             DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(programName, programVersion.ToString(4, true)));
         }
@@ -69,7 +69,7 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
             MaxResponseContentBufferSize = toClone.MaxResponseContentBufferSize,
 #if NETCOREAPP3_0_OR_GREATER
             DefaultRequestVersion = toClone.DefaultRequestVersion,
-            DefaultVersionPolicy  = toClone.DefaultVersionPolicy
+            DefaultVersionPolicy = toClone.DefaultVersionPolicy
 #endif
         };
 
@@ -83,7 +83,7 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
     /// <inheritdoc />
     public virtual Task<HttpResponseMessage> SendAsync(HttpRequest request, CancellationToken cancellationToken = default) {
 #if NET8_0_OR_GREATER
-        WireLogFilter.AsyncState.Value = new WireLogFilter.WireAsyncState();
+        WireLogFilter.ASYNC_STATE.Value = new WireLogFilter.WireAsyncState();
 #endif
 
         UnfuckedHttpRequestMessage req = new(request.Verb, request.Uri) {
@@ -120,7 +120,7 @@ public class UnfuckedHttpClient: HttpClient, IUnfuckedHttpClient {
 
 }
 
-internal class HttpClientWrapper: IUnfuckedHttpClient {
+internal class HttpClientWrapper: IHttpClient {
 
     private readonly HttpClient realClient;
 
@@ -131,8 +131,8 @@ internal class HttpClientWrapper: IUnfuckedHttpClient {
         Handler         = UnfuckedHttpHandler.FindHandler(realClient);
     }
 
-    public static IUnfuckedHttpClient Wrap(IUnfuckedHttpClient client) => client is HttpClient httpClient and not UnfuckedHttpClient ? new HttpClientWrapper(httpClient) : client;
-    public static IUnfuckedHttpClient Wrap(HttpClient client) => client as UnfuckedHttpClient as IUnfuckedHttpClient ?? new HttpClientWrapper(client);
+    public static IHttpClient Wrap(IHttpClient client) => client is HttpClient httpClient and not UnfuckedHttpClient ? new HttpClientWrapper(httpClient) : client;
+    public static IHttpClient Wrap(HttpClient client) => client as UnfuckedHttpClient as IHttpClient ?? new HttpClientWrapper(client);
 
     /// <exception cref="ProcessingException"></exception>
     public Task<HttpResponseMessage> SendAsync(HttpRequest request, CancellationToken cancellationToken = default) {

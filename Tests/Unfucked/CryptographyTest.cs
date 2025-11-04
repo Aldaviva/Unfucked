@@ -1,28 +1,31 @@
+#if !NET48
 using System.Security.Cryptography.X509Certificates;
-using DateTime = System.DateTime;
+#endif
 
 namespace Tests.Unfucked;
 
 public class CryptographyTest {
 
-    private static readonly X509Certificate2 Cert = X509Certificate2.CreateFromPemFile("Unfucked/cert.pem", "Unfucked/key.pem");
+#if !NET48
+    private static readonly X509Certificate2 CERT = X509Certificate2.CreateFromPemFile("Unfucked/cert.pem", "Unfucked/key.pem");
 
     [Fact]
     public void IsCertificateTemporallyValid() {
-        Cert.IsTemporallyValid(now: new DateTime(2024, 10, 2, 0, 0, 0, DateTimeKind.Utc)).Should().BeTrue();
-        Cert.IsTemporallyValid(now: new DateTime(2024, 10, 3, 0, 0, 0, DateTimeKind.Utc)).Should().BeFalse();
-        Cert.IsTemporallyValid(TimeSpan.FromDays(1), new DateTime(2024, 10, 2, 0, 0, 0, DateTimeKind.Utc)).Should().BeFalse();
+        CERT.IsTemporallyValid(now: new DateTime(2024, 10, 2, 0, 0, 0, DateTimeKind.Utc)).Should().BeTrue();
+        CERT.IsTemporallyValid(now: new DateTime(2024, 10, 3, 0, 0, 0, DateTimeKind.Utc)).Should().BeFalse();
+        CERT.IsTemporallyValid(TimeSpan.FromDays(1), new DateTime(2024, 10, 2, 0, 0, 0, DateTimeKind.Utc)).Should().BeFalse();
     }
 
     [Fact]
     public void GetCertField() {
-        X500DistinguishedName subjectName = Cert.SubjectName;
+        X500DistinguishedName subjectName = CERT.SubjectName;
         subjectName.Get("CN").Should().Be("Ben Hutchison");
         subjectName.Get("O").Should().Be("Ben Hutchison");
         subjectName.Get("L").Should().Be("Santa Clara");
         subjectName.Get("S").Should().Be("California");
         subjectName.Get("C").Should().Be("US");
     }
+#endif
 
     [Fact]
     public void GenerateRandomString() {
@@ -32,6 +35,12 @@ public class CryptographyTest {
         foreach (char c in actual) {
             alphabet.Contains(c).Should().BeTrue("generated string should only contain characters from alphabet");
         }
+    }
+
+    [Fact]
+    public void GenerateRandomString2() {
+        string actual = Cryptography.GenerateRandomString(8);
+        actual.Should().HaveLength(8);
     }
 
 }

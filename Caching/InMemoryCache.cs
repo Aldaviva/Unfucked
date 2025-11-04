@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Timers;
 using Timer = System.Timers.Timer;
 
@@ -9,16 +9,17 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
     public event RemovalNotification<K, V>? Removal;
 
     private readonly CacheOptions                           options;
-    private readonly Func<K, Task<V>>?                      defaultLoader;
+    private readonly Func<K, ValueTask<V>>?                 defaultLoader;
     private readonly ConcurrentDictionary<K, CacheEntry<V>> cache;
     private readonly Timer?                                 expirationTimer;
 
     private volatile bool isDisposed;
 
-    public InMemoryCache(CacheOptions? options = null, Func<K, Task<V>>? loader = null) {
-        this.options                  = options ?? new CacheOptions();
-        this.options.ConcurrencyLevel = this.options.ConcurrencyLevel is > 0 and var c ? c : Environment.ProcessorCount;
-        this.options.InitialCapacity  = this.options.InitialCapacity is > 0 and var i ? i : 31;
+    public InMemoryCache(CacheOptions? options = null, Func<K, ValueTask<V>>? loader = null) {
+        this.options = (options ?? new CacheOptions()) with {
+            ConcurrencyLevel = this.options.ConcurrencyLevel is > 0 and var c ? c : Environment.ProcessorCount,
+            InitialCapacity = this.options.InitialCapacity is > 0 and var i ? i : 31
+        };
 
         defaultLoader = loader;
         cache         = new ConcurrentDictionary<K, CacheEntry<V>>(this.options.ConcurrencyLevel, this.options.InitialCapacity);
@@ -35,7 +36,7 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
     public long Count => cache.Count;
 
     /// <inheritdoc />
-    public async Task<V> Get(K key, Func<K, Task<V>>? loader = null) {
+    public async Task<V> Get(K key, Func<K, ValueTask<V>>? loader = null) {
         CacheEntry<V> cacheEntry = cache.GetOrAdd(key, ValueFactory);
         if (cacheEntry.IsNew) {
             await cacheEntry.ValueLock.WaitAsync().ConfigureAwait(false);
@@ -74,7 +75,7 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
             }
 
             if (oldValue is not null) {
-                Removal?.Invoke(this, key, oldValue, RemovalCause.Expired);
+                Removal?.Invoke(this, key, oldValue, RemovalCause.EXPIRED);
             }
         }
 
@@ -103,7 +104,7 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
         }
 
         if (removedValue is not null) {
-            Removal?.Invoke(this, key, removedValue, RemovalCause.Replaced);
+            Removal?.Invoke(this, key, removedValue, RemovalCause.REPLACED);
         }
     }
 
@@ -113,7 +114,7 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
         var    entry        = new CacheEntry<V>(refreshTimer);
 
         if (entry.RefreshTimer != null) {
-            async void RefreshEntry(object o, ElapsedEventArgs elapsedEventArgs) {
+            async void refreshEntry(object o, ElapsedEventArgs elapsedEventArgs) {
                 if (!entry.IsDisposed) {
                     V oldValue;
                     await entry.ValueLock.WaitAsync().ConfigureAwait(false);
@@ -125,20 +126,20 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
                     } finally {
                         entry.ValueLock.Release();
                     }
-                    Removal?.Invoke(this, key, oldValue, RemovalCause.Replaced);
+                    Removal?.Invoke(this, key, oldValue, RemovalCause.REPLACED);
                 } else {
-                    entry.RefreshTimer.Elapsed -= RefreshEntry;
+                    entry.RefreshTimer.Elapsed -= refreshEntry;
                 }
             }
 
-            entry.RefreshTimer.Elapsed += RefreshEntry;
+            entry.RefreshTimer.Elapsed += refreshEntry;
         }
 
         return entry;
     }
 
     /// <exception cref="System.Collections.Generic.KeyNotFoundException">a value with the key <typeparamref name="K"/> was not found, and no <paramref name="loader"/> was not provided</exception>
-    private static Task<V> LoadValue(K key, Func<K, Task<V>>? loader) {
+    private static ValueTask<V> LoadValue(K key, Func<K, ValueTask<V>>? loader) {
         if (loader != null) {
             return loader(key);
         } else {
@@ -163,7 +164,7 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
                 removed = cache.TryRemove(entry.Key, out _);
                 if (removed) {
                     entry.Value.Dispose();
-                    Removal?.Invoke(this, entry.Key, entry.Value.Value, RemovalCause.Expired);
+                    Removal?.Invoke(this, entry.Key, entry.Value.Value, RemovalCause.EXPIRED);
                 }
             }
 
@@ -183,10 +184,10 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
     }
 
     /// <inheritdoc />
-    public void Invalidate(params K[] keys) {
+    public void Invalidate(params IEnumerable<K> keys) {
         foreach (K key in keys) {
             if (cache.TryRemove(key, out CacheEntry<V>? removedEntry)) {
-                Removal?.Invoke(this, key, removedEntry.Value, RemovalCause.Explicit);
+                Removal?.Invoke(this, key, removedEntry.Value, RemovalCause.EXPLICIT);
                 removedEntry.Dispose();
             }
         }
@@ -198,7 +199,7 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
         cache.Clear();
         foreach (KeyValuePair<K, CacheEntry<V>> entry in toDispose) {
             if (!isDisposed) {
-                Removal?.Invoke(this, entry.Key, entry.Value.Value, RemovalCause.Explicit);
+                Removal?.Invoke(this, entry.Key, entry.Value.Value, RemovalCause.EXPLICIT);
             }
             entry.Value.Dispose();
         }

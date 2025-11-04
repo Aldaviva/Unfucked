@@ -1,4 +1,4 @@
-﻿namespace Unfucked.Caching;
+namespace Unfucked.Caching;
 
 public interface Cache<K, V>: IDisposable where K: notnull {
 
@@ -7,12 +7,12 @@ public interface Cache<K, V>: IDisposable where K: notnull {
     long Count { get; }
 
     /// <exception cref="System.Collections.Generic.KeyNotFoundException"></exception>
-    Task<V> Get(K key, Func<K, Task<V>>? loader = null);
+    Task<V> Get(K key, Func<K, ValueTask<V>>? loader = null);
 
     Task Put(K key, V value);
 
     void CleanUp();
-    void Invalidate(params K[] key);
+    void Invalidate(params IEnumerable<K> key);
     void InvalidateAll();
 
 }

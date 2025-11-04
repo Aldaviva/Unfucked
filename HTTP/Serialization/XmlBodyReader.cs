@@ -9,7 +9,7 @@ namespace Unfucked.HTTP.Serialization;
 
 public class XmlBodyReader: MessageBodyReader {
 
-    private const string ApplicationXmlMediaType =
+    private const string APPLICATION_XML_MEDIA_TYPE =
 #if NET6_0_OR_GREATER
         MediaTypeNames.Application.Xml;
 #else
@@ -18,7 +18,7 @@ public class XmlBodyReader: MessageBodyReader {
 
     public bool CanRead<T>(string? mimeType, string? bodyPrefix) =>
         mimeType == MediaTypeNames.Text.Xml ||
-        mimeType == ApplicationXmlMediaType ||
+        mimeType == APPLICATION_XML_MEDIA_TYPE ||
         (mimeType?.EndsWith("+xml") ?? false) ||
         (bodyPrefix != null && (
             bodyPrefix.StartsWith('<') ||

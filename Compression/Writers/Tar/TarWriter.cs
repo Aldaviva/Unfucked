@@ -1,4 +1,3 @@
-using SharpCompress.Writers;
 using SharpCompress.Writers.Tar;
 using Unfucked.Compression.Common.Tar.Headers;
 
@@ -54,10 +53,10 @@ public class TarWriter(Stream destination, TarWriterOptions options): SharpCompr
     /// </summary>
     /// <param name="directoryName">The name of the directory that will appear in the archive for this entry, such as <c>a/b/c</c>.</param>
     /// <param name="modificationTime">The date and time this directory was last modified, or <c>null</c> to use the start of the Unix epoch (1970-01-01T00:00Z).</param>
-    /// <param name="fileMode">Unix file permissions mode to set on this directory during extraction, or <c>null</c> to use the most permissive <c>777</c> mode (world readable and writable).</param>
+    /// <param name="directoryMode">Unix file permissions mode to set on this directory during extraction, or <c>null</c> to use the most permissive <c>777</c> mode (world readable and writable).</param>
     /// <param name="ownerId">User ID of the owner of this directory to set during extraction, or <c>0</c> to inherit the user ID from the parent directory on extraction.</param>
     /// <param name="groupId">Group ID of the group of this directory to set during extraction, or <c>0</c> to inherit the group ID from the parent directory on extraction.</param>
-    public virtual void WriteDirectory(string directoryName, DateTime? modificationTime, int? fileMode, int ownerId = 0, int groupId = 0) {
+    public virtual void WriteDirectory(string directoryName, DateTime? modificationTime, int? directoryMode, int ownerId = 0, int groupId = 0) {
         TarHeader header = new(WriterOptions.ArchiveEncoding) {
             LastModifiedTime = modificationTime ?? TarHeader.EPOCH,
             Name             = NormalizeFilename(directoryName),
@@ -65,8 +64,8 @@ public class TarWriter(Stream destination, TarWriterOptions options): SharpCompr
             GroupId          = groupId,
             EntryType        = EntryType.Directory
         };
-        if (fileMode.HasValue) {
-            header.Mode = fileMode.Value;
+        if (directoryMode.HasValue) {
+            header.Mode = directoryMode.Value;
         }
 
         header.Write(OutputStream);
@@ -96,9 +95,9 @@ public class TarWriter(Stream destination, TarWriterOptions options): SharpCompr
     }
 
     /// <summary>
-    /// For an <see cref="AbstractWriter.OutputStream"/> of size <paramref name="size"/>, write enough null bytes to the stream to make its new length an integer multiple of 512.
+    /// For an<c>TarWriter.OutputStream</c> of size <paramref name="size"/>, write enough null bytes to the stream to make its new length an integer multiple of 512.
     /// </summary>
-    /// <param name="size">Existing length of <see cref="AbstractWriter.OutputStream"/>.</param>
+    /// <param name="size">Existing length of <c>TarWriter.OutputStream</c>.</param>
     protected void PadTo512(long size) {
         int        length = unchecked((int) (((size + 511L) & ~511L) - size));
         Span<byte> zeroes = stackalloc byte[length];

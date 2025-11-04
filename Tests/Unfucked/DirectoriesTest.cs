@@ -4,10 +4,10 @@ public class DirectoriesTest {
 
     [Fact]
     public void DeleteQuietlyIfExtant() {
-        string tempDirectory = Paths.GetTempDirectory();
+        string tempDirectory = Paths.CreateTempDir();
         Directory.Exists(tempDirectory).Should().BeTrue();
 
-        Directories.DeleteQuietly(tempDirectory);
+        Directories.TryDelete(tempDirectory);
         Directory.Exists(tempDirectory).Should().BeFalse();
     }
 
@@ -16,7 +16,7 @@ public class DirectoriesTest {
         string tempDirectory = Path.Combine(Path.GetTempPath(), "temp-" + Cryptography.GenerateRandomString(8));
         Directory.Exists(tempDirectory).Should().BeFalse();
 
-        Directories.DeleteQuietly(tempDirectory);
+        Directories.TryDelete(tempDirectory);
         Directory.Exists(tempDirectory).Should().BeFalse();
     }
 

@@ -1,9 +1,9 @@
 namespace Unfucked.HTTP;
 
-public partial class UnfuckedWebTarget {
+public partial class WebTarget {
 
-    private static readonly HttpMethod PatchVerb   = new("PATCH");
-    private static readonly Type       StreamClass = typeof(Stream);
+    private static readonly HttpMethod PATCH_VERB   = new("PATCH");
+    private static readonly Type       STREAM_CLASS = typeof(Stream);
 
     /*
      * Must not be async so the AsyncLocal scope for wire logging is high enough in the async chain.
@@ -25,7 +25,7 @@ public partial class UnfuckedWebTarget {
     public Task<HttpResponseMessage> Put(HttpContent? requestBody, CancellationToken cancellationToken = default) => Send(HttpMethod.Put, requestBody, cancellationToken);
 
     /// <inheritdoc />
-    public Task<HttpResponseMessage> Patch(HttpContent? requestBody, CancellationToken cancellationToken = default) => Send(PatchVerb, requestBody, cancellationToken);
+    public Task<HttpResponseMessage> Patch(HttpContent? requestBody, CancellationToken cancellationToken = default) => Send(PATCH_VERB, requestBody, cancellationToken);
 
     /// <inheritdoc />
     public Task<HttpResponseMessage> Delete(HttpContent? requestBody = null, CancellationToken cancellationToken = default) => Send(HttpMethod.Delete, requestBody, cancellationToken);
@@ -91,7 +91,7 @@ public partial class UnfuckedWebTarget {
     }
 
     private static void DisposeIfNotStream<T>(HttpResponseMessage response) {
-        if (typeof(T) != StreamClass) {
+        if (typeof(T) != STREAM_CLASS) {
             response.Dispose();
         }
     }

@@ -23,8 +23,8 @@ public interface IStandbyListener: IDisposable {
 /// <inheritdoc />
 public class EventLogStandbyListener: IStandbyListener {
 
-    private const int StandByEventId = 42;
-    private const int ResumeEventId  = 107;
+    private const int STAND_BY_EVENT_ID = 42;
+    private const int RESUME_EVENT_ID   = 107;
 
     /// <inheritdoc />
     public event EventHandler? StandingBy;
@@ -36,7 +36,7 @@ public class EventLogStandbyListener: IStandbyListener {
 
     public EventLogStandbyListener() {
         logWatcher = new EventLogWatcher(new EventLogQuery("System", PathType.LogName,
-            $"*[System[Provider/@Name=\"Microsoft-Windows-Kernel-Power\" and (EventID={StandByEventId} or EventID={ResumeEventId})]]"));
+            $"*[System[Provider/@Name=\"Microsoft-Windows-Kernel-Power\" and (EventID={STAND_BY_EVENT_ID} or EventID={RESUME_EVENT_ID})]]"));
 
         logWatcher.EventRecordWritten += onEventRecord;
 
@@ -47,10 +47,10 @@ public class EventLogStandbyListener: IStandbyListener {
         if (e.EventException == null) {
             using EventRecord? record = e.EventRecord;
             switch (record?.Id) {
-                case StandByEventId:
+                case STAND_BY_EVENT_ID:
                     StandingBy?.Invoke(this, EventArgs.Empty);
                     break;
-                case ResumeEventId:
+                case RESUME_EVENT_ID:
                     Resumed?.Invoke(this, EventArgs.Empty);
                     break;
             }

@@ -2,7 +2,7 @@ using System.Collections.Specialized;
 
 namespace Tests.Unfucked;
 
-public class URITest {
+public class UriExtensionsTest {
 
     [Fact]
     public void GetQuery() {
@@ -43,15 +43,15 @@ public class URITest {
     [InlineData("https://aldaviva.com:443", "https://aldaviva.com")]
     [InlineData("https://foo:bar@aldaviva.com:444/path?query#frag", "https://aldaviva.com:444")]
     public void Origin(string uri, string expected) {
-        new Uri(uri, UriKind.Absolute).Truncate(URI.Part.Origin).Should().Be(expected);
+        new Uri(uri, UriKind.Absolute).Truncate(UriExtensions.Part.Origin).Should().Be(expected);
     }
 
     [Theory]
-    [InlineData(URI.Part.Query, "https://user:pass@aldaviva.com/path/segments?query=param")]
-    [InlineData(URI.Part.Path, "https://user:pass@aldaviva.com/path/segments")]
-    [InlineData(URI.Part.Authority, "https://user:pass@aldaviva.com/")]
-    [InlineData(URI.Part.Origin, "https://aldaviva.com")]
-    public void Truncate(URI.Part preserve, string expected) {
+    [InlineData(UriExtensions.Part.Query, "https://user:pass@aldaviva.com/path/segments?query=param")]
+    [InlineData(UriExtensions.Part.Path, "https://user:pass@aldaviva.com/path/segments")]
+    [InlineData(UriExtensions.Part.Authority, "https://user:pass@aldaviva.com/")]
+    [InlineData(UriExtensions.Part.Origin, "https://aldaviva.com")]
+    public void Truncate(UriExtensions.Part preserve, string expected) {
         Uri    input  = new("https://user:pass@aldaviva.com/path/segments?query=param#fragment");
         string actual = input.Truncate(preserve);
         actual.Should().Be(expected);

@@ -6,7 +6,7 @@ namespace Unfucked;
 public static class Tasks {
 
     // ExceptionAdjustment: M:System.TimeSpan.FromMilliseconds(System.Double) -T:System.OverflowException
-    private static readonly TimeSpan MaxShortDelay =
+    private static readonly TimeSpan MAX_SHORT_DELAY =
 #if NET6_0_OR_GREATER
         TimeSpan.FromMilliseconds(uint.MaxValue - 1);
 #else
@@ -23,8 +23,8 @@ public static class Tasks {
     public static Task Delay(TimeSpan duration, CancellationToken cancellationToken = default) {
         Task result = Task.CompletedTask;
 
-        for (TimeSpan remaining = duration; remaining > TimeSpan.Zero; remaining = remaining.Subtract(MaxShortDelay)) {
-            TimeSpan shortDelay = remaining > MaxShortDelay ? MaxShortDelay : remaining;
+        for (TimeSpan remaining = duration; remaining > TimeSpan.Zero; remaining = remaining.Subtract(MAX_SHORT_DELAY)) {
+            TimeSpan shortDelay = remaining > MAX_SHORT_DELAY ? MAX_SHORT_DELAY : remaining;
             result = result.ContinueWith(_ => Task.Delay(shortDelay, cancellationToken), cancellationToken,
                 TaskContinuationOptions.LongRunning | TaskContinuationOptions.NotOnCanceled, TaskScheduler.Current).Unwrap();
         }
@@ -45,8 +45,8 @@ public static class Tasks {
         timeProvider ??= TimeProvider.System;
         Task result = Task.CompletedTask;
 
-        for (TimeSpan remaining = duration; remaining > TimeSpan.Zero; remaining = remaining.Subtract(MaxShortDelay)) {
-            TimeSpan shortDelay = remaining > MaxShortDelay ? MaxShortDelay : remaining;
+        for (TimeSpan remaining = duration; remaining > TimeSpan.Zero; remaining = remaining.Subtract(MAX_SHORT_DELAY)) {
+            TimeSpan shortDelay = remaining > MAX_SHORT_DELAY ? MAX_SHORT_DELAY : remaining;
             result = result.ContinueWith(_ => Task.Delay(shortDelay, timeProvider, cancellationToken), cancellationToken,
                 TaskContinuationOptions.LongRunning | TaskContinuationOptions.NotOnCanceled, TaskScheduler.Current).Unwrap();
         }

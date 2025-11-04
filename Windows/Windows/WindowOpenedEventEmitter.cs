@@ -30,7 +30,7 @@ public interface IWindowOpenedEventEmitter: IDisposable {
 /// <inheritdoc />
 public class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
 
-    private static readonly TimeSpan CleanUpInterval = TimeSpan.FromMinutes(14);
+    private static readonly TimeSpan CLEAN_UP_INTERVAL = TimeSpan.FromMinutes(14);
 
     /// <inheritdoc />
     public event EventHandler<SystemWindow>? SystemWindowOpened;
@@ -55,7 +55,7 @@ public class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
 
         Automation.AddAutomationEventHandler(WindowPattern.WindowOpenedEvent, AutomationElement.RootElement, TreeScope.Children, OnWindowOpened);
 
-        cleanUpTimer = new Timer(CleanUpWindowOpeningTimes, null, CleanUpInterval, CleanUpInterval);
+        cleanUpTimer = new Timer(CleanUpWindowOpeningTimes, null, CLEAN_UP_INTERVAL, CLEAN_UP_INTERVAL);
     }
 
     private void OnWindowOpened(object? sender, AutomationEventArgs e) {
@@ -69,7 +69,7 @@ public class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
     }
 
     private void OnWindowOpened(object? sender, ShellEventArgs args) {
-        if (args.Event == ShellEventArgs.ShellEvent.WindowCreated && AddWindow(args.WindowHandle)) {
+        if (args.Event == ShellEventArgs.ShellEvent.WINDOW_CREATED && AddWindow(args.WindowHandle)) {
             WindowHandleOpened?.Invoke(this, args.WindowHandle);
             SystemWindowOpened?.Invoke(this, new SystemWindow(args.WindowHandle));
             if (AutomationElement.FromHandle(args.WindowHandle) is { } automationElement) {
@@ -85,7 +85,7 @@ public class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
     /// <returns><c>true</c> if this is the first time a window has been opened with this handle, or <c>false</c> if this window has already been opened before because a duplicate window opening event was received.</returns>
     private bool AddWindow(IntPtr windowHandle) {
         DateTime now                  = DateTime.UtcNow;
-        long?    previousWindowHandle = alreadyOpenedWindows.Exchange(windowHandle.ToInt32(), now.ToBinary());
+        long?    previousWindowHandle = alreadyOpenedWindows.Swap(windowHandle.ToInt32(), now.ToBinary());
         if (previousWindowHandle == null) {
             return true;
         } else {
@@ -98,7 +98,7 @@ public class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
     private void CleanUpWindowOpeningTimes(object? state) {
         DateTime now = DateTime.UtcNow;
 
-        IEnumerable<KeyValuePair<int, ValueHolder<long>>> oldWindowsToCleanUp = alreadyOpenedWindows.Where(pair => DateTime.FromBinary(pair.Value.Value) < now - CleanUpInterval);
+        IEnumerable<KeyValuePair<int, ValueHolder<long>>> oldWindowsToCleanUp = alreadyOpenedWindows.Where(pair => DateTime.FromBinary(pair.Value.Value) < now - CLEAN_UP_INTERVAL);
 
         foreach (KeyValuePair<int, ValueHolder<long>> windowToCleanUp in oldWindowsToCleanUp) {
             alreadyOpenedWindows.TryRemove(windowToCleanUp.Key, out _);

@@ -6,7 +6,7 @@ namespace Unfucked;
 /// <summary>
 /// Methods that make it easier to work with URIs and URLs.
 /// </summary>
-public static class URI {
+public static class UriExtensions {
 
     /// <summary>
     /// Get the query parameters from a URI.

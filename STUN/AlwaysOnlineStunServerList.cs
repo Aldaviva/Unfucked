@@ -1,4 +1,4 @@
-﻿using System.Collections.Frozen;
+using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -14,15 +14,15 @@ public interface StunServerList {
 
 public class AlwaysOnlineStunServerList: StunServerList {
 
-    private const string CacheKey = "always-on-stun";
+    private const string CACHE_KEY = "always-on-stun";
 
-    private static readonly Random   Random                = new();
-    private static readonly TimeSpan StunListCacheDuration = TimeSpan.FromDays(1);
+    private static readonly Random   RANDOM                   = new();
+    private static readonly TimeSpan STUN_LIST_CACHE_DURATION = TimeSpan.FromDays(1);
 
     // ExceptionAdjustment: M:System.Uri.#ctor(System.String) -T:System.UriFormatException
-    private static readonly Uri StunServerListUrl = new("https://raw.githubusercontent.com/pradt2/always-online-stun/master/valid_hosts.txt");
+    private static readonly Uri STUN_SERVER_LIST_URL = new("https://raw.githubusercontent.com/pradt2/always-online-stun/master/valid_hosts.txt");
 
-    private static readonly DnsEndPoint[] FallbackServers = ((Func<DnsEndPoint[]>) (() => {
+    private static readonly DnsEndPoint[] FALLBACK_SERVERS = ((Func<DnsEndPoint[]>) (() => {
         DnsEndPoint[] fallbackServers = [
             new("stun.ekiga.net", 3478, AddressFamily.InterNetwork),
             new("stun.freeswitch.org", 3478, AddressFamily.InterNetwork),
@@ -31,7 +31,7 @@ public class AlwaysOnlineStunServerList: StunServerList {
             new("stun3.l.google.com", 19302, AddressFamily.InterNetwork),
             new("stun4.l.google.com", 19302, AddressFamily.InterNetwork)
         ];
-        Random.Shuffle(fallbackServers);
+        RANDOM.Shuffle(fallbackServers);
         return fallbackServers;
     }))();
 
@@ -48,15 +48,15 @@ public class AlwaysOnlineStunServerList: StunServerList {
         this.http          = http;
         blacklistedServers = (serverBlacklist?.Select(s => s.ToLowerInvariant()) ?? new HashSet<string>(0)).ToFrozenSet();
 
-        ServersCache = new InMemoryCache<string, IEnumerable<DnsEndPoint>>(new CacheOptions { ExpireAfterWrite = StunListCacheDuration, InitialCapacity = 1 },
-            _ => FetchStunServers());
+        ServersCache = new InMemoryCache<string, IEnumerable<DnsEndPoint>>(new CacheOptions { ExpireAfterWrite = STUN_LIST_CACHE_DURATION, InitialCapacity = 1 },
+            async _ => await FetchStunServers().ConfigureAwait(false));
     }
 
     /// <exception cref="HttpRequestException"></exception>
     /// <exception cref="TaskCanceledException"></exception>
     private async Task<IEnumerable<DnsEndPoint>> FetchStunServers() {
         Debug.WriteLine("Fetching list of STUN servers from pradt2/always-online-stun");
-        ICollection<DnsEndPoint> servers = (await http.GetStringAsync(StunServerListUrl).ConfigureAwait(false))
+        ICollection<DnsEndPoint> servers = (await http.GetStringAsync(STUN_SERVER_LIST_URL).ConfigureAwait(false))
             .TrimEnd()
             .Split('\n')
             .Select(line => {
@@ -78,13 +78,13 @@ public class AlwaysOnlineStunServerList: StunServerList {
     public async Task<IEnumerable<DnsEndPoint>> ListStunServers() {
         DnsEndPoint[] servers = [];
         try {
-            servers = (await ServersCache.Get(CacheKey).ConfigureAwait(false)).ToArray();
+            servers = (await ServersCache.Get(CACHE_KEY).ConfigureAwait(false)).ToArray();
         } catch (HttpRequestException) { } catch (TaskCanceledException) { // timeout
         } catch (Exception e) when (e is not OutOfMemoryException) { }
 
-        Random.Shuffle(servers);
+        RANDOM.Shuffle(servers);
 
-        return servers.Concat(FallbackServers);
+        return servers.Concat(FALLBACK_SERVERS);
     }
 
 }

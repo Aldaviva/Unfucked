@@ -15,19 +15,19 @@ namespace Unfucked.DI.Logging;
 /// </summary>
 /// <param name="options">Whether the formatter should include full class names including their namespace, what character to use to separate columns, and whether to use colored output</param>
 [ExcludeFromCodeCoverage]
-public class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOptions> options): ConsoleFormatter(Id) {
+public class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOptions> options): ConsoleFormatter(ID) {
 
     /// <summary>
     /// Name of this logger class, used by <see cref="ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggingBuilder,Action{ConsoleLoggerOptions})"/>.
     /// </summary>
-    public const string Id = "UnfuckedConsoleFormatter";
+    public const string ID = "UnfuckedConsoleFormatter";
 
-    private const string DefaultDateFormat = "yyyy'-'MM'-'dd' 'HH':'mm':'ss.fff";
-    private const string Padding           = "                                ";
-    private const string AnsiReset         = "\e[0m";
+    private const string DEFAULT_DATE_FORMAT = "yyyy'-'MM'-'dd' 'HH':'mm':'ss.fff";
+    private const string PADDING             = "                                ";
+    private const string ANSI_RESET          = "\e[0m";
 
-    private static readonly int    MaxPaddedCategoryLength = Padding.Length;
-    private static readonly char[] LevelLabels             = ['t', 'd', 'i', 'W', 'E', 'C', ' '];
+    private static readonly int    MAX_PADDED_CATEGORY_LENGTH = PADDING.Length;
+    private static readonly char[] LEVEL_LABELS               = ['t', 'd', 'i', 'W', 'E', 'C', ' '];
 
     private readonly UnfuckedConsoleFormatterOptions options  = options.Value;
     private readonly bool                            useColor = options.Value.Color && ConsoleControl.IsColorSupported();
@@ -54,7 +54,7 @@ public class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOptions> 
             }
 
             textWriter.Write(' ');
-            textWriter.Write(LevelLabels[(int) logEntry.LogLevel]);
+            textWriter.Write(LEVEL_LABELS[(int) logEntry.LogLevel]);
             textWriter.Write(options.ColumnSeparator);
             textWriter.Write(FormatTime(now));
             textWriter.Write(options.ColumnSeparator);
@@ -74,7 +74,7 @@ public class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOptions> 
             }
 
             if (useColor) {
-                textWriter.Write(AnsiReset);
+                textWriter.Write(ANSI_RESET);
             }
 
             textWriter.WriteLine();
@@ -97,7 +97,7 @@ public class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOptions> 
         if (categoryLength >= maxCategoryLength) {
             maxCategoryLength = categoryLength;
         } else {
-            ReadOnlySpan<char> padding = Padding.AsSpan(0, Math.Max(0, Math.Min(maxCategoryLength, MaxPaddedCategoryLength) - categoryLength));
+            ReadOnlySpan<char> padding = PADDING.AsSpan(0, Math.Max(0, Math.Min(maxCategoryLength, MAX_PADDED_CATEGORY_LENGTH) - categoryLength));
 #if NET6_0_OR_GREATER
             textWriter.Write(padding);
 #else
@@ -108,10 +108,10 @@ public class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOptions> 
 
     private string FormatTime(DateTimeOffset now) {
         try {
-            return now.ToString(options.TimestampFormat ?? DefaultDateFormat);
+            return now.ToString(options.TimestampFormat ?? DEFAULT_DATE_FORMAT);
         } catch (FormatException) {
 #pragma warning disable Ex0100 // Member may throw undocumented exception - known good hardcoded fallback format string
-            return now.ToString(DefaultDateFormat);
+            return now.ToString(DEFAULT_DATE_FORMAT);
 #pragma warning restore Ex0100 // Member may throw undocumented exception
         }
     }

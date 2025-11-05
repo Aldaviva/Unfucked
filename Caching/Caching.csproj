@@ -3,7 +3,7 @@
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
         <Version>$(UnfuckedCachingVersion)</Version>
-        <Description>Fix Microsoft.Extensions.Caching.Memory.MemoryCache not being typesafe or allowing loader functions.</Description>
+        <Description>Fix Microsoft.Extensions.Caching.Memory.MemoryCache not being typesafe or allowing loader functions. Inspired by Guava Cache.</Description>
         <PackageTags>cache caching memorycache $(PackageTags)</PackageTags>
     </PropertyGroup>
 

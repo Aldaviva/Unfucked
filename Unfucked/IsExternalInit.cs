@@ -12,15 +12,15 @@ namespace System.Runtime.CompilerServices {
     /// <para>From <see href="https://stackoverflow.com/a/62656145/979493"/></para>
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    internal class IsExternalInit;
-
-    // #endif
+    internal sealed class IsExternalInit;
 
     // https://stackoverflow.com/a/74447498/979493
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Property, Inherited = false)]
     internal sealed class RequiredMemberAttribute: Attribute;
 
     // https://stackoverflow.com/a/74447498/979493
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = false)]
     internal sealed class CompilerFeatureRequiredAttribute(string featureName): Attribute {
 

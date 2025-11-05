@@ -32,13 +32,14 @@ jobs:
       run: |
         $binPath = [System.IO.Path]::GetFullPath("./bin/")
         New-Item $binPath -ItemType Directory -ErrorAction SilentlyContinue
+
         dotnet pack ${{ env.ProjectName }} --configuration Release --no-restore --output $binPath
 
         dotnet restore Caching --source "https://api.nuget.org/v3/index.json" --source $binPath -p:Configuration=Release
         dotnet pack Caching --configuration Release --no-restore --output $binPath
         
         dotnet restore --source "https://api.nuget.org/v3/index.json" --source $binPath -p:Configuration=Release
-        dotnet pack --configuration Release --output $binPath --no-restore
+        dotnet pack --configuration Release --no-restore --output $binPath
 
     - name: Test
       run: |

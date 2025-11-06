@@ -29,7 +29,7 @@
 dotnet add package Unfucked.Caching
 ```
 ```cs
-using Unfucked;
+using Unfucked.Caching;
 ```
 
 ## Usage

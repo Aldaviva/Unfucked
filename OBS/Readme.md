@@ -20,13 +20,42 @@
 dotnet add package Unfucked.OBS
 ```
 ```cs
-using Unfucked;
+using Unfucked.OBS;
 ```
 
 ## Usage
 
-- Interface for Open Broadcaster Software Studio WebSocket API client to allow mocked testing isolation
-- Easily connect and authenticate to servers without all the boilerplate
+- Interface for Open Broadcaster Software Studio WebSocket API client to decouple contract from implementation.
+    ```cs
+    IObsClient client = new ObsClient();
+    ```
+- Easily connect and authenticate to servers without all the boilerplate.
+    ```cs
+    IObsClientFactory factory = new ObsClientFactory();
+    using IObsClient? obs = await factory.Connect(obsHost: new Uri("ws://localhost:4455/"), password: "123");
+
+    bool isBroadcasting = obs is not null ? (await obs.GetStreamStatus()).OutputActive : false;
+    ```
+- Mock instances allow tests to run without a real OBS server.
+    ```cs
+    // FakeItEasy
+    IObsClientFactory mockFactory = A.Fake<IObsClientFactory>();
+    IObsClient mockClient = A.Fake<IObsClient>();
+    A.CallTo(() => mockFactory.Connect(A<Uri>._, A<string>._, A<CancellationToken>._)).Returns(mockClient);
+
+    A.CallTo(() => mockClient.GetStreamStatus()).Returns(new OutputStatusResponse {
+        outputActive: false,
+        outputReconnecting: false,
+        outputTimecode: string.Empty,
+        outputDuration: 0,
+        outputCongestion: 0.0f,
+        outputBytes: 0,
+        outputSkippedFrames: 0,
+        outputTotalFrames: 0
+    });
+
+
+    ```
 
 ## All Unfucked libraries
 - [Unfucked](https://github.com/Aldaviva/Unfucked/tree/master/Unfucked)

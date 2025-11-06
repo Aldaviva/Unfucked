@@ -9,7 +9,7 @@
 
 ## Packages
 
-|Name|Documentation|NuGet Gallery|Related projects|
+|Name|Documentation|NuGet Gallery|Fixes, extends, or copies|
 |-|-|-|-|
 |**Unfucked**|[Documentation](https://github.com/Aldaviva/Unfucked/blob/master/Unfucked/Readme.md)|[![NuGet](https://img.shields.io/nuget/v/Unfucked?logo=nuget&color=informational&label=Unfucked)](https://www.nuget.org/packages/Unfucked)|[.NET BCL](https://learn.microsoft.com/en-us/dotnet/standard/runtime-libraries-overview)|
 |Unfucked.Caching|[Documentation](https://github.com/Aldaviva/Unfucked/blob/master/Caching/Readme.md)|[![NuGet](https://img.shields.io/nuget/v/Unfucked.Caching?logo=nuget&color=informational&label=Unfucked.Caching)](https://www.nuget.org/packages/Unfucked.Caching)|[Guava Cache](https://guava.dev/releases/32.0.1-jre/api/docs/com/google/common/cache/Cache.html)|

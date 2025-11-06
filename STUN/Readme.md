@@ -20,7 +20,7 @@
 dotnet add package Unfucked.STUN
 ```
 ```cs
-using Unfucked;
+using Unfucked.STUN;
 ```
 
 ## Usage

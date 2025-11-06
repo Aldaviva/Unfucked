@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Timer = System.Timers.Timer;
 
 namespace Unfucked.Caching;

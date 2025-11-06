@@ -50,7 +50,7 @@ await app.RunAsync();
         .AddTransient<MyDependency>();
 
     class MyDependent(Provider<MyDependency> dependencyProvider){
-        void run(){
+        void Run(){
             using MyDependency dependency = dependencyProvider.Get();
         }
     }
@@ -67,7 +67,7 @@ await app.RunAsync();
     class MyDependency: MyInterface;
     class MyDependent(MyInterface dependency);
     ```
-    - Available for singletons, transients, scoped, and hosted services.
+    - Available for singletons, transients, scoped, hosted, and keyed services.
 
 ### Logging
 

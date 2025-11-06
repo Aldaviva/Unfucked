@@ -8,9 +8,6 @@ on:
 
 jobs:
   build:
-    env:
-      ProjectName: Unfucked
-
     runs-on: windows-latest
 
     steps:
@@ -26,14 +23,14 @@ jobs:
         domain: ${{github.repository_owner}}
 
     - name: Restore
-      run: dotnet restore ${{ env.ProjectName }} -p:Configuration=Release
+      run: dotnet restore Unfucked -p:Configuration=Release
 
     - name: Build and pack
       run: |
         $binPath = [System.IO.Path]::GetFullPath("./bin/")
         New-Item $binPath -ItemType Directory -ErrorAction SilentlyContinue
 
-        dotnet pack ${{ env.ProjectName }} --configuration Release --no-restore --output $binPath
+        dotnet pack Unfucked --configuration Release --no-restore --output $binPath
 
         dotnet restore Caching --source "https://api.nuget.org/v3/index.json" --source $binPath -p:Configuration=Release
         dotnet pack Caching --configuration Release --no-restore --output $binPath
@@ -63,6 +60,6 @@ jobs:
     - name: Upload package
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.ProjectName }}
+        name: Unfucked
         path: bin/*.*nupkg
         if-no-files-found: error

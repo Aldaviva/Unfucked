@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.FileProviders;
 
-namespace Tests.DependencyInjection;
+namespace Tests.DI;
 
-public class DependencyInjectionExtensionsTest {
+public class ConfigurationTest {
 
     [Fact]
     public void AlsoSearchForJsonFilesInExecutableDirectory() {

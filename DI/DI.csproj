@@ -5,7 +5,7 @@
         <Version>0.0.1-beta.11</Version>
         <RootNamespace>Unfucked</RootNamespace>
         <Description>Fix egregiously broken or missing functionality in Microsoft.Extensions.Hosting dependency injection.</Description>
-        <PackageTags>di ioc hosting dependency dependencies injection inversion control $(PackageTags)</PackageTags>
+        <PackageTags>di ioc hosting dependency dependencies injection dependency-injection inversion control $(PackageTags)</PackageTags>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
@@ -41,6 +41,7 @@
     
     To fix this issue, this library's build edits the runtime configuration JSON file of this plugin before it is run. It sets the roll-forward behavior to LatestMajor, like the original author should 
     have done, allowing it to run successfully on .NET 8 and 9.
+    This change has been requested in https://github.com/Tenacom/ReSharper.ExportAnnotations/pull/76, but it has not yet been merged or released.
     -->
     <Target Name="FixExternalAnnotationsRollForward" BeforeTargets="BeforeBuild" Condition="!$([System.IO.File]::ReadAllText('$(USERPROFILE)\.nuget\packages\resharper.exportannotations.task\1.4.0\tools\net6.0\ExportAnnotations.runtimeconfig.json').ToLowerInvariant().Contains('rollforward'))">
         <WriteLinesToFile File="$(USERPROFILE)\.nuget\packages\resharper.exportannotations.task\1.4.0\tools\net6.0\ExportAnnotations.runtimeconfig.json" Lines="{&quot;runtimeOptions&quot;: {&quot;rollForward&quot;: &quot;Major&quot;, &quot;tfm&quot;: &quot;net6.0&quot;, &quot;framework&quot;: {&quot;name&quot;: &quot;Microsoft.NETCore.App&quot;, &quot;version&quot;: &quot;6.0.0&quot;}, &quot;configProperties&quot;: {&quot;System.Reflection.Metadata.MetadataUpdater.IsSupported&quot;: false }}}" Overwrite="true" Encoding="UTF-8" />

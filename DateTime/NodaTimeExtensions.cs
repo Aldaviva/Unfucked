@@ -73,6 +73,10 @@ public static class NodaTimeExtensions {
     [Pure]
     public static bool IsBefore(this OffsetDateTime time, OffsetDateTime other) => time.ToInstant() < other.ToInstant();
 
+    /// <inheritdoc cref="IsBefore(NodaTime.OffsetDateTime,NodaTime.OffsetDateTime)" />
+    [Pure]
+    public static bool IsBefore(this ZonedDateTime time, ZonedDateTime other) => time.ToInstant() < other.ToInstant();
+
     /// <summary>
     /// Is this time after another?
     /// </summary>
@@ -81,5 +85,9 @@ public static class NodaTimeExtensions {
     /// <returns><c>true</c> if this <paramref name="time"/> happens after <paramref name="other"/>, or <c>false</c> if it happens on or before <paramref name="other"/>.</returns>
     [Pure]
     public static bool IsAfter(this OffsetDateTime time, OffsetDateTime other) => time.ToInstant() > other.ToInstant();
+
+    /// <inheritdoc cref="IsAfter(NodaTime.OffsetDateTime,NodaTime.OffsetDateTime)" />
+    [Pure]
+    public static bool IsAfter(this ZonedDateTime time, ZonedDateTime other) => time.ToInstant() > other.ToInstant();
 
 }

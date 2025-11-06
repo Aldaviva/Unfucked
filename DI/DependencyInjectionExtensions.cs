@@ -4,11 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.Serialization;
 using Unfucked.DI;
 #if !NET6_0_OR_GREATER
+using System.Reflection;
 using System.Diagnostics;
 #endif
 
@@ -17,7 +16,7 @@ namespace Unfucked;
 /// <summary>
 /// Methods that make it easier to work with the <c>Microsoft.Extensions.Hosting</c> dependency injection/inversion of control library, which is used in the Generic Host and ASP.NET Core.
 /// </summary>
-public static class DependencyInjectionExtensions {
+public static partial class DependencyInjectionExtensions {
 
     private static readonly IEnumerable<Type> InterfaceRegistrationBlacklist = [
         typeof(IDisposable),
@@ -35,7 +34,6 @@ public static class DependencyInjectionExtensions {
     /// <returns>the same <see cref="IConfigurationBuilder"/> for chaining</returns>
     // ExceptionAdjustment: M:System.Collections.Generic.IList`1.Insert(System.Int32,`0) -T:System.NotSupportedException
     // ExceptionAdjustment: P:System.Diagnostics.Process.MainModule get -T:System.ComponentModel.Win32Exception
-    [ExcludeFromCodeCoverage]
     public static IConfigurationBuilder AlsoSearchForJsonFilesInExecutableDirectory(this IConfigurationBuilder builder) {
         string? installationDir;
         try {
@@ -144,104 +142,5 @@ public static class DependencyInjectionExtensions {
         }
 
     }
-
-    #region Super registrations
-
-    /// <summary>
-    /// <para>Register a class in the dependency injection context, and also register it so it can be injected as any of its interfaces or superclasses, like Spring does by default and Autofac optionally allows.</para>
-    /// <para>For example, if <c>MyClass</c> implements <c>IMyInterface1</c> and extends <c>MySuperClass</c>, this allows you to easily register <c>MyClass</c> in DI and inject either <c>IMyInterface1</c> or <c>MySuperClass</c> into a service's constructor, without injection casting or duplicative unrefactorable registration clutter.</para>
-    /// </summary>
-    /// <typeparam name="TImpl">Type of the class to register</typeparam>
-    /// <param name="services"><see cref="IHostApplicationBuilder.Services"/> or similar</param>
-    /// <param name="alsoRegister">Also register the class as its own concrete class, all of its extended superclasses, or all of its implemented interfaces, or <see cref="SuperRegistration.NONE"/> to only register it as its own type (default <c>Microsoft.Extensions.DependencyInjection</c> behavior). A union of multiple values can be passed with logical OR (<see cref="SuperRegistration.SUPERCLASSES"/><c> | </c><see cref="SuperRegistration.INTERFACES"/>).</param>
-    /// <returns>The same collection of service registrations, for chained calls</returns>
-    public static IServiceCollection AddSingleton<TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class =>
-        Add<TImpl>(services, ServiceLifetime.Singleton, alsoRegister);
-
-    /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
-    /// <param name="instance">One concrete singleton instance that will always be returned when these types are injected</param>
-    public static IServiceCollection AddSingleton<TImpl>(this IServiceCollection services, TImpl instance, SuperRegistration alsoRegister) where TImpl: class =>
-        Add(services, ServiceLifetime.Singleton, alsoRegister, instance);
-
-    /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
-    /// <param name="factory">Function that creates instances of <typeparamref name="TImpl"/></param>
-    public static IServiceCollection AddSingleton<TImpl>(this IServiceCollection services, Func<IServiceProvider, TImpl> factory, SuperRegistration alsoRegister) where TImpl: class =>
-        Add(services, ServiceLifetime.Singleton, alsoRegister, factory);
-
-    /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
-    public static IServiceCollection AddTransient<TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class =>
-        Add<TImpl>(services, ServiceLifetime.Transient, alsoRegister);
-
-    /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
-    /// <param name="factory">Function that creates instances of <typeparamref name="TImpl"/></param>
-    public static IServiceCollection AddTransient<TImpl>(this IServiceCollection services, Func<IServiceProvider, TImpl> factory, SuperRegistration alsoRegister) where TImpl: class =>
-        Add(services, ServiceLifetime.Transient, alsoRegister, factory);
-
-    /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
-    public static IServiceCollection AddScoped<TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class =>
-        Add<TImpl>(services, ServiceLifetime.Scoped, alsoRegister);
-
-    /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
-    /// <param name="factory">Function that creates instances of <typeparamref name="TImpl"/></param>
-    public static IServiceCollection AddScoped<TImpl>(this IServiceCollection services, Func<IServiceProvider, TImpl> factory, SuperRegistration alsoRegister) where TImpl: class =>
-        Add(services, ServiceLifetime.Scoped, alsoRegister, factory);
-
-    /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
-    public static IServiceCollection AddHostedService<TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class, IHostedService =>
-        Add<TImpl>(services, alsoRegister, () => new ServiceDescriptor(typeof(IHostedService), typeof(TImpl), ServiceLifetime.Singleton),
-            extra => new ServiceDescriptor(extra, concreteClassProvider<TImpl>, ServiceLifetime.Singleton));
-
-    /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
-    /// <param name="factory">Function that creates instances of <typeparamref name="TImpl"/></param>
-    public static IServiceCollection AddHostedService<TImpl>(this IServiceCollection services, Func<IServiceProvider, TImpl> factory, SuperRegistration alsoRegister)
-        where TImpl: class, IHostedService => Add<TImpl>(services, alsoRegister, () => new ServiceDescriptor(typeof(IHostedService), factory, ServiceLifetime.Singleton),
-        extra => new ServiceDescriptor(extra, concreteClassProvider<TImpl>, ServiceLifetime.Singleton));
-
-    private static IServiceCollection Add<TImpl>(IServiceCollection services, ServiceLifetime scope, SuperRegistration alsoRegister) where TImpl: class => Add<TImpl>(services, alsoRegister,
-        () => new ServiceDescriptor(typeof(TImpl), typeof(TImpl), scope),
-        extra => scope == ServiceLifetime.Singleton ? new ServiceDescriptor(extra, concreteClassProvider<TImpl>, scope) : new ServiceDescriptor(extra, typeof(TImpl), scope));
-
-    private static IServiceCollection Add<TImpl>(IServiceCollection services, ServiceLifetime scope, SuperRegistration alsoRegister, TImpl instance) where TImpl: class => Add<TImpl>(services,
-        alsoRegister, () => new ServiceDescriptor(typeof(TImpl), instance, scope), extra => new ServiceDescriptor(extra, _ => instance, scope));
-
-    private static IServiceCollection Add<TImpl>(IServiceCollection services, ServiceLifetime scope, SuperRegistration alsoRegister, Func<IServiceProvider, TImpl> factory) where TImpl: class =>
-        Add<TImpl>(services,
-            alsoRegister, () => new ServiceDescriptor(typeof(TImpl), factory, scope), extra => new ServiceDescriptor(extra, concreteClassProvider<TImpl>, scope));
-
-    [SuppressMessage("ReSharper", "PossibleMultipleEnumeration")] // IEnumerable.Concat obviously never enumerates the lazy sequence, even if it's in a try block
-    private static IServiceCollection Add<TImpl>(IServiceCollection services, SuperRegistration alsoRegister, Func<ServiceDescriptor> defaultRegistration,
-                                                 Func<Type, ServiceDescriptor> extraRegistration) where TImpl: class {
-        IEnumerable<ServiceDescriptor> registrations = [defaultRegistration()];
-        try {
-            Type concreteType = typeof(TImpl);
-
-            if ((alsoRegister & SuperRegistration.CONCRETE_CLASS) != 0) {
-                registrations = registrations.Append(extraRegistration(concreteType));
-            }
-
-            if ((alsoRegister & SuperRegistration.INTERFACES) != 0) {
-                registrations = registrations.Concat(concreteType.GetInterfaces().Except(InterfaceRegistrationBlacklist).Select(extraRegistration));
-            }
-
-            if ((alsoRegister & SuperRegistration.SUPERCLASSES) != 0) {
-                IEnumerable<Type> superclasses = [];
-                Type              @class       = concreteType, @object = typeof(object), valueType = typeof(ValueType);
-                while (@class.BaseType is { } superclass && superclass != @object && superclass != valueType) {
-                    superclasses = superclasses.Append(superclass);
-                    @class       = superclass;
-                }
-                registrations = registrations.Concat(superclasses.Select(extraRegistration));
-            }
-        } catch (TargetInvocationException) {
-            // if an interface's static initializer is throwing an exception, it will become obvious anyway
-        }
-
-        services.AddAll(registrations); // TryAddEnumerable fails when trying to register a class as itself, such as .AddSingleton<HttpClient>()
-        return services;
-    }
-
-    private static object concreteClassProvider<TImpl>(IServiceProvider services) => services.GetService<TImpl>()!;
-
-    #endregion
 
 }

@@ -11,7 +11,7 @@ using System.Text;
 namespace Unfucked.DI.Logging.Internationalized;
 
 /*
- * Copied from .NET BCL and extracted a field for the culture, because it always used the hardcoded invariant culture instead of letting you change the culture, which made all the percentages you logged look stupid ("100 %" instead of "100%")
+ * Copied from .NET 8 BCL and extracted a field for the culture, because it always used the hardcoded invariant culture instead of letting you change the culture, which made all the percentages you logged look stupid ("100 %" instead of "100%")
  */
 /// <summary>
 /// Formatter to convert the named format items like {NamedformatItem} to <see cref="string.Format(IFormatProvider, string, object)"/> format.

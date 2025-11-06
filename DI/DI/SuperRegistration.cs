@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Unfucked.DI;
 
@@ -14,7 +15,8 @@ public enum SuperRegistration: ushort {
     NONE = 0,
 
     /// <summary>
-    /// Register the concrete class as its own type.
+    /// <para>Register the concrete class as its own type.</para>
+    /// <para>Useful when calling <see cref="DependencyInjectionExtensions.AddHostedService{T}(IServiceCollection,SuperRegistration)"/>, which by default only registers your service as <see cref="IHostedService"/> and not its actual class.</para>
     /// </summary>
     CONCRETE_CLASS = 1,
 

@@ -9,6 +9,9 @@ using System.ComponentModel;
 using System.Text.Json;
 using Monitor = OBSStudioClient.Classes.Monitor;
 
+// ReSharper disable EventNeverSubscribedTo.Global
+// ReSharper disable CommentTypo
+
 namespace Unfucked.OBS;
 
 /*
@@ -20,7 +23,7 @@ namespace Unfucked.OBS;
  * 5. Delete the temporary ObsClient.cs file
  * 6. Create an ObsClient subclass of ObsClient which implements the new IObsClient interface
  * 7. Register ObsClient in dependency injection context with IObsClient interface
- * 8. Inject IObjsClient into dependent classes
+ * 8. Inject IObsClient into dependent classes
  *
  * Note: in step 2, make sure you're extracting the interface from upstream ObsClient instead of its subclass, otherwise documentation comments will not be copied to the interface.
  *

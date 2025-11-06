@@ -4,6 +4,10 @@
 // ReSharper disable All
 
 using System.ComponentModel;
+#pragma warning disable IDE0005
+using System.Diagnostics.CodeAnalysis;
+
+#pragma warning restore IDE0005
 
 namespace System.Runtime.CompilerServices {
 
@@ -12,16 +16,19 @@ namespace System.Runtime.CompilerServices {
     /// <para>From <see href="https://stackoverflow.com/a/62656145/979493"/></para>
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [ExcludeFromCodeCoverage]
     internal sealed class IsExternalInit;
 
     // https://stackoverflow.com/a/74447498/979493
     [EditorBrowsable(EditorBrowsableState.Never)]
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Property, Inherited = false)]
+    [ExcludeFromCodeCoverage]
     internal sealed class RequiredMemberAttribute: Attribute;
 
     // https://stackoverflow.com/a/74447498/979493
     [EditorBrowsable(EditorBrowsableState.Never)]
     [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = false)]
+    [ExcludeFromCodeCoverage]
     internal sealed class CompilerFeatureRequiredAttribute(string featureName): Attribute {
 
         public const string RefStructs      = nameof(RefStructs);
@@ -44,6 +51,7 @@ namespace System.Runtime.CompilerServices {
 namespace System.Diagnostics.CodeAnalysis {
 
     [AttributeUsage(AttributeTargets.Constructor)]
+    [ExcludeFromCodeCoverage]
     internal sealed class SetsRequiredMembersAttribute: Attribute;
 
 }

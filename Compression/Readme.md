@@ -26,7 +26,6 @@
 dotnet add package Unfucked.Compression
 ```
 ```cs
-using Unfucked;
 using TarWriter = Unfucked.Compression.Writers.Tar.TarWriter;
 ```
 

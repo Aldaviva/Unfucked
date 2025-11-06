@@ -116,17 +116,19 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
         if (entry.RefreshTimer != null) {
             async void refreshEntry(object o, ElapsedEventArgs elapsedEventArgs) {
                 if (!entry.IsDisposed) {
-                    V oldValue;
-                    await entry.ValueLock.WaitAsync().ConfigureAwait(false);
                     try {
-                        oldValue    = entry.Value;
-                        entry.Value = await defaultLoader!(key).ConfigureAwait(false);
-                        entry.LastWritten.Restart();
-                        entry.RefreshTimer.Start();
-                    } finally {
-                        entry.ValueLock.Release();
-                    }
-                    Removal?.Invoke(this, key, oldValue, RemovalCause.REPLACED);
+                        V oldValue;
+                        await entry.ValueLock.WaitAsync().ConfigureAwait(false);
+                        try {
+                            oldValue    = entry.Value;
+                            entry.Value = await defaultLoader!(key).ConfigureAwait(false);
+                            entry.LastWritten.Restart();
+                            entry.RefreshTimer.Start();
+                        } finally {
+                            entry.ValueLock.Release();
+                        }
+                        Removal?.Invoke(this, key, oldValue, RemovalCause.REPLACED);
+                    } catch (ObjectDisposedException) { }
                 } else {
                     entry.RefreshTimer.Elapsed -= refreshEntry;
                 }

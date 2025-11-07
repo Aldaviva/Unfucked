@@ -16,6 +16,7 @@
         <RepositoryType>git</RepositoryType>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <GeneratePackageOnBuild Condition="'$(GITHUB_ACTIONS)' != 'true' and '$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
         <IncludeSource>true</IncludeSource>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>

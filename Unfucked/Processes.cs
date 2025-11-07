@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -73,7 +72,7 @@ public static class Processes {
     /// <param name="arguments">Arguments to pass to the child process</param>
     /// <returns>Tuple that contains the numeric exit code of the child process, the standard output text, and the standard error text, or <c>null</c> if the child process failed to start.</returns>
 #pragma warning disable Ex0100 // No cancellation token is passed, so it can't be canceled.
-    public static Task<(int exitCode, string standardOutput, string standardError)?> ExecFile(string file, params IEnumerable<string> arguments) => ExecFile(file, arguments, extraEnvironment: null);
+    public static Task<(int exitCode, string stdout, string stderr)> ExecFile(string file, params IEnumerable<string> arguments) => ExecFile(file, arguments, extraEnvironment: null);
 #pragma warning restore Ex0100
 
     /// <summary>
@@ -86,9 +85,9 @@ public static class Processes {
     /// <param name="workingDirectory">The working directory that the child process should start executing in, or <c>null</c> to inherit the current working directory from this process.</param>
     /// <param name="hideWindow"><c>true</c> on Windows to attempt to hide the child process' window, useful for console applications that force a command prompt window to appear, or <c>false</c> to use the default behavior for the child process. Has no effect on other operating systems.</param>
     /// <param name="cancellationToken">Used to stop waiting if the process is taking too long to exit. Does not kill the process on cancellation.</param>
-    /// <returns>Tuple that contains the numeric exit code of the child process, the standard output text, and the standard error text, or <c>null</c> if the child process failed to start.</returns>
-    /// <exception cref="TaskCanceledException"><paramref name="cancellationToken"/> was canceled before the child process exited. The child process will still be running at this point—cancelling this method does not kill it. To get information about the running child process, for example if you want to kill it yourself, you can read the integer <c>pid</c> value from the <see cref="Exception.Data"/> dictionary to pass to <see cref="Process.GetProcessById(int)"/>.</exception>
-    public static async Task<(int exitCode, string standardOutput, string standardError)?> ExecFile(
+    /// <returns>Tuple that contains the numeric exit code of the child process, the standard output text, and the standard error text, or <c>(-1, "", "")</c> if the child process failed to start.</returns>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled before the child process exited. The child process will still be running at this point—cancelling this method does not kill it. To get information about the running child process, for example if you want to kill it yourself, you can read the integer <c>pid</c> value from the <see cref="Exception.Data"/> dictionary to pass to <see cref="Process.GetProcessById(int)"/> and call <see cref="Process.Kill()"/>.</exception>
+    public static async Task<(int exitCode, string stdout, string stderr)> ExecFile(
         string file,
         IEnumerable<string>? arguments = null,
         IDictionary<string, string?>? extraEnvironment = null,
@@ -127,28 +126,28 @@ public static class Processes {
 
             process = Process.Start(processStartInfo);
         } catch (Win32Exception) {
-            return null;
+            return (-1, string.Empty, string.Empty);
         } catch (PlatformNotSupportedException) {
-            return null;
+            return (-1, string.Empty, string.Empty);
         }
 
         if (process == null) {
-            return null;
+            return (-1, string.Empty, string.Empty);
         }
 
         using (process) {
-            ConfiguredTaskAwaitable<string> stdout;
-            ConfiguredTaskAwaitable<string> stderr;
-
-#if NET8_0_OR_GREATER
-            stdout = process.StandardOutput.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
-            stderr = process.StandardError.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
-#else
-            stdout = process.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
-            stderr = process.StandardError.ReadToEndAsync().ConfigureAwait(false);
-#endif
+            Task<string> stdout;
+            Task<string> stderr;
 
             try {
+#if NET8_0_OR_GREATER
+                stdout = process.StandardOutput.ReadToEndAsync(cancellationToken);
+                stderr = process.StandardError.ReadToEndAsync(cancellationToken);
+#else
+                stdout = process.StandardOutput.ReadToEndAsync();
+                stderr = process.StandardError.ReadToEndAsync();
+#endif
+
 #if NET6_0_OR_GREATER
                 await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
 #else
@@ -158,11 +157,14 @@ public static class Processes {
                 await exited.Task.ConfigureAwait(false);
 #endif
             } catch (TaskCanceledException e) {
+                throw new OperationCanceledException(e.Message, e) { Data = { { "pid", process.Id } } };
+            } catch (OperationCanceledException e) {
                 e.Data["pid"] = process.Id;
                 throw;
             }
 
-            return (process.ExitCode, (await stdout).Trim(), (await stderr).Trim());
+            string[] std = await Task.WhenAll(stdout, stderr).ConfigureAwait(false);
+            return (process.ExitCode, std[0].Trim(), std[1].Trim());
         }
     }
 

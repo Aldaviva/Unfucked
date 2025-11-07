@@ -5,6 +5,7 @@
         <TargetFrameworks>net8.0-windows;net4.8</TargetFrameworks>
         <RootNamespace>Tests</RootNamespace>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
         <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
         <NoWarn>$(NoWarn);CA1816</NoWarn>
 

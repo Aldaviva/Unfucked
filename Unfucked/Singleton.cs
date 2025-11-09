@@ -34,13 +34,7 @@ public static class Singleton {
     /// <param name="item">single item</param>
     /// <param name="comparer">optional comparer used for item equality, or <c>null</c> to use the default <see cref="EqualityComparer{T}"/> for <typeparamref name="T"/></param>
     /// <returns>A set with the one specified <paramref name="item"/></returns>
-    public static
-#if NET5_0_OR_GREATER
-        IReadOnlySet<T>
-#else
-        ISet<T>
-#endif
-        Set<T>(T item, IEqualityComparer<T>? comparer = null) => new HashSet<T>([item], comparer);
+    public static ISet<T> Set<T>(T item, IEqualityComparer<T>? comparer = null) => new HashSet<T>([item], comparer);
 
     /// <summary>
     /// Create a singleton enumerable with one key-value pair

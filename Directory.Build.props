@@ -16,8 +16,8 @@
         <RepositoryType>git</RepositoryType>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <SkipSameSolutionWorkspaceResolution>true</SkipSameSolutionWorkspaceResolution>
+        <!-- <GeneratePackageOnBuild>true</GeneratePackageOnBuild> -->
+        <!-- <SkipSameSolutionWorkspaceResolution>true</SkipSameSolutionWorkspaceResolution> -->
         <IncludeSource>true</IncludeSource>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -29,7 +29,7 @@
 
     <!-- Self version numbers -->
     <PropertyGroup>
-        <UnfuckedVersion>0.0.1-beta.23</UnfuckedVersion>
+        <UnfuckedVersion>0.0.1-beta.24</UnfuckedVersion>
         <UnfuckedCachingVersion>0.0.1-beta.2</UnfuckedCachingVersion>
     </PropertyGroup>
 
@@ -46,7 +46,7 @@
         <InternalsVisibleTo Include="Tests;DynamicProxyGenAssembly2" />
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' or '$(Configuration)' == 'Release'">
+    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' or '$(Configuration)' != 'Debug'">
         <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     </PropertyGroup>
 

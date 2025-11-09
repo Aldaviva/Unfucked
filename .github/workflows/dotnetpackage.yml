@@ -30,15 +30,15 @@ jobs:
         $binPath = [System.IO.Path]::GetFullPath("./bin/")
         New-Item $binPath -ItemType Directory -ErrorAction SilentlyContinue
 
-        dotnet build Unfucked --configuration Release --no-restore --output $binPath
+        dotnet build Unfucked --configuration Release --no-restore
         dotnet pack Unfucked --configuration Release --no-build --output $binPath
 
         dotnet restore Caching --source "https://api.nuget.org/v3/index.json" --source $binPath -p:Configuration=Release
-        dotnet build Caching --configuration Release --no-restore --output $binPath
+        dotnet build Caching --configuration Release --no-restore
         dotnet pack Caching --configuration Release --no-build --output $binPath
         
         dotnet restore --source "https://api.nuget.org/v3/index.json" --source $binPath -p:Configuration=Release
-        dotnet build --configuration Release --no-restore --output $binPath
+        dotnet build --configuration Release --no-restore
         dotnet pack --configuration Release --no-build --output $binPath
 
     - name: Test

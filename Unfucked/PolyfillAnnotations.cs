@@ -20,14 +20,14 @@ namespace System.Runtime.CompilerServices {
     internal sealed class IsExternalInit;
 
     // https://stackoverflow.com/a/74447498/979493
-    [EditorBrowsable(EditorBrowsableState.Never)]
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Property, Inherited = false)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [ExcludeFromCodeCoverage]
     internal sealed class RequiredMemberAttribute: Attribute;
 
     // https://stackoverflow.com/a/74447498/979493
-    [EditorBrowsable(EditorBrowsableState.Never)]
     [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = false)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [ExcludeFromCodeCoverage]
     internal sealed class CompilerFeatureRequiredAttribute(string featureName): Attribute {
 
@@ -40,6 +40,7 @@ namespace System.Runtime.CompilerServices {
     }
 
     /*[System.AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+    [ExcludeFromCodeCoverage]
     internal sealed class OverloadResolutionPriorityAttribute(int priority): Attribute {
 
         public int Priority { get; } = priority;

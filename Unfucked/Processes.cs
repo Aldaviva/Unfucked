@@ -89,7 +89,7 @@ public static class Processes {
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled before the child process exited. The child process will still be running at this point—cancelling this method does not kill it. To get information about the running child process, for example if you want to kill it yourself, you can read the integer <c>pid</c> value from the <see cref="Exception.Data"/> dictionary to pass to <see cref="Process.GetProcessById(int)"/> and call <see cref="Process.Kill()"/>.</exception>
     public static async Task<(int exitCode, string stdout, string stderr)> ExecFile(
         string file,
-        IEnumerable<string>? arguments = null,
+        IEnumerable<string> arguments,
         IDictionary<string, string?>? extraEnvironment = null,
         string workingDirectory = "",
         bool hideWindow = false,
@@ -116,13 +116,11 @@ public static class Processes {
                 }
             }
 
-            if (arguments != null) {
-#if NET8_0_OR_GREATER
-                processStartInfo.ArgumentList.AddAll(arguments);
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1_OR_GREATER
+            processStartInfo.ArgumentList.AddAll(arguments);
 #else
-                processStartInfo.Arguments = CommandLineToString(arguments);
+            processStartInfo.Arguments = CommandLineToString(arguments);
 #endif
-            }
 
             process = Process.Start(processStartInfo);
         } catch (Win32Exception) {
@@ -140,7 +138,7 @@ public static class Processes {
             Task<string> stderr;
 
             try {
-#if NET8_0_OR_GREATER
+#if NET7_0_OR_GREATER
                 stdout = process.StandardOutput.ReadToEndAsync(cancellationToken);
                 stderr = process.StandardError.ReadToEndAsync(cancellationToken);
 #else
@@ -148,7 +146,7 @@ public static class Processes {
                 stderr = process.StandardError.ReadToEndAsync();
 #endif
 
-#if NET6_0_OR_GREATER
+#if NET5_0_OR_GREATER
                 await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
 #else
                 TaskCompletionSource<bool> exited = new();

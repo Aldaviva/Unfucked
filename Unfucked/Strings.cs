@@ -101,6 +101,91 @@ public static class Strings {
 #endif
     }
 
+    /// <summary>
+    /// Concatenates a span of strings, using the specified separator between each member.
+    /// </summary>
+    /// <param name="separator">The string to use as a separator. <paramref name="separator"/> is included in the returned string only if <paramref name="strings"/> has more than one element.</param>
+    /// <param name="strings">A span that contains the elements to concatenate.</param>
+    /// <returns>A string that consists of the elements of <paramref name="strings"/> delimited by the <paramref name="separator"/> string, or <see cref="string.Empty"/> if <paramref name="strings"/> has zero elements.</returns>
+    [Pure]
+    public static string Join(this ReadOnlySpan<string?> strings, string? separator = null) {
+#if NET9_0_OR_GREATER
+        return string.Join(separator, strings);
+#else
+        bool          first = true;
+        StringBuilder stringBuilder = new();
+        foreach (string? s in strings) {
+            if (!first) {
+                stringBuilder.Append(separator);
+            } else {
+                first = false;
+            }
+            stringBuilder.Append(s);
+        }
+        return stringBuilder.ToString();
+#endif
+    }
+
+    /// <inheritdoc cref="Join(ReadOnlySpan{string?},string?)" />
+    [Pure]
+    public static string Join(this ReadOnlySpan<string?> strings, char separator) {
+#if NET9_0_OR_GREATER
+        return string.Join(separator, strings);
+#else
+        bool          first = true;
+        StringBuilder stringBuilder = new();
+        foreach (string? s in strings) {
+            if (!first) {
+                stringBuilder.Append(separator);
+            } else {
+                first = false;
+            }
+            stringBuilder.Append(s);
+        }
+        return stringBuilder.ToString();
+#endif
+    }
+
+    /// <inheritdoc cref="Join(ReadOnlySpan{string?},string?)" />
+    [Pure]
+    public static string Join(this ReadOnlySpan<object?> strings, string? separator = null) {
+#if NET9_0_OR_GREATER
+        return string.Join(separator, strings);
+#else
+        bool          first = true;
+        StringBuilder stringBuilder = new();
+        foreach (object? s in strings) {
+            if (!first) {
+                stringBuilder.Append(separator);
+            } else {
+                first = false;
+            }
+            stringBuilder.Append(s);
+        }
+        return stringBuilder.ToString();
+#endif
+    }
+
+    /// <inheritdoc cref="Join(ReadOnlySpan{string?},string?)" />
+    [Pure]
+    public static string Join(this ReadOnlySpan<object?> strings, char separator) {
+#if NET9_0_OR_GREATER
+        return string.Join(separator, strings);
+#else
+        bool          first = true;
+        StringBuilder stringBuilder = new();
+        foreach (object? s in strings) {
+            if (!first) {
+                stringBuilder.Append(separator);
+            } else {
+                first = false;
+            }
+            stringBuilder.Append(s);
+        }
+        return stringBuilder.ToString();
+#endif
+    }
+
     // ReSharper disable ReplaceSubstringWithRangeIndexer
     /// <summary>
     /// Converts the first character of a string to lowercase.

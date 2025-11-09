@@ -430,4 +430,46 @@ public class EnumerablesTest {
 
     }
 
+    [Fact]
+    public void GetValueOrNullStruct() {
+        var map = new Dictionary<string, int> { { "a", 1 } };
+        map.GetValueOrNullStruct("a").Should().Be(1);
+        map.GetValueOrNullStruct("b").Should().BeNull();
+
+        IDictionary<string, int> imap = map;
+        imap.GetValueOrNullStruct("a").Should().Be(1);
+        imap.GetValueOrNullStruct("b").Should().BeNull();
+
+        IReadOnlyDictionary<string, int> romap = map;
+        romap.GetValueOrNullStruct("a").Should().Be(1);
+        romap.GetValueOrNullStruct("b").Should().BeNull();
+
+        var nullableMap = new Dictionary<string, int?> { { "a", 1 } };
+        nullableMap.GetValueOrNullStruct("a").Should().Be(1);
+        nullableMap.GetValueOrNullStruct("b").Should().BeNull();
+
+        IDictionary<string, int?> nullableImap = nullableMap;
+        nullableImap.GetValueOrNullStruct("a").Should().Be(1);
+        nullableImap.GetValueOrNullStruct("b").Should().BeNull();
+
+        IReadOnlyDictionary<string, int?> nullableRomap = nullableMap;
+        nullableRomap.GetValueOrNullStruct("a").Should().Be(1);
+        nullableRomap.GetValueOrNullStruct("b").Should().BeNull();
+    }
+
+    [Fact]
+    public void GetValueOrDefaultClass() {
+        var map = new Dictionary<string, string> { { "a", "1" } };
+        map.GetValueOrNull("a").Should().Be("1");
+        map.GetValueOrNull("b").Should().BeNull();
+
+        IDictionary<string, string> imap = map;
+        imap.GetValueOrNull("a").Should().Be("1");
+        imap.GetValueOrNull("b").Should().BeNull();
+
+        IReadOnlyDictionary<string, string> romap = map;
+        romap.GetValueOrNull("a").Should().Be("1");
+        romap.GetValueOrNull("b").Should().BeNull();
+    }
+
 }

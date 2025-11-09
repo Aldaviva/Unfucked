@@ -237,4 +237,27 @@ public class StringsTest {
         toRepeat.Repeat(repetitions).Should().Be(expected);
     }
 
+    [Theory]
+    [MemberData(nameof(SpanJoinData))]
+    public void SpanJoin(string? separator, string?[] items, string expected) {
+        ReadOnlySpan<string?> stringSpan = items.ToArray().AsSpan();
+        stringSpan.Join(separator).Should().Be(expected);
+
+        ReadOnlySpan<object?> objectSpan = items.Cast<object?>().ToArray().AsSpan();
+        objectSpan.Join(separator).Should().Be(expected);
+
+        if (separator is [var separatorChar]) {
+            stringSpan.Join(separatorChar).Should().Be(expected);
+            objectSpan.Join(separatorChar).Should().Be(expected);
+        }
+    }
+
+    public static TheoryData<string?, string?[], string> SpanJoinData => new() {
+        { ",", ["a", "bb", "ccc"], "a,bb,ccc" },
+        { "; ", ["a", null, "ccc"], "a; ; ccc" },
+        { null, ["a", "bb", "ccc"], "abbccc" },
+        { "", ["a", "bb", "ccc"], "abbccc" },
+        { ",", [null, "bb", "ccc", null], ",bb,ccc," },
+    };
+
 }

@@ -181,6 +181,16 @@ using Unfucked;
     TimeSpan singleton = ts.SingleOrNull() ?? TimeSpan.FromSeconds(3);              // 3 seconds
     TimeSpan t         = ts.ElementAtOrNull(index: 100) ?? TimeSpan.FromSeconds(4); // 4 seconds
     ```
+- Get an element from a dictionary by key, or return `null` instead of `default`, because default value types are ambiguous with present elements. This avoids having to use an awkward, verbose TryGetValue in a ternary operator every time. Also includes methods for reference typed keys, because `TryGetValue` did not exist in .NET Standard 2.0.
+    ```cs
+    var structDict = new Dictionary<string, int> { { "a", 0 } };
+    int? a = structDict.GetValueOrNullStruct("a"); // 0
+    int? b = structDict.GetValueOrNullStruct("b"); // null instead of 0, the default value of int, which is ambiguous with the presence of "b"
+
+    var classDict = new Dictionary<string, string> { { "c", "0" } };
+    string? c = classDict.GetValueOrNull("c"); // "0"
+    string? d = classDict.GetValueOrNull("d"); // null
+    ```
 - Head and tail
     ```cs
     IEnumerable<string> original = ["a", "b", "c"];
@@ -369,9 +379,10 @@ using Unfucked;
     ```cs
     "Ben".Repeat(4); // "BenBenBenBen"
     ```
-- Polyfill for [`StringBuilder.AppendJoin`](https://learn.microsoft.com/en-us/dotnet/api/system.text.stringbuilder.appendjoin) in .NET Standard 2.0
+- Polyfills for [`StringBuilder.AppendJoin`](https://learn.microsoft.com/en-us/dotnet/api/system.text.stringbuilder.appendjoin) in .NET Standard 2.0
 - Polyfills for [`string.StartsWith(char)`](https://learn.microsoft.com/en-us/dotnet/api/system.string.startswith#system-string-startswith(system-char)) and [`string.EndsWith(char)`](https://learn.microsoft.com/en-us/dotnet/api/system.string.endswith#system-string-endswith(system-char)) in .NET Standard 2.0
-- Polyfill for [`string.Contains(string, StringComparison)`](https://learn.microsoft.com/en-us/dotnet/api/system.string.contains#system-string-contains(system-string-system-stringcomparison)) in .NET Standard 2.0
+- Polyfills for [`string.Contains(string, StringComparison)`](https://learn.microsoft.com/en-us/dotnet/api/system.string.contains#system-string-contains(system-string-system-stringcomparison)) in .NET Standard 2.0
+- Polyfills for [`string.Join`](https://learn.microsoft.com/en-us/dotnet/api/system.string.join?view=net-9.0#system-string-join(system-string-system-readonlyspan((system-string)))) overloads that take `ReadOnlySpan` in .NET Standard 2.0 and .NET Runtimes < 9
 
 ### Tasks
 - Unbounded delay time (.NET ≥ 6 tops out at 49.7 days, .NET < 6 tops out at 24.9 days)

@@ -17,6 +17,7 @@
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <SkipSameSolutionWorkspaceResolution>true</SkipSameSolutionWorkspaceResolution>
         <IncludeSource>true</IncludeSource>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -28,7 +29,7 @@
 
     <!-- Self version numbers -->
     <PropertyGroup>
-        <UnfuckedVersion>0.0.1-beta.22</UnfuckedVersion>
+        <UnfuckedVersion>0.0.1-beta.23</UnfuckedVersion>
         <UnfuckedCachingVersion>0.0.1-beta.2</UnfuckedCachingVersion>
     </PropertyGroup>
 
@@ -41,7 +42,7 @@
         <None Include="Readme.md" Pack="true" PackagePath="\" Visible="true" />
         <None Include=".\*.sln.DotSettings;.\*.csproj.DotSettings" Visible="false" />
         <AdditionalFiles Include="..\ExceptionAdjustments.txt" Visible="false" />
-        <Compile Include="$(MSBuildThisFileDirectory)\Unfucked\IsExternalInit.cs" Visible="true" Condition="'$(PackageId)' != 'Unfucked'" />
+        <Compile Include="$(MSBuildThisFileDirectory)\Unfucked\PolyfillAnnotations.cs" Visible="true" Condition="'$(PackageId)' != 'Unfucked'" />
         <InternalsVisibleTo Include="Tests;DynamicProxyGenAssembly2" />
     </ItemGroup>
 

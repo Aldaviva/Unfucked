@@ -492,12 +492,21 @@ public static partial class Enumerables {
         new ReadOnlyCollection<T>(writableList);
 #endif
 
+    [Pure]
+    public static IReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> writableDict) where TKey: notnull =>
+#if NET8_0_OR_GREATER
+        CollectionExtensions.AsReadOnly(writableDict);
+#else
+        new ReadOnlyDictionary<TKey, TValue>(writableDict);
+#endif
+
     /// <summary>
     /// Like <see cref="Enumerable.OfType{TResult}"/> but it excludes subclasses. It only includes objects which are the exact same class as <typeparamref name="T"/>.
     /// </summary>
     /// <typeparam name="T">Exact concrete type of objects to return.</typeparam>
     /// <param name="source">Enumerable of zero or more objects.</param>
     /// <returns>An enumerable that contains all the elements from <paramref name="source"/>, in order, which are exactly of type <typeparamref name="T"/>.</returns>
+    [Pure]
     public static IEnumerable<T> OfTypeExactly<T>(this IEnumerable source) =>
         OfTypeExactly(source, typeof(T)).Cast<T>();
 
@@ -507,7 +516,87 @@ public static partial class Enumerables {
     /// <param name="source">Enumerable of zero or more objects.</param>
     /// <param name="exactType">Exact concrete type of objects to return.</param>
     /// <returns>An enumerable that contains all the elements from <paramref name="source"/>, in order, which are exactly of type <paramref name="exactType"/>.</returns>
+    [Pure]
     public static IEnumerable OfTypeExactly(this IEnumerable source, Type exactType) =>
         source.Cast<object?>().Where(item => item?.GetType() == exactType);
+
+    /// <summary>
+    /// <para>Read the value of a key in a dictionary, or if the key was not found, return <c>null</c>.</para>
+    /// <para>In .NET Standard ≥ 2.1 and .NET ≥ Core 2.0, this is the same as <c>CollectionExtensions.GetValueOrDefault</c>. This method exists as a polyfill for .NET Standard 2.0.</para>
+    /// </summary>
+    /// <typeparam name="TKey">type of <paramref name="dictionary"/> keys</typeparam>
+    /// <typeparam name="TValue">type of <paramref name="dictionary"/> values</typeparam>
+    /// <param name="dictionary">readable dictionary that may contain <paramref name="key"/></param>
+    /// <param name="key">key to look up in the <paramref name="dictionary"/></param>
+    /// <returns>the value of <paramref name="key"/> in <paramref name="dictionary"/>, or <c>null</c> if <paramref name="key"/> was not found in <paramref name="dictionary"/></returns>
+    [Pure]
+    public static TValue? GetValueOrNull<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) where TValue: class =>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+        dictionary.GetValueOrDefault(key);
+#else
+        dictionary.TryGetValue(key, out TValue? value) ? value : null;
+#endif
+
+    /// <inheritdoc cref="GetValueOrNull{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
+    [Pure]
+    public static TValue? GetValueOrNull<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) where TValue: class where TKey: notnull =>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+        dictionary.AsReadOnly().GetValueOrDefault(key);
+#else
+        dictionary.TryGetValue(key, out TValue? value) ? value : null;
+#endif
+
+    /// <inheritdoc cref="GetValueOrNull{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
+    [Pure]
+    public static TValue? GetValueOrNull<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key) where TValue: class where TKey: notnull =>
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+        dictionary.GetValueOrDefault(key);
+#else
+        dictionary.TryGetValue(key, out TValue? value) ? value : null;
+#endif
+
+    /// <summary>
+    /// <para>Read the value of a key in a dictionary, or if the key was not found, return <c>null</c> instead of the default value for the value's type.</para>
+    /// <para>This way, you can avoid both an ambiguous return type that may have really been in the dictionary, and an awkward, verbose <see cref="IDictionary{TKey,TValue}.TryGetValue"/> ternary expression at each callsite.</para>
+    /// </summary>
+    /// <typeparam name="TKey">type of <paramref name="dictionary"/> keys</typeparam>
+    /// <typeparam name="TValue">type of <paramref name="dictionary"/> values</typeparam>
+    /// <param name="dictionary">readable dictionary that may contain <paramref name="key"/></param>
+    /// <param name="key">key to look up in the <paramref name="dictionary"/></param>
+    /// <returns>the value of <paramref name="key"/> in <paramref name="dictionary"/>, or <c>null</c> if <paramref name="key"/> was not found in <paramref name="dictionary"/></returns>
+    [Pure]
+    public static TValue? GetValueOrNullStruct<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) where TValue: struct =>
+        dictionary.TryGetValue(key, out TValue value) ? value : null;
+
+    /// <inheritdoc cref="GetValueOrNullStruct{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
+    [Pure]
+    public static TValue? GetValueOrNullStruct<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue?> dictionary, TKey key) where TValue: struct {
+        dictionary.TryGetValue(key, out TValue? value);
+        return value;
+    }
+
+    /// <inheritdoc cref="GetValueOrNullStruct{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
+    [Pure]
+    public static TValue? GetValueOrNullStruct<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) where TValue: struct =>
+        dictionary.TryGetValue(key, out TValue value) ? value : null;
+
+    /// <inheritdoc cref="GetValueOrNullStruct{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
+    [Pure]
+    public static TValue? GetValueOrNullStruct<TKey, TValue>(this IDictionary<TKey, TValue?> dictionary, TKey key) where TValue: struct {
+        dictionary.TryGetValue(key, out TValue? value);
+        return value;
+    }
+
+    /// <inheritdoc cref="GetValueOrNullStruct{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
+    [Pure]
+    public static TValue? GetValueOrNullStruct<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key) where TValue: struct where TKey: notnull =>
+        dictionary.TryGetValue(key, out TValue value) ? value : null;
+
+    /// <inheritdoc cref="GetValueOrNullStruct{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
+    [Pure]
+    public static TValue? GetValueOrNullStruct<TKey, TValue>(this Dictionary<TKey, TValue?> dictionary, TKey key) where TValue: struct where TKey: notnull {
+        dictionary.TryGetValue(key, out TValue? value);
+        return value;
+    }
 
 }

@@ -2,6 +2,7 @@ using Unfucked.HTTP.Config;
 
 namespace Unfucked.HTTP;
 
+/// <inheritdoc cref="IWebTarget" />
 public partial class WebTarget: IWebTarget, Configurable<WebTarget> {
 
     private readonly UrlBuilder            urlBuilder;
@@ -16,11 +17,11 @@ public partial class WebTarget: IWebTarget, Configurable<WebTarget> {
         this.clientConfig  = clientConfig;
     }
 
-    private WebTarget(IHttpClient client, UrlBuilder urlBuilder, IUnfuckedHttpHandler? clientHandler): this(client, urlBuilder, clientHandler, clientHandler?.ClientConfig) { }
+    private WebTarget(IHttpClient client, UrlBuilder urlBuilder, IUnfuckedHttpHandler? clientHandler): this(client, urlBuilder, clientHandler, clientHandler?.ClientConfig) {}
 
-    public WebTarget(IHttpClient client, UrlBuilder urlBuilder): this(client, urlBuilder, client.Handler) { }
-    public WebTarget(IHttpClient client, Uri uri): this(client, new UrlBuilder(uri)) { }
-    public WebTarget(IHttpClient client, string uri): this(client, new UrlBuilder(uri)) { }
-    public WebTarget(IHttpClient client, UriBuilder uriBuilder): this(client, new UrlBuilder(uriBuilder)) { }
+    public WebTarget(IHttpClient client, UrlBuilder urlBuilder): this(client, urlBuilder, client.Handler) {}
+    public WebTarget(IHttpClient client, Uri uri): this(client, new UrlBuilder(uri)) {}
+    public WebTarget(IHttpClient client, string uri): this(client, new UrlBuilder(uri)) {}
+    public WebTarget(IHttpClient client, UriBuilder uriBuilder): this(client, new UrlBuilder(uriBuilder)) {}
 
 }

@@ -40,6 +40,9 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
 
     private static readonly TimeSpan DEFAULT_TIMEOUT = new(0, 0, 30);
 
+    private static readonly Lazy<(string name, Version version)?> USER_AGENT = new(() => Assembly.GetEntryAssembly()?.GetName() is { Name: {} programName, Version: {} programVersion }
+        ? (programName, programVersion) : null, LazyThreadSafetyMode.PublicationOnly);
+
     /// <inheritdoc />
     public IUnfuckedHttpHandler? Handler { get; }
 
@@ -47,7 +50,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
     /// <para>Create a new <see cref="UnfuckedHttpClient"/> with a default message handler and configuration.</para>
     /// <para>Includes a default 30 second response timeout, 10 second connect timeout, 1 hour connection pool lifetime, and user-agent header named after your program.</para>
     /// </summary>
-    public UnfuckedHttpClient(): this((IUnfuckedHttpHandler) new UnfuckedHttpHandler()) { }
+    public UnfuckedHttpClient(): this((IUnfuckedHttpHandler) new UnfuckedHttpHandler()) {}
 
     // This is not a factory method because it lets us both pass a SocketsHttpHandler with custom properties like PooledConnectionLifetime, as well as init properties on the UnfuckedHttpClient like Timeout. If this were a factory method, init property accessors would not be available, and callers would have to set them later on a temporary variable which can't all fit in one expression.
     /// <summary>
@@ -55,13 +58,13 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
     /// </summary>
     /// <param name="handler">An <see cref="HttpMessageHandler"/> used to send requests, typically a <see cref="SocketsHttpHandler"/> with custom properties.</param>
     /// <param name="disposeHandler"><c>true</c> to dispose of <paramref name="handler"/> when this instance is disposed, or <c>false</c> to not dispose it.</param>
-    public UnfuckedHttpClient(HttpMessageHandler handler, bool disposeHandler = true): this(handler as IUnfuckedHttpHandler ?? new UnfuckedHttpHandler(handler), disposeHandler) { }
+    public UnfuckedHttpClient(HttpMessageHandler handler, bool disposeHandler = true): this(handler as IUnfuckedHttpHandler ?? new UnfuckedHttpHandler(handler), disposeHandler) {}
 
     /// <summary>
     /// Create a new <see cref="UnfuckedHttpClient"/> instance with a new handler and the given <paramref name="configuration"/>.
     /// </summary>
     /// <param name="configuration">Properties, filters, and message body readers to use in the new instance.</param>
-    public UnfuckedHttpClient(IClientConfig configuration): this((IUnfuckedHttpHandler) new UnfuckedHttpHandler(null, configuration)) { }
+    public UnfuckedHttpClient(IClientConfig configuration): this((IUnfuckedHttpHandler) new UnfuckedHttpHandler(null, configuration)) {}
 
     /// <summary>
     /// Main constructor that other constructors and factory methods delegate to.
@@ -72,7 +75,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
         disposeHandler) {
         Handler = unfuckedHandler;
         Timeout = DEFAULT_TIMEOUT;
-        if (Assembly.GetEntryAssembly()?.GetName() is { Name: { } programName, Version: { } programVersion }) {
+        if (USER_AGENT.Value is var (programName, programVersion)) {
             DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(programName, programVersion.ToString(4, true)));
         }
         UnfuckedHttpHandler.CacheClientHandler(this, unfuckedHandler);
@@ -96,7 +99,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
     public static UnfuckedHttpClient Create(HttpClient toClone) {
         IUnfuckedHttpHandler newHandler;
         bool                 disposeHandler;
-        if (toClone is UnfuckedHttpClient { Handler: { } h }) {
+        if (toClone is UnfuckedHttpClient { Handler: {} h }) {
             newHandler     = h;
             disposeHandler = false; // we don't own it, toClone does
         } else {

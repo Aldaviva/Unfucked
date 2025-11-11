@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.Contracts;
+using System.Net;
 using System.Reflection;
 using Unfucked.HTTP.Config;
 using Unfucked.HTTP.Exceptions;
@@ -70,7 +71,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
      * at test runtime. Default values for other constructor below wouldn't have been called by FakeItEasy. This avoids having to remember to call
      * options.WithArgumentsForConstructor(() => new UnfuckedHttpHandler(null, null)) when creating the fake.
      */
-    public UnfuckedHttpHandler(): this(null) { }
+    public UnfuckedHttpHandler(): this(null) {}
 
     // HttpClientHandler automatically uses SocketsHttpHandler on .NET Core ≥ 2.1, or HttpClientHandler otherwise
     public UnfuckedHttpHandler(HttpMessageHandler? innerHandler = null, IClientConfig? configuration = null): base(innerHandler ??
@@ -78,13 +79,14 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
         new SocketsHttpHandler {
             PooledConnectionLifetime = TimeSpan.FromHours(1),
             ConnectTimeout           = TimeSpan.FromSeconds(10),
+            AutomaticDecompression   = DecompressionMethods.All,
             // MaxConnectionsPerServer defaults to MAX_INT, so we don't need to increase it here
 #if NET8_0_OR_GREATER
             MeterFactory = new WireLogFilter.WireLoggingMeterFactory()
 #endif
         }
 #else
-        new HttpClientHandler()
+        new HttpClientHandler {AutomaticDecompression = DecompressionMethods.GZip|DecompressionMethods.Deflate}
 #endif
     ) {
         ClientConfig        = configuration ?? new ClientConfig();

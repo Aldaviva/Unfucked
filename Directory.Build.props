@@ -23,7 +23,7 @@
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <PackageIcon>icon.png</PackageIcon>
         <PackageReadmeFile>Readme.md</PackageReadmeFile>
-        <NoWarn>$(NoWarn);8524;VSTHRD200</NoWarn>
+        <NoWarn>$(NoWarn);8524;VSTHRD200;NU1507</NoWarn>
     </PropertyGroup>
 
     <!-- Self version numbers -->

@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
-        <Version>0.0.1-beta.20</Version>
+        <Version>0.0.1-beta.21</Version>
         <Description>Fix egregiously broken or missing functionality in System.Net.Http.HttpClient.</Description>
         <PackageTags>http HttpClient web request $(PackageTags)</PackageTags>
     </PropertyGroup>
@@ -12,7 +12,7 @@
     </ItemGroup>
     
     <Choose>
-        <When Condition="'$(Configuration)' == 'Release'">
+        <When Condition="'$(Configuration)' != 'Debug'">
             <ItemGroup>
                 <PackageReference Include="Unfucked" />
             </ItemGroup>

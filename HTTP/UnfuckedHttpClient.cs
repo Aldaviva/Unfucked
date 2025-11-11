@@ -43,14 +43,31 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
     /// <inheritdoc />
     public IUnfuckedHttpHandler? Handler { get; }
 
-    public UnfuckedHttpClient(): this(new UnfuckedHttpHandler()) { }
+    /// <summary>
+    /// <para>Create a new <see cref="UnfuckedHttpClient"/> with a default message handler and configuration.</para>
+    /// <para>Includes a default 30 second response timeout, 10 second connect timeout, 1 hour connection pool lifetime, and user-agent header named after your program.</para>
+    /// </summary>
+    public UnfuckedHttpClient(): this((IUnfuckedHttpHandler) new UnfuckedHttpHandler()) { }
 
-    // These factory methods are no longer constructors so DI gets less confused by the arguments, even though many are optional, to prevent it trying to inject a real HttpMessageHandler in a symmetric dependency. Microsoft.Extensions.DependencyInjection always picks the constructor overload with the most injectable arguments, but I want it to pick the no-arg constructor.
-    public static UnfuckedHttpClient Create(HttpMessageHandler? handler = null, bool disposeHandler = true, IClientConfig? configuration = null) =>
-        new(handler as UnfuckedHttpHandler ?? new UnfuckedHttpHandler(handler, configuration), disposeHandler);
+    // This is not a factory method because it lets us both pass a SocketsHttpHandler with custom properties like PooledConnectionLifetime, as well as init properties on the UnfuckedHttpClient like Timeout. If this were a factory method, init property accessors would not be available, and callers would have to set them later on a temporary variable which can't all fit in one expression.
+    /// <summary>
+    /// Create a new <see cref="UnfuckedHttpClient"/> instance with the given handler.
+    /// </summary>
+    /// <param name="handler">An <see cref="HttpMessageHandler"/> used to send requests, typically a <see cref="SocketsHttpHandler"/> with custom properties.</param>
+    /// <param name="disposeHandler"><c>true</c> to dispose of <paramref name="handler"/> when this instance is disposed, or <c>false</c> to not dispose it.</param>
+    public UnfuckedHttpClient(HttpMessageHandler handler, bool disposeHandler = true): this(handler as IUnfuckedHttpHandler ?? new UnfuckedHttpHandler(handler), disposeHandler) { }
 
-    public static UnfuckedHttpClient Create(IUnfuckedHttpHandler unfuckedHandler, bool disposeHandler = true) => new(unfuckedHandler, disposeHandler);
+    /// <summary>
+    /// Create a new <see cref="UnfuckedHttpClient"/> instance with a new handler and the given <paramref name="configuration"/>.
+    /// </summary>
+    /// <param name="configuration">Properties, filters, and message body readers to use in the new instance.</param>
+    public UnfuckedHttpClient(IClientConfig configuration): this((IUnfuckedHttpHandler) new UnfuckedHttpHandler(null, configuration)) { }
 
+    /// <summary>
+    /// Main constructor that other constructors and factory methods delegate to.
+    /// </summary>
+    /// <param name="unfuckedHandler"></param>
+    /// <param name="disposeHandler"></param>
     protected UnfuckedHttpClient(IUnfuckedHttpHandler unfuckedHandler, bool disposeHandler = true): base(unfuckedHandler as HttpMessageHandler ?? new IUnfuckedHttpHandlerWrapper(unfuckedHandler),
         disposeHandler) {
         Handler = unfuckedHandler;
@@ -61,15 +78,39 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
         UnfuckedHttpHandler.CacheClientHandler(this, unfuckedHandler);
     }
 
+    /// <summary>
+    /// Create a new <see cref="UnfuckedHttpClient"/> instance that uses the given <paramref name="unfuckedHandler"/> to send requests. This is mostly useful for testing where <paramref name="unfuckedHandler"/> is a mock. When it's a real <see cref="UnfuckedHttpHandler"/>, you can use the <see cref="UnfuckedHttpClient(HttpMessageHandler,bool)"/> constructor instead.
+    /// </summary>
+    /// <param name="unfuckedHandler">Handler used to send requests.</param>
+    /// <param name="disposeHandler"><c>true</c> to dispose of <paramref name="unfuckedHandler"/> when this instance is disposed, or <c>false</c> to not dispose it.</param>
+    /// <returns></returns>
+    public static UnfuckedHttpClient Create(IUnfuckedHttpHandler unfuckedHandler, bool disposeHandler = true) => new(unfuckedHandler, disposeHandler);
+
+    // This factory method is no longer constructors so DI gets less confused by the arguments, even though many are optional, to prevent it trying to inject a real HttpMessageHandler in a symmetric dependency. Microsoft.Extensions.DependencyInjection always picks the constructor overload with the most injectable arguments, but I want it to pick the no-arg constructor.
+    /// <summary>
+    /// Create a new <see cref="UnfuckedHttpClient"/> that copies the settings of an existing <see cref="HttpClient"/>.
+    /// </summary>
+    /// <param name="toClone"><see cref="HttpClient"/> to copy.</param>
+    /// <returns>A new instance of an <see cref="UnfuckedHttpClient"/> with the same handler and configuration as <paramref name="toClone"/>.</returns>
     // ExceptionAdjustment: M:System.Net.Http.Headers.HttpHeaders.Add(System.String,System.Collections.Generic.IEnumerable{System.String}) -T:System.FormatException
-    public static UnfuckedHttpClient Create(HttpClient toClone, bool disposeHandler = true, IClientConfig? configuration = null) {
-        UnfuckedHttpClient newClient = new(toClone is UnfuckedHttpClient { Handler: { } h } ? h : new UnfuckedHttpHandler(toClone, configuration), disposeHandler) {
+    public static UnfuckedHttpClient Create(HttpClient toClone) {
+        IUnfuckedHttpHandler newHandler;
+        bool                 disposeHandler;
+        if (toClone is UnfuckedHttpClient { Handler: { } h }) {
+            newHandler     = h;
+            disposeHandler = false; // we don't own it, toClone does
+        } else {
+            newHandler     = UnfuckedHttpHandler.Create(toClone);
+            disposeHandler = true; // we own it, although it won't dispose toClone's inner handler because it wasn't created by the new UnfuckedHttpHandler
+        }
+
+        UnfuckedHttpClient newClient = new(newHandler, disposeHandler) {
             BaseAddress                  = toClone.BaseAddress,
             Timeout                      = toClone.Timeout,
             MaxResponseContentBufferSize = toClone.MaxResponseContentBufferSize,
 #if NETCOREAPP3_0_OR_GREATER
             DefaultRequestVersion = toClone.DefaultRequestVersion,
-            DefaultVersionPolicy = toClone.DefaultVersionPolicy
+            DefaultVersionPolicy  = toClone.DefaultVersionPolicy
 #endif
         };
 

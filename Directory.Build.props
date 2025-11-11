@@ -16,20 +16,19 @@
         <RepositoryType>git</RepositoryType>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <!-- <GeneratePackageOnBuild>true</GeneratePackageOnBuild> -->
-        <!-- <SkipSameSolutionWorkspaceResolution>true</SkipSameSolutionWorkspaceResolution> -->
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <IncludeSource>true</IncludeSource>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <PackageIcon>icon.png</PackageIcon>
         <PackageReadmeFile>Readme.md</PackageReadmeFile>
-        <NoWarn>$(NoWarn);8524;VSTHRD200;1591</NoWarn>
+        <NoWarn>$(NoWarn);8524;VSTHRD200</NoWarn>
     </PropertyGroup>
 
     <!-- Self version numbers -->
     <PropertyGroup>
-        <UnfuckedVersion>0.0.1-beta.24</UnfuckedVersion>
+        <UnfuckedVersion>0.0.1-beta.25</UnfuckedVersion>
         <UnfuckedCachingVersion>0.0.1-beta.2</UnfuckedCachingVersion>
     </PropertyGroup>
 

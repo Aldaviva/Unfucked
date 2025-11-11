@@ -26,19 +26,23 @@ public class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOptions> 
     private const string PADDING             = "                                ";
     private const string ANSI_RESET          = "\e[0m";
 
-    private static readonly int    MAX_PADDED_CATEGORY_LENGTH = PADDING.Length;
-    private static readonly char[] LEVEL_LABELS               = ['t', 'd', 'i', 'W', 'E', 'C', ' '];
+    /**
+     * Any categories longer than this will be wider only on their own line, while subsequent lines from different categories will only be as wide as this field.
+     */
+    private static readonly int MAX_PADDED_CATEGORY_LENGTH = PADDING.Length;
+
+    private static readonly char[] LEVEL_LABELS = ['t', 'd', 'i', 'W', 'E', 'C', ' '];
 
     private readonly UnfuckedConsoleFormatterOptions options  = options.Value;
     private readonly bool                            useColor = options.Value.Color && ConsoleControl.IsColorSupported();
 
     private readonly string[] levelColors = [
-        ConsoleControl.Color(ConsoleColor.DarkGray),
-        ConsoleControl.Color(ConsoleColor.Gray),
-        string.Empty,
-        ConsoleControl.Color(Color.Black, Color.FromArgb(0xFF, 0xAA, 0x00)),
-        ConsoleControl.Color(Color.White, Color.FromArgb(0xB0, 0x3A, 0x3A)),
-        ConsoleControl.Color(Color.White, Color.FromArgb(0xB0, 0x3A, 0x3A))
+        ConsoleControl.Color(ConsoleColor.DarkGray),                         // trace
+        ConsoleControl.Color(ConsoleColor.Gray),                             // debug
+        string.Empty,                                                        // info
+        ConsoleControl.Color(Color.Black, Color.FromArgb(0xFF, 0xAA, 0x00)), // warn
+        ConsoleControl.Color(Color.White, Color.FromArgb(0xB0, 0x3A, 0x3A)), // error
+        ConsoleControl.Color(Color.White, Color.FromArgb(0xB0, 0x3A, 0x3A))  // critical
     ];
 
     private int maxCategoryLength;
@@ -87,8 +91,7 @@ public class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOptions> 
         ReadOnlySpan<char> category = lastSeparatorPosition != -1 ? logEntry.Category.AsSpan(lastSeparatorPosition + 1) : logEntry.Category.AsSpan();
 
         int categoryLength = category.Length;
-        maxCategoryLength = Math.Max(maxCategoryLength, categoryLength);
-#if NET6_0_OR_GREATER
+#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         textWriter.Write(category);
 #else
         textWriter.Write(category.ToString());
@@ -98,7 +101,7 @@ public class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOptions> 
             maxCategoryLength = categoryLength;
         } else {
             ReadOnlySpan<char> padding = PADDING.AsSpan(0, Math.Max(0, Math.Min(maxCategoryLength, MAX_PADDED_CATEGORY_LENGTH) - categoryLength));
-#if NET6_0_OR_GREATER
+#if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
             textWriter.Write(padding);
 #else
             textWriter.Write(padding.ToString());

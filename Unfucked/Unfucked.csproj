@@ -9,16 +9,20 @@
         <NoWarn>$(NoWarn);SYSLIB1054</NoWarn>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
-        <PackageReference Include="System.Collections.Immutable" />
-    </ItemGroup>
-    
     <ItemGroup>
         <None Remove="..\Unfucked\icon.png" />
         <None Include="..\Unfucked\icon.png" Pack="true" PackagePath="\" Visible="true" />
         <None Include="..\*.props;..\*.ps1;..\.github*\**" />
         <AdditionalFiles Include="..\ExceptionAdjustments.txt" Visible="true" />
     </ItemGroup>
-    
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
+        <PackageReference Include="System.Collections.Immutable" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
+    </ItemGroup>
+
 </Project>

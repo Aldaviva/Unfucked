@@ -1,6 +1,11 @@
+using JetBrains.Annotations;
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+#if NET8_0_OR_GREATER
+using System.Collections.Frozen;
+#endif
 
 namespace Unfucked;
 
@@ -13,7 +18,7 @@ public static partial class Enumerables {
     /// <param name="source">Enumerable that may contain <c>null</c> values</param>
     /// <returns>Input enumerable with <c>null</c> values removed.</returns>
     /// <remarks>Inspired by Underscore.js' <c>_.compact()</c>: <see href="https://underscorejs.org/#compact"/></remarks>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static IEnumerable<T> Compact<T>(this IEnumerable<T?> source) where T: class => source.Where(item => item != null)!;
 
     // Not using <inheritdoc> for any Compact() overloads because it seems to cause ServiceHub.RoslynCodeAnalysisService.exe to crash repeatedly
@@ -21,20 +26,20 @@ public static partial class Enumerables {
     /// <summary>Remove <c>null</c> values.</summary>
     /// <param name="source">Enumerable that may contain <c>null</c> values</param>
     /// <returns>Input enumerable with <c>null</c> values removed.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static IEnumerable<T> Compact<T>(this IEnumerable<T?> source) where T: struct => source.Where(item => item != null).Cast<T>();
 
     /// <summary>Remove <c>null</c> values.</summary>
     /// <param name="source">Array that may contain <c>null</c> values</param>
     /// <returns>Copy of input array with <c>null</c> values removed.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static T[] Compact<T>(this T?[] source) where T: class => source.Where(item => item != null).ToArray()!;
 
     // <inheritdoc cref="Compact{T}(T?[])" />
     /// <summary>Remove <c>null</c> values.</summary>
     /// <param name="source">Array that may contain <c>null</c> values</param>
     /// <returns>Copy of input array with <c>null</c> values removed.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static T[] Compact<T>(this T?[] source) where T: struct => source.Where(item => item != null).Cast<T>().ToArray();
 
     /// <summary>
@@ -44,7 +49,7 @@ public static partial class Enumerables {
     /// <typeparam name="TValue">Value type of the dictionary</typeparam>
     /// <param name="source">Dictionary with possible <c>null</c> values. This dictionary and its values are not modified by this method.</param>
     /// <returns>A copy of <paramref name="source"/> where all the <c>null</c> values have been removed.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static IDictionary<TKey, TValue> Compact<TKey, TValue>(this IDictionary<TKey, TValue?> source) where TKey: notnull where TValue: class =>
         source.Where(entry => entry.Value != null).ToDictionary(entry => entry.Key, entry => entry.Value!);
 
@@ -56,7 +61,7 @@ public static partial class Enumerables {
     /// <typeparam name="TValue">Value type of the dictionary</typeparam>
     /// <param name="source">Dictionary with possible <c>null</c> values. This dictionary and its values are not modified by this method.</param>
     /// <returns>A copy of <paramref name="source"/> where all the <c>null</c> values have been removed.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static IDictionary<TKey, TValue> Compact<TKey, TValue>(this IDictionary<TKey, TValue?> source) where TKey: notnull where TValue: struct =>
         source.Where(entry => entry.Value != null).ToDictionary(entry => entry.Key, pair => pair.Value!.Value);
 
@@ -67,7 +72,7 @@ public static partial class Enumerables {
     /// <typeparam name="TValue">Value type of the dictionary</typeparam>
     /// <param name="source">Dictionary with possible <c>null</c> values. This dictionary and its values are not modified by this method.</param>
     /// <returns>A copy of <paramref name="source"/> where all the <c>null</c> values have been removed.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static IEnumerable<KeyValuePair<TKey, TValue>> Compact<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue?>> source) where TKey: notnull where TValue: struct =>
         from pair in source
         where pair.Value.HasValue
@@ -80,7 +85,7 @@ public static partial class Enumerables {
     /// <typeparam name="TValue">Value type of the dictionary</typeparam>
     /// <param name="source">Dictionary with possible <c>null</c> values. This dictionary and its values are not modified by this method.</param>
     /// <returns>A copy of <paramref name="source"/> where all the <c>null</c> values have been removed.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static IEnumerable<KeyValuePair<TKey, TValue>> Compact<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue?>> source) where TKey: notnull where TValue: class =>
         from pair in source
         where pair.Value != null
@@ -164,19 +169,114 @@ public static partial class Enumerables {
         }
     }
 
-    /// <summary>
+    /*/// <summary>
     /// Set difference
     /// </summary>
     /// <typeparam name="T">type of items</typeparam>
-    /// <param name="a">set or other enumerable from which you want to subtract <paramref name="b"/></param>
+    /// <param name="a">set from which you want to subtract <paramref name="b"/></param>
     /// <param name="b">set or other enumerable which you want to subtract from <paramref name="a"/></param>
     /// <returns>a new set containing the result of <c>a−b</c></returns>
     [Pure]
-    public static ISet<T> Minus<T>(this IEnumerable<T> a, IEnumerable<T> b) {
-        var difference = new HashSet<T>(a);
-        difference.ExceptWith(b);
+    public static ISet<T> Minus<T>(this HashSet<T> a, IEnumerable<T> b) => Minus((ICollection<T>) a, b);
+
+    [Pure]
+    public static ISet<T> Minus<T>(this ISet<T> a, IEnumerable<T> b) => Minus((ICollection<T>) a, b);
+
+#if NET5_0_OR_GREATER
+    [Pure]
+    public static ISet<T> Minus<T>(this IReadOnlySet<T> a, IEnumerable<T> b) => Minus(new ReadOnlySetWrapper<T>(a), b);
+#endif
+
+    private static ISet<T> Minus<T>(this ICollection<T> a, IEnumerable<T> b) {
+        var difference = new HashSet<T>(
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+            a.Count
+#endif
+        );
+
+        ISet<T> bSet = b switch {
+            ISet<T> s => s,
+#if NET5_0_OR_GREATER
+            IReadOnlySet<T> r => new ReadOnlySetWrapper<T>(r),
+#endif
+            _ => ImmutableHashSet.CreateRange(b)
+        };
+
+        difference.AddAll(a.Where(aItem => !bSet.Contains(aItem)));
         return difference;
+    }*/
+
+    /// <summary>
+    /// <para>Set difference.</para>
+    /// <para>Unlike <see cref="ISet{T}.ExceptWith"/>, this does not mutate <paramref name="source"/>. Unlike <see cref="Enumerable.Except{T}(IEnumerable{T},IEnumerable{T})"/>, </para>
+    /// </summary>
+    /// <typeparam name="T">type of items</typeparam>
+    /// <param name="source">set from which you want to subtract <paramref name="toSubtract"/></param>
+    /// <param name="toSubtract">set or other enumerable which you want to subtract from <paramref name="source"/></param>
+    /// <returns>a new set containing the result of <paramref name="source"/><c>−</c><paramref name="toSubtract"/></returns>
+    public static ISet<T> Minus<T>(this IEnumerable<T> source, IEnumerable<T> toSubtract) {
+        IEqualityComparer<T>? comparer   = getComparer(source) ?? getComparer(toSubtract);
+        HashSet<T>            difference = comparer != null ? new HashSet<T>(source, comparer) : [..source];
+        difference.ExceptWith(toSubtract);
+        return difference;
+
+        /*HashSet<T> difference =
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+            source is ICollection<T> { Count: var sourceCount } ? new HashSet<T>(sourceCount) : [];
+#else
+            [];
+#endif
+
+        difference.AddAll(source.Where(aItem => !toSubtract.Contains(aItem)));
+        return difference;*/
+        static IEqualityComparer<T>? getComparer([NoEnumeration] IEnumerable<T> enumerable) => enumerable switch {
+            HashSet<T> s          => s.Comparer,
+            ImmutableHashSet<T> s => s.KeyComparer,
+#if NET8_0_OR_GREATER
+            FrozenSet<T> s => s.Comparer,
+#endif
+            _ => null
+        };
     }
+
+/*#if NET5_0_OR_GREATER
+    /// <inheritdoc cref="Minus{T}(System.Collections.Generic.IEnumerable{T},System.Collections.Generic.ISet{T})" />
+#if NET9_0_OR_GREATER
+    [OverloadResolutionPriority(-1)]
+#endif
+    [Pure]
+    public static ISet<T> Minus<T>(this IEnumerable<T> source, IReadOnlySet<T> toSubtract) => Minus(source, toSubtract as ISet<T> ?? new ReadOnlySetWrapper<T>(toSubtract));
+
+#pragma warning disable Ex0100
+    private class ReadOnlySetWrapper<T>(IReadOnlySet<T> wrapped): ISet<T> {
+
+        public bool Contains(T item) => wrapped.Contains(item);
+        public int Count => wrapped.Count;
+        public bool IsReadOnly => true;
+        public bool IsProperSubsetOf(IEnumerable<T> other) => wrapped.IsProperSubsetOf(other);
+        public bool IsProperSupersetOf(IEnumerable<T> other) => wrapped.IsProperSupersetOf(other);
+        public bool IsSubsetOf(IEnumerable<T> other) => wrapped.IsSubsetOf(other);
+        public bool IsSupersetOf(IEnumerable<T> other) => wrapped.IsSupersetOf(other);
+        public bool Overlaps(IEnumerable<T> other) => wrapped.Overlaps(other);
+        public bool SetEquals(IEnumerable<T> other) => wrapped.SetEquals(other);
+        public IEnumerator<T> GetEnumerator() => wrapped.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable) wrapped).GetEnumerator();
+
+        public bool Add(T item) => throw NotImplemented();
+        public void Clear() => throw NotImplemented();
+        public void CopyTo(T[] array, int arrayIndex) => throw NotImplemented();
+        public bool Remove(T item) => throw NotImplemented();
+        public void ExceptWith(IEnumerable<T> other) => throw NotImplemented();
+        public void IntersectWith(IEnumerable<T> other) => throw NotImplemented();
+        public void SymmetricExceptWith(IEnumerable<T> other) => throw NotImplemented();
+        public void UnionWith(IEnumerable<T> other) => throw NotImplemented();
+        void ICollection<T>.Add(T item) => throw NotImplemented();
+
+        private static NotImplementedException NotImplemented() => new("This set is read-only");
+
+    }
+#pragma warning restore Ex0100
+#endif*/
 
     /// <summary>
     /// <para>Return a copy of an enumerable with all runs of consecutive duplicate items replaced with only one instance of that item.</para>
@@ -186,7 +286,7 @@ public static partial class Enumerables {
     /// <param name="source">Input enumeration of items that may have runs of consecutive duplicate items.</param>
     /// <param name="comparer">Used to compare whether two items are equal, or the default <see cref="EqualityComparer{T}"/> if <c>null</c>.</param>
     /// <returns>An enumerable containing the items from <paramref name="source"/> in order, but with consecutive duplicate items excluded, or an empty enumerable if <paramref name="source"/> is empty.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static IEnumerable<T> DistinctConsecutive<T>(this IEnumerable<T> source, IEqualityComparer<T>? comparer = null) {
         comparer ??= EqualityComparer<T>.Default;
         T?   previousItem = default;
@@ -212,7 +312,7 @@ public static partial class Enumerables {
     /// <param name="keySelector">Compare uniqueness not on the items of <paramref name="source"/>, but on the output of this function that takes each item as input.</param>
     /// <param name="comparer">Used to compare whether two items are equal, or the default <see cref="EqualityComparer{T}"/> if <c>null</c>.</param>
     /// <returns>An enumerable containing the items from <paramref name="source"/> in order, but with consecutive duplicate items excluded, or an empty enumerable if <paramref name="source"/> is empty.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static IEnumerable<T> DistinctConsecutive<T, TKey>(this IEnumerable<T> source, Func<T, TKey> keySelector, IEqualityComparer<TKey>? comparer = null) {
         comparer ??= EqualityComparer<TKey>.Default;
         TKey? previousKey = default;
@@ -235,7 +335,7 @@ public static partial class Enumerables {
     /// <param name="source">An <see cref="IAsyncEnumerator{T}"/> of finite size.</param>
     /// <typeparam name="T">Type of items in <paramref name="source"/>.</typeparam>
     /// <returns>A read-only list containing all of the items from <paramref name="source"/> in order, or an empty list if <paramref name="source"/> returned no items.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static async Task<IReadOnlyList<T>> ToList<T>(this IAsyncEnumerator<T> source) {
         if (!await source.MoveNextAsync().ConfigureAwait(false)) {
             return [];
@@ -254,7 +354,7 @@ public static partial class Enumerables {
     /// <typeparam name="TSource">type of item in <paramref name="source"/></typeparam>
     /// <param name="source">sequence of items</param>
     /// <returns>the first item in <paramref name="source"/>, or <c>null</c> if it is empty</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TSource? FirstOrNull<TSource>(this IEnumerable<TSource> source) where TSource: struct {
         try {
             return source.First();
@@ -270,7 +370,7 @@ public static partial class Enumerables {
     /// <param name="source">sequence of items</param>
     /// <param name="predicate">function that should return <c>true</c> when the passed in item from <paramref name="source"/> should be returned, or <c>false</c> to not return it</param>
     /// <returns>the first item in <paramref name="source"/> that causes <paramref name="predicate"/> to return <c>true</c>, or <c>null</c> if it is empty or every item causes <paramref name="predicate"/> to return <c>false</c></returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TSource? FirstOrNull<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) where TSource: struct {
         try {
             return source.First(predicate);
@@ -285,7 +385,7 @@ public static partial class Enumerables {
     /// <typeparam name="TSource">type of item in <paramref name="source"/></typeparam>
     /// <param name="source">sequence of items</param>
     /// <returns>the last item in <paramref name="source"/>, or <c>null</c> if it is empty</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TSource? LastOrNull<TSource>(this IEnumerable<TSource> source) where TSource: struct {
         try {
             return source.Last();
@@ -301,7 +401,7 @@ public static partial class Enumerables {
     /// <param name="source">sequence of items</param>
     /// <param name="predicate">function that should return <c>true</c> when the passed in item from <paramref name="source"/> should be returned, or <c>false</c> to not return it</param>
     /// <returns>the last item in <paramref name="source"/> that causes <paramref name="predicate"/> to return <c>true</c>, or <c>null</c> if it is empty or every item causes <paramref name="predicate"/> to return <c>false</c></returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TSource? LastOrNull<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) where TSource: struct {
         try {
             return source.Last(predicate);
@@ -316,7 +416,7 @@ public static partial class Enumerables {
     /// <typeparam name="TSource">type of item in <paramref name="source"/></typeparam>
     /// <param name="source">sequence of items</param>
     /// <returns>the only item in <paramref name="source"/>, or <c>null</c> if it is empty or contains more than one item</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TSource? SingleOrNull<TSource>(this IEnumerable<TSource> source) where TSource: struct {
         try {
             return source.Single();
@@ -332,7 +432,7 @@ public static partial class Enumerables {
     /// <param name="source">sequence of items</param>
     /// <param name="predicate">function that should return <c>true</c> when the passed in item from <paramref name="source"/> should be returned, or <c>false</c> to not return it</param>
     /// <returns>the only item in <paramref name="source"/> that causes <paramref name="predicate"/> to return <c>true</c>; or <c>null</c> if either <paramref name="source"/> is empty, every item causes <paramref name="predicate"/> to return <c>false</c>, or more than one item causes <paramref name="predicate"/> to return <c>true</c></returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TSource? SingleOrNull<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) where TSource: struct {
         try {
             return source.Single(predicate);
@@ -348,7 +448,7 @@ public static partial class Enumerables {
     /// <param name="source">Sequence of items</param>
     /// <param name="index">The 0-indexed position of the item in <paramref name="source"/> to return</param>
     /// <returns>The item at position <paramref name="index"/> in <paramref name="source"/>, or <c>null</c> if <paramref name="index"/> is an invalid index in <paramref name="source"/>, either because the length of <paramref name="source"/> is less than or equal to <paramref name="index"/>, or because <paramref name="index"/> is negative</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TSource? ElementAtOrNull<TSource>(this IEnumerable<TSource> source, int index) where TSource: struct {
         try {
             return source.ElementAt(index);
@@ -359,7 +459,7 @@ public static partial class Enumerables {
 
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER
     /// <inheritdoc cref="ElementAtOrNull{TSource}(System.Collections.Generic.IEnumerable{TSource},int)" />
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TSource? ElementAtOrNull<TSource>(this IEnumerable<TSource> source, Index index) where TSource: struct {
         try {
             return source.ElementAt(index);
@@ -375,7 +475,7 @@ public static partial class Enumerables {
     /// <typeparam name="T">Type of elements in the enumerable</typeparam>
     /// <param name="source">Enumerable with zero or more elements.</param>
     /// <returns>A tuple with two items. The first item, <c>head</c>, is the first element of <paramref name="source"/>, or <c>null</c> if <paramref name="source"/> is empty. The second item, <c>tail</c>, is an enumerable of the remaining elements of <paramref name="source"/>, or an empty enumerable if <paramref name="source"/> has fewer than 2 elements.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static (T? head, IEnumerable<T> tail) HeadAndTail<T>(this IEnumerable<T> source) where T: class? {
         using IEnumerator<T> enumerator = source.GetEnumerator();
         return (head: enumerator.MoveNext() ? enumerator.Current : null, tail: new Enumerable<T>(enumerator));
@@ -387,7 +487,7 @@ public static partial class Enumerables {
     /// <typeparam name="T">Type of elements in the enumerable</typeparam>
     /// <param name="source">Enumerable with zero or more elements.</param>
     /// <returns>A tuple with two items. The first item, <c>head</c>, is the first element of <paramref name="source"/>, or <c>null</c> if <paramref name="source"/> is empty. The second item, <c>tail</c>, is an enumerable of the remaining elements of <paramref name="source"/>, or an empty enumerable if <paramref name="source"/> has fewer than 2 elements.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static (T? head, IEnumerable<T> tail) HeadAndTailStruct<T>(this IEnumerable<T> source) where T: struct {
         using IEnumerator<T> enumerator = source.GetEnumerator();
         return (head: enumerator.MoveNext() ? enumerator.Current : null, tail: new Enumerable<T>(enumerator));
@@ -399,7 +499,7 @@ public static partial class Enumerables {
     /// <typeparam name="T">Type of elements in the enumerable</typeparam>
     /// <param name="source">Enumerable with zero or more elements.</param>
     /// <returns>A tuple with two items. The first item, <c>head</c>, is the first element of <paramref name="source"/>, or <c>null</c> if <paramref name="source"/> is empty. The second item, <c>tail</c>, is an enumerable of the remaining elements of <paramref name="source"/>, or an empty enumerable if <paramref name="source"/> has fewer than 2 elements.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static (T? head, IEnumerable<T?> tail) HeadAndTailStruct<T>(this IEnumerable<T?> source) where T: struct {
         using IEnumerator<T?> enumerator = source.GetEnumerator();
         return (head: enumerator.MoveNext() ? enumerator.Current : null, tail: new Enumerable<T?>(enumerator));
@@ -422,7 +522,7 @@ public static partial class Enumerables {
     /// <param name="newList">the new state of the list</param>
     /// <param name="isEqual">equality comparer for an item pair</param>
     /// <returns>a tuple of items that were <c>created</c> (in <paramref name="newList"/> but not in <paramref name="oldList"/>), <c>updated</c> (in both <paramref name="newList"/> and <paramref name="oldList"/> but not equal because at least one property changed), <c>deleted</c> (in <paramref name="oldList"/> but not in <paramref name="newList"/>), and <c>unmodified</c> (in both <paramref name="newList"/> and <paramref name="oldList"/>, and equal because no properties changed). Sorting of input items is preserved in outputs, except <c>deleted</c>, which is in an undefined order.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static (IEnumerable<T> created, IEnumerable<T> updated, IEnumerable<T> deleted, IEnumerable<T> unmodified) DeltaWith<T>(
         this IEnumerable<T> oldList, IEnumerable<T> newList, IEqualityComparer<T>? isEqual = null) where T: notnull => oldList.DeltaWith(newList, item => item, isEqual);
 
@@ -437,7 +537,7 @@ public static partial class Enumerables {
     /// <param name="idSelector">get the <typeparamref name="TId"/> from items in <paramref name="oldList"/> and <paramref name="newList"/></param>
     /// <param name="isEqual">equality comparer for an item pair</param>
     /// <returns>a tuple of items that were <c>created</c> (in <paramref name="newList"/> but not in <paramref name="oldList"/>), <c>updated</c> (in both <paramref name="newList"/> and <paramref name="oldList"/> but not equal because at least one property changed), <c>deleted</c> (in <paramref name="oldList"/> but not in <paramref name="newList"/>), and <c>unmodified</c> (in both <paramref name="newList"/> and <paramref name="oldList"/>, and equal because no properties changed). Sorting of input items is preserved in outputs, except <c>deleted</c>, which is in an undefined order.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static (IEnumerable<T> created, IEnumerable<T> updated, IEnumerable<T> deleted, IEnumerable<T> unmodified) DeltaWith<T, TId>(
         this IEnumerable<T> oldList, IEnumerable<T> newList, Func<T, TId> idSelector, IEqualityComparer<T>? isEqual = null) where T: notnull where TId: notnull =>
         oldList.DeltaWith(newList, idSelector, idSelector, (isEqual ?? EqualityComparer<T>.Default).Equals);
@@ -455,7 +555,7 @@ public static partial class Enumerables {
     /// <param name="newIdSelector">get the <typeparamref name="TNew"/> ID from items in <paramref name="newList"/></param>
     /// <param name="isEqual">equality comparer for an <typeparamref name="TOld"/> and <typeparamref name="TNew"/> item pair</param>
     /// <returns>a tuple of items that were <c>created</c> (in <paramref name="newList"/> but not in <paramref name="oldList"/>), <c>updated</c> (in both <paramref name="newList"/> and <paramref name="oldList"/> but not equal because at least one property changed), <c>deleted</c> (in <paramref name="oldList"/> but not in <paramref name="newList"/>), and <c>unmodified</c> (in both <paramref name="newList"/> and <paramref name="oldList"/>, and equal because no properties changed). Sorting of input items is preserved in outputs, except <c>deleted</c>, which is in an undefined order.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static (IEnumerable<TNew> created, IEnumerable<TNew> updated, IEnumerable<TOld> deleted, IEnumerable<TOld> unmodified) DeltaWith<TOld, TNew, TId>(
         this IEnumerable<TOld> oldList, IEnumerable<TNew> newList, Func<TOld, TId> oldIdSelector, Func<TNew, TId> newIdSelector, Func<TOld, TNew, bool>? isEqual = null)
         where TOld: notnull where TNew: notnull where TId: notnull {
@@ -484,7 +584,7 @@ public static partial class Enumerables {
         return (created, updated, deleted, unmodified);
     }
 
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static IReadOnlyList<T> AsReadOnly<T>(this IList<T> writableList) =>
 #if NET8_0_OR_GREATER
         CollectionExtensions.AsReadOnly(writableList);
@@ -492,7 +592,7 @@ public static partial class Enumerables {
         new ReadOnlyCollection<T>(writableList);
 #endif
 
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static IReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> writableDict) where TKey: notnull =>
 #if NET8_0_OR_GREATER
         CollectionExtensions.AsReadOnly(writableDict);
@@ -506,7 +606,7 @@ public static partial class Enumerables {
     /// <typeparam name="T">Exact concrete type of objects to return.</typeparam>
     /// <param name="source">Enumerable of zero or more objects.</param>
     /// <returns>An enumerable that contains all the elements from <paramref name="source"/>, in order, which are exactly of type <typeparamref name="T"/>.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static IEnumerable<T> OfTypeExactly<T>(this IEnumerable source) =>
         OfTypeExactly(source, typeof(T)).Cast<T>();
 
@@ -516,7 +616,7 @@ public static partial class Enumerables {
     /// <param name="source">Enumerable of zero or more objects.</param>
     /// <param name="exactType">Exact concrete type of objects to return.</param>
     /// <returns>An enumerable that contains all the elements from <paramref name="source"/>, in order, which are exactly of type <paramref name="exactType"/>.</returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static IEnumerable OfTypeExactly(this IEnumerable source, Type exactType) =>
         source.Cast<object?>().Where(item => item?.GetType() == exactType);
 
@@ -529,7 +629,7 @@ public static partial class Enumerables {
     /// <param name="dictionary">readable dictionary that may contain <paramref name="key"/></param>
     /// <param name="key">key to look up in the <paramref name="dictionary"/></param>
     /// <returns>the value of <paramref name="key"/> in <paramref name="dictionary"/>, or <c>null</c> if <paramref name="key"/> was not found in <paramref name="dictionary"/></returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TValue? GetValueOrNull<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) where TValue: class =>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
         dictionary.GetValueOrDefault(key);
@@ -538,7 +638,7 @@ public static partial class Enumerables {
 #endif
 
     /// <inheritdoc cref="GetValueOrNull{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TValue? GetValueOrNull<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) where TValue: class where TKey: notnull =>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
         dictionary.AsReadOnly().GetValueOrDefault(key);
@@ -547,7 +647,7 @@ public static partial class Enumerables {
 #endif
 
     /// <inheritdoc cref="GetValueOrNull{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TValue? GetValueOrNull<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key) where TValue: class where TKey: notnull =>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
         dictionary.GetValueOrDefault(key);
@@ -564,36 +664,36 @@ public static partial class Enumerables {
     /// <param name="dictionary">readable dictionary that may contain <paramref name="key"/></param>
     /// <param name="key">key to look up in the <paramref name="dictionary"/></param>
     /// <returns>the value of <paramref name="key"/> in <paramref name="dictionary"/>, or <c>null</c> if <paramref name="key"/> was not found in <paramref name="dictionary"/></returns>
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TValue? GetValueOrNullStruct<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) where TValue: struct =>
         dictionary.TryGetValue(key, out TValue value) ? value : null;
 
     /// <inheritdoc cref="GetValueOrNullStruct{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TValue? GetValueOrNullStruct<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue?> dictionary, TKey key) where TValue: struct {
         dictionary.TryGetValue(key, out TValue? value);
         return value;
     }
 
     /// <inheritdoc cref="GetValueOrNullStruct{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TValue? GetValueOrNullStruct<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) where TValue: struct =>
         dictionary.TryGetValue(key, out TValue value) ? value : null;
 
     /// <inheritdoc cref="GetValueOrNullStruct{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TValue? GetValueOrNullStruct<TKey, TValue>(this IDictionary<TKey, TValue?> dictionary, TKey key) where TValue: struct {
         dictionary.TryGetValue(key, out TValue? value);
         return value;
     }
 
     /// <inheritdoc cref="GetValueOrNullStruct{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TValue? GetValueOrNullStruct<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key) where TValue: struct where TKey: notnull =>
         dictionary.TryGetValue(key, out TValue value) ? value : null;
 
     /// <inheritdoc cref="GetValueOrNullStruct{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
-    [Pure]
+    [System.Diagnostics.Contracts.Pure]
     public static TValue? GetValueOrNullStruct<TKey, TValue>(this Dictionary<TKey, TValue?> dictionary, TKey key) where TValue: struct where TKey: notnull {
         dictionary.TryGetValue(key, out TValue? value);
         return value;

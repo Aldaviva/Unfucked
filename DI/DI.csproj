@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
@@ -16,7 +16,7 @@
     </ItemGroup>
 
     <Choose>
-        <When Condition="'$(Configuration)' == 'Release'">
+        <When Condition="'$(Configuration)' != 'Debug'">
             <ItemGroup>
                 <PackageReference Include="Unfucked" />
             </ItemGroup>

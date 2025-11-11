@@ -42,6 +42,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
         .First(field => field.FieldType == typeof(HttpMessageHandler)), LazyThreadSafetyMode.PublicationOnly);
 
     private readonly FilterContext baseFilterContext;
+    private readonly bool          disposeInnerHandler;
 
 #if NET8_0_OR_GREATER
     private readonly IMeterFactory? wireLoggingMeterFactory;
@@ -69,14 +70,14 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
      * at test runtime. Default values for other constructor below wouldn't have been called by FakeItEasy. This avoids having to remember to call
      * options.WithArgumentsForConstructor(() => new UnfuckedHttpHandler(null, null)) when creating the fake.
      */
-    public UnfuckedHttpHandler(): this((HttpMessageHandler?) null) { }
+    public UnfuckedHttpHandler(): this(null) { }
 
     // HttpClientHandler automatically uses SocketsHttpHandler on .NET Core ≥ 2.1, or HttpClientHandler otherwise
     public UnfuckedHttpHandler(HttpMessageHandler? innerHandler = null, IClientConfig? configuration = null): base(innerHandler ??
 #if NETCOREAPP2_1_OR_GREATER
         new SocketsHttpHandler {
             PooledConnectionLifetime = TimeSpan.FromHours(1),
-            ConnectTimeout = TimeSpan.FromSeconds(10),
+            ConnectTimeout           = TimeSpan.FromSeconds(10),
             // MaxConnectionsPerServer defaults to MAX_INT, so we don't need to increase it here
 #if NET8_0_OR_GREATER
             MeterFactory = new WireLogFilter.WireLoggingMeterFactory()
@@ -86,8 +87,9 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
         new HttpClientHandler()
 #endif
     ) {
-        ClientConfig      = configuration ?? new ClientConfig();
-        baseFilterContext = new FilterContext(this, ClientConfig);
+        ClientConfig        = configuration ?? new ClientConfig();
+        baseFilterContext   = new FilterContext(this, ClientConfig);
+        disposeInnerHandler = innerHandler == null;
 
 #if NET8_0_OR_GREATER
         if (innerHandler == null) {
@@ -96,10 +98,8 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 #endif
     }
 
-    public UnfuckedHttpHandler(HttpClient toClone, IClientConfig? configuration = null): this((HttpMessageHandler) HTTP_CLIENT_HANDLER_FIELD.Value.GetValue(toClone)!, configuration) { }
-
-    [Pure]
-    public static HttpClient CreateClient(HttpMessageHandler? innerHandler = null) => UnfuckedHttpClient.Create(innerHandler);
+    public static UnfuckedHttpHandler Create(HttpClient toClone, IClientConfig? configuration = null) =>
+        new((HttpMessageHandler) HTTP_CLIENT_HANDLER_FIELD.Value.GetValue(toClone)!, configuration);
 
     internal static IUnfuckedHttpHandler? FindHandler(HttpClient httpClient) {
         if (httpClient is IHttpClient client) {
@@ -193,6 +193,10 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
         if (!disposed) {
             disposed = true;
             if (disposing) {
+                if (disposeInnerHandler) {
+                    InnerHandler?.Dispose();
+                }
+
                 List<KeyValuePair<int, WeakReference<IUnfuckedHttpHandler>?>> evictions =
                     HTTP_CLIENT_HANDLER_CACHE.Where(pair => pair.Value != null && (!pair.Value.TryGetTarget(out IUnfuckedHttpHandler? handler) || handler == this)).ToList();
                 foreach (KeyValuePair<int, WeakReference<IUnfuckedHttpHandler>?> eviction in evictions) {

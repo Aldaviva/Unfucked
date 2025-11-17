@@ -10,7 +10,7 @@ public static partial class Enumerables {
 
     // Normal values like int and object
     /// <summary>
-    /// Create a <see cref="ConcurrentDictionary{TKey,TValue}"/> whose values can be mutated atomically using <see cref="Interlocked"/>, especially using the extension methods like <see cref="Swap{TKey,TValue}"/>.
+    /// Create a <see cref="ConcurrentDictionary{TKey,TValue}"/> whose values can be mutated atomically using <see cref="Interlocked"/>, especially using the extension methods like <see cref="AtomicSwap{TKey,TValue}"/>.
     /// </summary>
     /// <typeparam name="TKey">Type of the dictionary keys.</typeparam>
     /// <typeparam name="TValue">
@@ -22,7 +22,7 @@ public static partial class Enumerables {
     /// <param name="capacity">Optional expected maximum number of keys that this dictionary will contain, useful to prevent resizing as key-value pairs are added. Will be ignored if <paramref name="initialElements"/> is not <c>null</c>.</param>
     /// <param name="keyComparer">Optional <see cref="IEqualityComparer{T}"/> to determine if two keys are the same.</param>
     /// <param name="concurrency">Optional maximum number of threads that are expected to access this dictionary concurrently, defaults to the total CPU thread count.</param>
-    /// <returns>A <see cref="ConcurrentDictionary{TKey,TValue}"/> whose values can be mutated atomically using <see cref="Swap{TKey,TValue}"/>.</returns>
+    /// <returns>A <see cref="ConcurrentDictionary{TKey,TValue}"/> whose values can be mutated atomically using <see cref="AtomicSwap{TKey,TValue}"/>.</returns>
     [Pure]
     public static ConcurrentDictionary<TKey, ValueHolder<TValue>> CreateConcurrentDictionary<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>>? initialElements = null, int concurrency = -1,
                                                                                                            int? capacity = null, IEqualityComparer<TKey>? keyComparer = null) where TKey: notnull {
@@ -42,7 +42,7 @@ public static partial class Enumerables {
 
     // Boolean values
     /// <summary>
-    /// <para>Create a <see cref="ConcurrentDictionary{TKey,TValue}"/> whose <see cref="bool"/> values can be mutated atomically using <see cref="Interlocked"/>, especially using the extension methods like <see cref="Swap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.BooleanValueHolder},TKey,bool)"/>.</para>
+    /// <para>Create a <see cref="ConcurrentDictionary{TKey,TValue}"/> whose <see cref="bool"/> values can be mutated atomically using <see cref="Interlocked"/>, especially using the extension methods like <see cref="AtomicSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.BooleanValueHolder},TKey,bool)"/>.</para>
     /// <para>If you get an ambiguous invocation error, try calling <see cref="CreateConcurrentBooleanDictionary{TKey}"/>.</para>
     /// </summary>
     /// <typeparam name="TKey">Type of the dictionary keys.</typeparam>
@@ -51,7 +51,7 @@ public static partial class Enumerables {
     /// <param name="capacity">Optional expected maximum number of keys that this dictionary will contain, useful to prevent resizing as key-value pairs are added. Will be ignored if <paramref name="initialElements"/> is not <c>null</c>.</param>
     /// <param name="keyComparer">Optional <see cref="IEqualityComparer{T}"/> to determine if two keys are the same.</param>
     /// <param name="concurrency">Optional maximum number of threads that are expected to access this dictionary concurrently, defaults to the total CPU thread count.</param>
-    /// <returns>A <see cref="ConcurrentDictionary{TKey,TValue}"/> whose values can be mutated atomically using <see cref="Swap{TKey,TValue}"/>.</returns>
+    /// <returns>A <see cref="ConcurrentDictionary{TKey,TValue}"/> whose values can be mutated atomically using <see cref="AtomicSwap{TKey,TValue}"/>.</returns>
     [Pure]
     public static ConcurrentDictionary<TKey, BooleanValueHolder> CreateConcurrentDictionary<TKey, TValue>(IEnumerable<KeyValuePair<TKey, bool>>? initialElements = null, int concurrency = -1,
                                                                                                           int? capacity = null, IEqualityComparer<TKey>? keyComparer = null)
@@ -72,14 +72,14 @@ public static partial class Enumerables {
 
     // Boolean values helper for ambiguous signature error
     /// <summary>
-    /// <para>Create a <see cref="ConcurrentDictionary{TKey,TValue}"/> whose <see cref="bool"/> values can be mutated atomically using <see cref="Interlocked"/>, especially using the extension methods like <see cref="Swap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.BooleanValueHolder},TKey,bool)"/>.</para>
+    /// <para>Create a <see cref="ConcurrentDictionary{TKey,TValue}"/> whose <see cref="bool"/> values can be mutated atomically using <see cref="Interlocked"/>, especially using the extension methods like <see cref="AtomicSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.BooleanValueHolder},TKey,bool)"/>.</para>
     /// </summary>
     /// <typeparam name="TKey">Type of the dictionary keys.</typeparam>
     /// <param name="initialElements">Optional key-value pairs to initially add to the new dictionary.</param>
     /// <param name="capacity">Optional expected maximum number of keys that this dictionary will contain, useful to prevent resizing as key-value pairs are added. Will be ignored if <paramref name="initialElements"/> is not <c>null</c>.</param>
     /// <param name="keyComparer">Optional <see cref="IEqualityComparer{T}"/> to determine if two keys are the same.</param>
     /// <param name="concurrency">Optional maximum number of threads that are expected to access this dictionary concurrently, defaults to the total CPU thread count.</param>
-    /// <returns>A <see cref="ConcurrentDictionary{TKey,TValue}"/> whose values can be mutated atomically using <see cref="Swap{TKey,TValue}"/>.</returns>
+    /// <returns>A <see cref="ConcurrentDictionary{TKey,TValue}"/> whose values can be mutated atomically using <see cref="AtomicSwap{TKey,TValue}"/>.</returns>
     [Pure]
     public static ConcurrentDictionary<TKey, BooleanValueHolder> CreateConcurrentBooleanDictionary<TKey>(IEnumerable<KeyValuePair<TKey, bool>>? initialElements = null, int concurrency = -1,
                                                                                                          int? capacity = null, IEqualityComparer<TKey>? keyComparer = null) where TKey: notnull {
@@ -88,7 +88,7 @@ public static partial class Enumerables {
 
     // Enum values
     /// <summary>
-    /// Create a <see cref="ConcurrentDictionary{TKey,TValue}"/> whose <see cref="Enum"/> values can be mutated atomically using <see cref="Swap{TKey,TIntegralValue,TValue}"/> or <see cref="Interlocked"/>.
+    /// Create a <see cref="ConcurrentDictionary{TKey,TValue}"/> whose <see cref="Enum"/> values can be mutated atomically using <see cref="AtomicSwap{TKey,TIntegralValue,TValue}"/> or <see cref="Interlocked"/>.
     /// </summary>
     /// <typeparam name="TKey">Type of the dictionary keys.</typeparam>
     /// <typeparam name="TEnumValue">Type of the dictionary <see cref="Enum"/> values, like <c>MyEnum</c> (not the underlying integral type like <see cref="int"/>).</typeparam>
@@ -97,7 +97,7 @@ public static partial class Enumerables {
     /// <param name="capacity">Optional expected maximum number of keys that this dictionary will contain, useful to prevent resizing as key-value pairs are added. Will be ignored if <paramref name="initialElements"/> is not <c>null</c>.</param>
     /// <param name="keyComparer">Optional <see cref="IEqualityComparer{T}"/> to determine if two keys are the same.</param>
     /// <param name="concurrency">Optional maximum number of threads that are expected to access this dictionary concurrently, defaults to the total CPU thread count.</param>
-    /// <returns>A <see cref="ConcurrentDictionary{TKey,TValue}"/> whose values can be mutated atomically using <see cref="Swap{TKey,TValue}"/>.</returns>
+    /// <returns>A <see cref="ConcurrentDictionary{TKey,TValue}"/> whose values can be mutated atomically using <see cref="AtomicSwap{TKey,TValue}"/>.</returns>
     /// <exception cref="InvalidCastException"><typeparamref name="TIntegralValue"/> does not match the underlying type of <typeparamref name="TEnumValue"/>.</exception>
     [Pure]
     public static ConcurrentDictionary<TKey, EnumValueHolder<TEnumValue, TIntegralValue>> CreateConcurrentEnumDictionary<TKey, TEnumValue, TIntegralValue>(
@@ -138,7 +138,7 @@ public static partial class Enumerables {
     /// <param name="key">The key whose value you want to replace.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value of the <paramref name="key"/> that was swapped out of <paramref name="dictionary"/>, replaced by <paramref name="newValue"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain this <paramref name="key"/>.</returns>
-    public static TValue? Swap<TKey, TIntegralValue, TValue>(this ConcurrentDictionary<TKey, EnumValueHolder<TValue, TIntegralValue>> dictionary, TKey key, TValue newValue)
+    public static TValue? AtomicSwap<TKey, TIntegralValue, TValue>(this ConcurrentDictionary<TKey, EnumValueHolder<TValue, TIntegralValue>> dictionary, TKey key, TValue newValue)
         where TKey: notnull where TValue: struct, Enum where TIntegralValue: struct {
         var     newHolder = new EnumValueHolder<TValue, TIntegralValue>(newValue);
         TValue? oldValue;
@@ -152,7 +152,7 @@ public static partial class Enumerables {
     }
 
     /// <summary>
-    /// Atomically compare and swap a new <see cref="Enum"/> value into a dictionary with a given key, only if the existing value equals a given value, and returning the old value. If the dictionary does not already contain this key, it will not be inserted, and <c>null</c> will be returned.
+    /// Atomically compare and swap a new <see cref="Enum"/> value into a dictionary with a given key, only if the existing value equals a given value, and return the old value. If the dictionary does not already contain this key, it will not be inserted, and <c>null</c> will be returned.
     /// </summary>
     /// <typeparam name="TKey">Type of the dictionary keys.</typeparam>
     /// <typeparam name="TValue"><see cref="Enum"/> type of the dictionary values such as <c>MyEnum</c>, rather than the underlying integral type such as <see cref="int"/>. These will be wrapped in a <see cref="EnumValueHolder{T,T}"/> to allow for mutations.</typeparam>
@@ -162,7 +162,8 @@ public static partial class Enumerables {
     /// <param name="oldValue">The old value that must be equal to the existing value in the dictionary in order to swap it.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value <paramref name="oldValue"/>, which is the old value of <paramref name="key"/> in <paramref name="dictionary"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain the key <paramref name="key"/> so no insertion or swapping occurred.</returns>
-    public static TValue? CompareAndSwap<TKey, TIntegralValue, TValue>(this ConcurrentDictionary<TKey, EnumValueHolder<TValue, TIntegralValue>> dictionary, TKey key, TValue oldValue, TValue newValue)
+    public static TValue? AtomicCompareAndSwap<TKey, TIntegralValue, TValue>(this ConcurrentDictionary<TKey, EnumValueHolder<TValue, TIntegralValue>> dictionary, TKey key, TValue oldValue,
+                                                                             TValue newValue)
         where TKey: notnull where TValue: struct, Enum where TIntegralValue: struct =>
         dictionary.TryGetValue(key, out EnumValueHolder<TValue, TIntegralValue>? existingHolder) ? existingHolder.CompareExchange(oldValue, newValue) : null;
 
@@ -174,7 +175,7 @@ public static partial class Enumerables {
     /// <param name="key">The key whose value you want to replace.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value of the <paramref name="key"/> that was swapped out of <paramref name="dictionary"/>, replaced by <paramref name="newValue"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain this <paramref name="key"/>.</returns>
-    public static bool? Swap<TKey>(this ConcurrentDictionary<TKey, BooleanValueHolder> dictionary, TKey key, bool newValue) where TKey: notnull {
+    public static bool? AtomicSwap<TKey>(this ConcurrentDictionary<TKey, BooleanValueHolder> dictionary, TKey key, bool newValue) where TKey: notnull {
         BooleanValueHolder newHolder = new(newValue);
         bool?              oldValue;
         bool               inserted;
@@ -187,7 +188,7 @@ public static partial class Enumerables {
     }
 
     /// <summary>
-    /// Atomically compare and swap a new boolean value into a dictionary with a given key, only if the existing value equals a given value, and returning the old value. If the dictionary does not already contain this key, it will not be inserted, and <c>null</c> will be returned.
+    /// Atomically compare and swap a new boolean value into a dictionary with a given key, only if the existing value equals a given value, and return the old value. If the dictionary does not already contain this key, it will not be inserted, and <c>null</c> will be returned.
     /// </summary>
     /// <typeparam name="TKey">Type of the dictionary keys.</typeparam>
     /// <param name="dictionary">A <see cref="ConcurrentDictionary{TKey,TValue}"/> created by <see cref="CreateConcurrentBooleanDictionary{TKey}"/>.</param>
@@ -195,7 +196,7 @@ public static partial class Enumerables {
     /// <param name="oldValue">The old value that must be equal to the existing value in the dictionary in order to swap it.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value <paramref name="oldValue"/>, which is the old value of <paramref name="key"/> in <paramref name="dictionary"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain the key <paramref name="key"/> so no insertion or swapping occurred.</returns>
-    public static bool? CompareAndSwap<TKey>(this ConcurrentDictionary<TKey, BooleanValueHolder> dictionary, TKey key, bool oldValue, bool newValue) where TKey: notnull =>
+    public static bool? AtomicCompareAndSwap<TKey>(this ConcurrentDictionary<TKey, BooleanValueHolder> dictionary, TKey key, bool oldValue, bool newValue) where TKey: notnull =>
         dictionary.TryGetValue(key, out BooleanValueHolder? existingHolder) ? existingHolder.CompareExchange(oldValue, newValue) : null;
 
     #endregion
@@ -210,7 +211,7 @@ public static partial class Enumerables {
     /// <param name="key">The key whose value you want to replace.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value of the <paramref name="key"/> that was swapped out of <paramref name="dictionary"/>, replaced by <paramref name="newValue"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain this <paramref name="key"/>.</returns>
-    public static long? Swap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<long>> dictionary, TKey key, long newValue) where TKey: notnull {
+    public static long? AtomicSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<long>> dictionary, TKey key, long newValue) where TKey: notnull {
         var   newHolder = new ValueHolder<long>(newValue);
         long? oldValue;
         bool  inserted;
@@ -223,7 +224,7 @@ public static partial class Enumerables {
     }
 
     /// <summary>
-    /// Atomically compare and swap a new value into a dictionary with a given key, only if the existing value equals a given value, and returning the old value. If the dictionary does not already contain this key, it will not be inserted, and <c>null</c> will be returned.
+    /// Atomically compare and swap a new value into a dictionary with a given key, only if the existing value equals a given value, and return the old value. If the dictionary does not already contain this key, it will not be inserted, and <c>null</c> will be returned.
     /// </summary>
     /// <typeparam name="TKey">Type of the dictionary keys.</typeparam>
     /// <param name="dictionary">A <see cref="ConcurrentDictionary{TKey,TValue}"/>, possibly created by <see cref="CreateConcurrentDictionary{TKey,TValue}(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{TKey,TValue}}?,int,int?,System.Collections.Generic.IEqualityComparer{TKey}?)"/>.</param>
@@ -231,8 +232,39 @@ public static partial class Enumerables {
     /// <param name="oldValue">The old value that must be equal to the existing value in the dictionary in order to swap it.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value <paramref name="oldValue"/>, which is the old value of <paramref name="key"/> in <paramref name="dictionary"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain the key <paramref name="key"/> so no insertion or swapping occurred.</returns>
-    public static long? CompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<long>> dictionary, TKey key, long oldValue, long newValue) where TKey: notnull =>
+    public static long? AtomicCompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<long>> dictionary, TKey key, long oldValue, long newValue) where TKey: notnull =>
         dictionary.TryGetValue(key, out ValueHolder<long>? existingHolder) ? Interlocked.CompareExchange(ref existingHolder.Value, newValue, oldValue) : null;
+
+    /// <summary>
+    /// Atomically add a number to the existing value in the dictionary with the given key and return the new value. If the dictionary does not already contain this key, it will not be inserted, and <c>null</c> will be returned.
+    /// </summary>
+    /// <typeparam name="TKey">Type of the dictionary keys.</typeparam>
+    /// <param name="dictionary">A <see cref="ConcurrentDictionary{TKey,TValue}"/>, possibly created by <see cref="CreateConcurrentDictionary{TKey,TValue}(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{TKey,TValue}}?,int,int?,System.Collections.Generic.IEqualityComparer{TKey}?)"/>.</param>
+    /// <param name="key">The key whose value you want to conditionally replace.</param>
+    /// <param name="toAdd">The number that you want to add to the existing value in the dictionary.</param>
+    /// <returns>The sum of the old existing value and <paramref name="toAdd"/>, which is also the new value of <paramref name="key"/> in <paramref name="dictionary"/>; does not return the old value.</returns>
+    public static long? AtomicAdd<TKey>(this ConcurrentDictionary<TKey, ValueHolder<long>> dictionary, TKey key, long toAdd) where TKey: notnull =>
+        dictionary.TryGetValue(key, out ValueHolder<long>? existingHolder) ? Interlocked.Add(ref existingHolder.Value, toAdd) : null;
+
+    /// <summary>
+    /// Atomically add one to the existing value in the dictionary with the given key and return the new value. If the dictionary does not already contain this key, it will not be inserted, and <c>null</c> will be returned.
+    /// </summary>
+    /// <typeparam name="TKey">Type of the dictionary keys.</typeparam>
+    /// <param name="dictionary">A <see cref="ConcurrentDictionary{TKey,TValue}"/>, possibly created by <see cref="CreateConcurrentDictionary{TKey,TValue}(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{TKey,TValue}}?,int,int?,System.Collections.Generic.IEqualityComparer{TKey}?)"/>.</param>
+    /// <param name="key">The key whose value you want to conditionally replace.</param>
+    /// <returns>The sum of the old existing value and 1, which is also the new value of <paramref name="key"/> in <paramref name="dictionary"/>; does not return the old value.</returns>
+    public static long? AtomicIncrement<TKey>(this ConcurrentDictionary<TKey, ValueHolder<long>> dictionary, TKey key) where TKey: notnull =>
+        dictionary.TryGetValue(key, out ValueHolder<long>? existingHolder) ? Interlocked.Increment(ref existingHolder.Value) : null;
+
+    /// <summary>
+    /// Atomically subtract one from the existing value in the dictionary with the given key and return the new value. If the dictionary does not already contain this key, it will not be inserted, and <c>null</c> will be returned.
+    /// </summary>
+    /// <typeparam name="TKey">Type of the dictionary keys.</typeparam>
+    /// <param name="dictionary">A <see cref="ConcurrentDictionary{TKey,TValue}"/>, possibly created by <see cref="CreateConcurrentDictionary{TKey,TValue}(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{TKey,TValue}}?,int,int?,System.Collections.Generic.IEqualityComparer{TKey}?)"/>.</param>
+    /// <param name="key">The key whose value you want to conditionally replace.</param>
+    /// <returns>The difference of the old existing value and 1, which is also the new value of <paramref name="key"/> in <paramref name="dictionary"/>; does not return the old value.</returns>
+    public static long? AtomicDecrement<TKey>(this ConcurrentDictionary<TKey, ValueHolder<long>> dictionary, TKey key) where TKey: notnull =>
+        dictionary.TryGetValue(key, out ValueHolder<long>? existingHolder) ? Interlocked.Decrement(ref existingHolder.Value) : null;
 
     /// <summary>
     /// Atomically swap a new value into a dictionary with a given key, getting the old value. If the dictionary does not already contain this key, it will be atomically inserted.
@@ -242,7 +274,7 @@ public static partial class Enumerables {
     /// <param name="key">The key whose value you want to replace.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value of the <paramref name="key"/> that was swapped out of <paramref name="dictionary"/>, replaced by <paramref name="newValue"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain this <paramref name="key"/>.</returns>
-    public static int? Swap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<int>> dictionary, TKey key, int newValue) where TKey: notnull {
+    public static int? AtomicSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<int>> dictionary, TKey key, int newValue) where TKey: notnull {
         var  newHolder = new ValueHolder<int>(newValue);
         int? oldValue;
         bool inserted;
@@ -254,9 +286,21 @@ public static partial class Enumerables {
         return oldValue;
     }
 
-    /// <inheritdoc cref="CompareAndSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long,long)" />
-    public static int? CompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<int>> dictionary, TKey key, int oldValue, int newValue) where TKey: notnull =>
+    /// <inheritdoc cref="AtomicCompareAndSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long,long)" />
+    public static int? AtomicCompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<int>> dictionary, TKey key, int oldValue, int newValue) where TKey: notnull =>
         dictionary.TryGetValue(key, out ValueHolder<int>? existingHolder) ? Interlocked.CompareExchange(ref existingHolder.Value, newValue, oldValue) : null;
+
+    /// <inheritdoc cref="AtomicAdd{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long)" />
+    public static int? AtomicAdd<TKey>(this ConcurrentDictionary<TKey, ValueHolder<int>> dictionary, TKey key, int toAdd) where TKey: notnull =>
+        dictionary.TryGetValue(key, out ValueHolder<int>? existingHolder) ? Interlocked.Add(ref existingHolder.Value, toAdd) : null;
+
+    /// <inheritdoc cref="AtomicIncrement{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey)" />
+    public static int? AtomicIncrement<TKey>(this ConcurrentDictionary<TKey, ValueHolder<int>> dictionary, TKey key) where TKey: notnull =>
+        dictionary.TryGetValue(key, out ValueHolder<int>? existingHolder) ? Interlocked.Increment(ref existingHolder.Value) : null;
+
+    /// <inheritdoc cref="AtomicDecrement{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey)" />
+    public static int? AtomicDecrement<TKey>(this ConcurrentDictionary<TKey, ValueHolder<int>> dictionary, TKey key) where TKey: notnull =>
+        dictionary.TryGetValue(key, out ValueHolder<int>? existingHolder) ? Interlocked.Decrement(ref existingHolder.Value) : null;
 
     /// <summary>
     /// Atomically swap a new value into a dictionary with a given key, getting the old value. If the dictionary does not already contain this key, it will be atomically inserted.
@@ -266,7 +310,7 @@ public static partial class Enumerables {
     /// <param name="key">The key whose value you want to replace.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value of the <paramref name="key"/> that was swapped out of <paramref name="dictionary"/>, replaced by <paramref name="newValue"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain this <paramref name="key"/>.</returns>
-    public static double? Swap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<double>> dictionary, TKey key, double newValue) where TKey: notnull {
+    public static double? AtomicSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<double>> dictionary, TKey key, double newValue) where TKey: notnull {
         var     newHolder = new ValueHolder<double>(newValue);
         double? oldValue;
         bool    inserted;
@@ -278,11 +322,11 @@ public static partial class Enumerables {
         return oldValue;
     }
 
-    /// <inheritdoc cref="CompareAndSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long,long)" />
-    public static double? CompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<double>> dictionary, TKey key, double oldValue, double newValue) where TKey: notnull =>
+    /// <inheritdoc cref="AtomicCompareAndSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long,long)" />
+    public static double? AtomicCompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<double>> dictionary, TKey key, double oldValue, double newValue) where TKey: notnull =>
         dictionary.TryGetValue(key, out ValueHolder<double>? existingHolder) ? Interlocked.CompareExchange(ref existingHolder.Value, newValue, oldValue) : null;
 
-#if NET6_0_OR_GREATER
+#if NET5_0_OR_GREATER
     /// <summary>
     /// Atomically swap a new value into a dictionary with a given key, getting the old value. If the dictionary does not already contain this key, it will be atomically inserted.
     /// </summary>
@@ -291,7 +335,7 @@ public static partial class Enumerables {
     /// <param name="key">The key whose value you want to replace.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value of the <paramref name="key"/> that was swapped out of <paramref name="dictionary"/>, replaced by <paramref name="newValue"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain this <paramref name="key"/>.</returns>
-    public static uint? Swap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<uint>> dictionary, TKey key, uint newValue) where TKey: notnull {
+    public static uint? AtomicSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<uint>> dictionary, TKey key, uint newValue) where TKey: notnull {
         var   newHolder = new ValueHolder<uint>(newValue);
         uint? oldValue;
         bool  inserted;
@@ -303,9 +347,21 @@ public static partial class Enumerables {
         return oldValue;
     }
 
-    /// <inheritdoc cref="CompareAndSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long,long)" />
-    public static uint? CompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<uint>> dictionary, TKey key, uint oldValue, uint newValue) where TKey: notnull =>
+    /// <inheritdoc cref="AtomicCompareAndSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long,long)" />
+    public static uint? AtomicCompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<uint>> dictionary, TKey key, uint oldValue, uint newValue) where TKey: notnull =>
         dictionary.TryGetValue(key, out ValueHolder<uint>? existingHolder) ? Interlocked.CompareExchange(ref existingHolder.Value, newValue, oldValue) : null;
+
+    /// <inheritdoc cref="AtomicAdd{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long)" />
+    public static uint? AtomicAdd<TKey>(this ConcurrentDictionary<TKey, ValueHolder<uint>> dictionary, TKey key, uint toAdd) where TKey: notnull =>
+        dictionary.TryGetValue(key, out ValueHolder<uint>? existingHolder) ? Interlocked.Add(ref existingHolder.Value, toAdd) : null;
+
+    /// <inheritdoc cref="AtomicIncrement{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey)" />
+    public static uint? AtomicIncrement<TKey>(this ConcurrentDictionary<TKey, ValueHolder<uint>> dictionary, TKey key) where TKey: notnull =>
+        dictionary.TryGetValue(key, out ValueHolder<uint>? existingHolder) ? Interlocked.Increment(ref existingHolder.Value) : null;
+
+    /// <inheritdoc cref="AtomicDecrement{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey)" />
+    public static uint? AtomicDecrement<TKey>(this ConcurrentDictionary<TKey, ValueHolder<uint>> dictionary, TKey key) where TKey: notnull =>
+        dictionary.TryGetValue(key, out ValueHolder<uint>? existingHolder) ? Interlocked.Decrement(ref existingHolder.Value) : null;
 
     /// <summary>
     /// Atomically swap a new value into a dictionary with a given key, getting the old value. If the dictionary does not already contain this key, it will be atomically inserted.
@@ -315,7 +371,7 @@ public static partial class Enumerables {
     /// <param name="key">The key whose value you want to replace.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value of the <paramref name="key"/> that was swapped out of <paramref name="dictionary"/>, replaced by <paramref name="newValue"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain this <paramref name="key"/>.</returns>
-    public static ulong? Swap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<ulong>> dictionary, TKey key, ulong newValue) where TKey: notnull {
+    public static ulong? AtomicSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<ulong>> dictionary, TKey key, ulong newValue) where TKey: notnull {
         var    newHolder = new ValueHolder<ulong>(newValue);
         ulong? oldValue;
         bool   inserted;
@@ -327,9 +383,22 @@ public static partial class Enumerables {
         return oldValue;
     }
 
-    /// <inheritdoc cref="CompareAndSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long,long)" />
-    public static ulong? CompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<ulong>> dictionary, TKey key, ulong oldValue, ulong newValue) where TKey: notnull =>
+    /// <inheritdoc cref="AtomicCompareAndSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long,long)" />
+    public static ulong? AtomicCompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<ulong>> dictionary, TKey key, ulong oldValue, ulong newValue) where TKey: notnull =>
         dictionary.TryGetValue(key, out ValueHolder<ulong>? existingHolder) ? Interlocked.CompareExchange(ref existingHolder.Value, newValue, oldValue) : null;
+
+    /// <inheritdoc cref="AtomicAdd{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long)" />
+    public static ulong? AtomicAdd<TKey>(this ConcurrentDictionary<TKey, ValueHolder<ulong>> dictionary, TKey key, ulong toAdd) where TKey: notnull =>
+        dictionary.TryGetValue(key, out ValueHolder<ulong>? existingHolder) ? Interlocked.Add(ref existingHolder.Value, toAdd) : null;
+
+    /// <inheritdoc cref="AtomicIncrement{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey)" />
+    public static ulong? AtomicIncrement<TKey>(this ConcurrentDictionary<TKey, ValueHolder<ulong>> dictionary, TKey key) where TKey: notnull =>
+        dictionary.TryGetValue(key, out ValueHolder<ulong>? existingHolder) ? Interlocked.Increment(ref existingHolder.Value) : null;
+
+    /// <inheritdoc cref="AtomicDecrement{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey)" />
+    public static ulong? AtomicDecrement<TKey>(this ConcurrentDictionary<TKey, ValueHolder<ulong>> dictionary, TKey key) where TKey: notnull =>
+        dictionary.TryGetValue(key, out ValueHolder<ulong>? existingHolder) ? Interlocked.Decrement(ref existingHolder.Value) : null;
+
 #endif
 
     /// <summary>
@@ -340,7 +409,7 @@ public static partial class Enumerables {
     /// <param name="key">The key whose value you want to replace.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value of the <paramref name="key"/> that was swapped out of <paramref name="dictionary"/>, replaced by <paramref name="newValue"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain this <paramref name="key"/>.</returns>
-    public static float? Swap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<float>> dictionary, TKey key, float newValue) where TKey: notnull {
+    public static float? AtomicSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<float>> dictionary, TKey key, float newValue) where TKey: notnull {
         var    newHolder = new ValueHolder<float>(newValue);
         float? oldValue;
         bool   inserted;
@@ -352,8 +421,8 @@ public static partial class Enumerables {
         return oldValue;
     }
 
-    /// <inheritdoc cref="CompareAndSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long,long)" />
-    public static float? CompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<float>> dictionary, TKey key, float oldValue, float newValue) where TKey: notnull =>
+    /// <inheritdoc cref="AtomicCompareAndSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long,long)" />
+    public static float? AtomicCompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<float>> dictionary, TKey key, float oldValue, float newValue) where TKey: notnull =>
         dictionary.TryGetValue(key, out ValueHolder<float>? existingHolder) ? Interlocked.CompareExchange(ref existingHolder.Value, newValue, oldValue) : null;
 
     /// <summary>
@@ -364,7 +433,7 @@ public static partial class Enumerables {
     /// <param name="key">The key whose value you want to replace.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value of the <paramref name="key"/> that was swapped out of <paramref name="dictionary"/>, replaced by <paramref name="newValue"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain this <paramref name="key"/>.</returns>
-    public static IntPtr? Swap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<IntPtr>> dictionary, TKey key, IntPtr newValue) where TKey: notnull {
+    public static IntPtr? AtomicSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<IntPtr>> dictionary, TKey key, IntPtr newValue) where TKey: notnull {
         var     newHolder = new ValueHolder<IntPtr>(newValue);
         IntPtr? oldValue;
         bool    inserted;
@@ -376,8 +445,8 @@ public static partial class Enumerables {
         return oldValue;
     }
 
-    /// <inheritdoc cref="CompareAndSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long,long)" />
-    public static IntPtr? CompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<IntPtr>> dictionary, TKey key, IntPtr oldValue, IntPtr newValue) where TKey: notnull =>
+    /// <inheritdoc cref="AtomicCompareAndSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long,long)" />
+    public static IntPtr? AtomicCompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<IntPtr>> dictionary, TKey key, IntPtr oldValue, IntPtr newValue) where TKey: notnull =>
         dictionary.TryGetValue(key, out ValueHolder<IntPtr>? existingHolder) ? Interlocked.CompareExchange(ref existingHolder.Value, newValue, oldValue) : null;
 
 #if NET8_0_OR_GREATER
@@ -389,7 +458,7 @@ public static partial class Enumerables {
     /// <param name="key">The key whose value you want to replace.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value of the <paramref name="key"/> that was swapped out of <paramref name="dictionary"/>, replaced by <paramref name="newValue"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain this <paramref name="key"/>.</returns>
-    public static UIntPtr? Swap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<UIntPtr>> dictionary, TKey key, UIntPtr newValue) where TKey: notnull {
+    public static UIntPtr? AtomicSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<UIntPtr>> dictionary, TKey key, UIntPtr newValue) where TKey: notnull {
         var      newHolder = new ValueHolder<UIntPtr>(newValue);
         UIntPtr? oldValue;
         bool     inserted;
@@ -401,8 +470,8 @@ public static partial class Enumerables {
         return oldValue;
     }
 
-    /// <inheritdoc cref="CompareAndSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long,long)" />
-    public static UIntPtr? CompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<UIntPtr>> dictionary, TKey key, UIntPtr oldValue, UIntPtr newValue) where TKey: notnull =>
+    /// <inheritdoc cref="AtomicCompareAndSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.ValueHolder{long}},TKey,long,long)" />
+    public static UIntPtr? AtomicCompareAndSwap<TKey>(this ConcurrentDictionary<TKey, ValueHolder<UIntPtr>> dictionary, TKey key, UIntPtr oldValue, UIntPtr newValue) where TKey: notnull =>
         dictionary.TryGetValue(key, out ValueHolder<UIntPtr>? existingHolder) ? Interlocked.CompareExchange(ref existingHolder.Value, newValue, oldValue) : null;
 #endif
 
@@ -415,7 +484,7 @@ public static partial class Enumerables {
     /// <param name="key">The key whose value you want to replace.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value of the <paramref name="key"/> that was swapped out of <paramref name="dictionary"/>, replaced by <paramref name="newValue"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain this <paramref name="key"/>.</returns>
-    public static TValue? Swap<TKey, TValue>(this ConcurrentDictionary<TKey, ValueHolder<TValue>> dictionary, TKey key, TValue newValue) where TKey: notnull where TValue: class {
+    public static TValue? AtomicSwap<TKey, TValue>(this ConcurrentDictionary<TKey, ValueHolder<TValue>> dictionary, TKey key, TValue newValue) where TKey: notnull where TValue: class {
         var     newHolder = new ValueHolder<TValue>(newValue);
         TValue? oldValue;
         bool    inserted;
@@ -428,16 +497,16 @@ public static partial class Enumerables {
     }
 
     /// <summary>
-    /// Atomically compare and swap a new value into a dictionary with a given key, only if the existing value equals a given value, and returning the old value. If the dictionary does not already contain this key, it will not be inserted, and <c>null</c> will be returned.
+    /// Atomically compare and swap a new value into a dictionary with a given key, only if the existing value equals a given value, and return the old value. If the dictionary does not already contain this key, it will not be inserted, and <c>null</c> will be returned.
     /// </summary>
     /// <typeparam name="TKey">Type of the dictionary keys.</typeparam>
-    /// <typeparam name="TValue">Non-nullable reference type of the dictionary values. For nullable reference type, use <see cref="CompareAndSwapNullable{TKey,TValue}"/>.</typeparam>
+    /// <typeparam name="TValue">Non-nullable reference type of the dictionary values. For nullable reference type, use <see cref="AtomicCompareAndSwapNullable{TKey,TValue}"/>.</typeparam>
     /// <param name="dictionary">A <see cref="ConcurrentDictionary{TKey,TValue}"/>, possibly created by <see cref="CreateConcurrentDictionary{TKey,TValue}(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{TKey,TValue}}?,int,int?,System.Collections.Generic.IEqualityComparer{TKey}?)"/>.</param>
     /// <param name="key">The key whose value you want to conditionally replace.</param>
     /// <param name="oldValue">The old value that must be equal to the existing value in the dictionary in order to swap it.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value <paramref name="oldValue"/>, which is the old value of <paramref name="key"/> in <paramref name="dictionary"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain the key <paramref name="key"/> so no insertion or swapping occurred.</returns>
-    public static TValue? CompareAndSwap<TKey, TValue>(this ConcurrentDictionary<TKey, ValueHolder<TValue>> dictionary, TKey key, TValue oldValue, TValue newValue)
+    public static TValue? AtomicCompareAndSwap<TKey, TValue>(this ConcurrentDictionary<TKey, ValueHolder<TValue>> dictionary, TKey key, TValue oldValue, TValue newValue)
         where TKey: notnull where TValue: class =>
         dictionary.TryGetValue(key, out ValueHolder<TValue>? existingHolder) ? Interlocked.CompareExchange(ref existingHolder.Value, newValue, oldValue) : null;
 
@@ -445,7 +514,7 @@ public static partial class Enumerables {
     /// Atomically swap a new value into a dictionary with a given key, getting the old value. If the dictionary does not already contain this key, it will be atomically inserted.
     /// </summary>
     /// <typeparam name="TKey">Type of the dictionary keys.</typeparam>
-    /// <typeparam name="TValue">Nullable reference type of the dictionary values. For non-nullable reference type, use <see cref="Swap{TKey,TValue}"/>.</typeparam>
+    /// <typeparam name="TValue">Nullable reference type of the dictionary values. For non-nullable reference type, use <see cref="AtomicSwap{TKey,TValue}"/>.</typeparam>
     /// <param name="dictionary">A <see cref="ConcurrentDictionary{TKey,TValue}"/>, possibly created by <see cref="CreateConcurrentDictionary{TKey,TValue}(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{TKey,TValue}}?,int,int?,System.Collections.Generic.IEqualityComparer{TKey}?)"/>.</param>
     /// <param name="key">The key whose value you want to replace.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
@@ -463,16 +532,16 @@ public static partial class Enumerables {
     }
 
     /// <summary>
-    /// Atomically compare and swap a new value into a dictionary with a given key, only if the existing value equals a given value, and returning the old value. If the dictionary does not already contain this key, it will not be inserted, and <c>null</c> will be returned.
+    /// Atomically compare and swap a new value into a dictionary with a given key, only if the existing value equals a given value, and return the old value. If the dictionary does not already contain this key, it will not be inserted, and <c>null</c> will be returned.
     /// </summary>
     /// <typeparam name="TKey">Type of the dictionary keys.</typeparam>
-    /// <typeparam name="TValue">Nullable reference type of the dictionary values. For non-nullable reference type, use <see cref="Swap{TKey,TValue}"/>.</typeparam>
+    /// <typeparam name="TValue">Nullable reference type of the dictionary values. For non-nullable reference type, use <see cref="AtomicSwap{TKey,TValue}"/>.</typeparam>
     /// <param name="dictionary">A <see cref="ConcurrentDictionary{TKey,TValue}"/>, possibly created by <see cref="CreateConcurrentDictionary{TKey,TValue}(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{TKey,TValue}}?,int,int?,System.Collections.Generic.IEqualityComparer{TKey}?)"/>.</param>
     /// <param name="key">The key whose value you want to conditionally replace.</param>
     /// <param name="oldValue">The old value that must be equal to the existing value in the dictionary in order to swap it.</param>
     /// <param name="newValue">The new value that you want to swap into the dictionary.</param>
     /// <returns>The old value <paramref name="oldValue"/>, which is the old value of <paramref name="key"/> in <paramref name="dictionary"/>, or <c>null</c> if <paramref name="dictionary"/> did not already contain the key <paramref name="key"/> so no insertion or swapping occurred.</returns>
-    public static TValue? CompareAndSwapNullable<TKey, TValue>(this ConcurrentDictionary<TKey, ValueHolder<TValue?>> dictionary, TKey key, TValue? oldValue, TValue newValue)
+    public static TValue? AtomicCompareAndSwapNullable<TKey, TValue>(this ConcurrentDictionary<TKey, ValueHolder<TValue?>> dictionary, TKey key, TValue? oldValue, TValue newValue)
         where TKey: notnull where TValue: class? =>
         dictionary.TryGetValue(key, out ValueHolder<TValue?>? existingHolder) ? Interlocked.CompareExchange(ref existingHolder.Value, newValue, oldValue) : null;
 
@@ -596,14 +665,14 @@ public static partial class Enumerables {
 #region Containers
 
 /// <summary>
-/// Wrapper class used as a dictionary value in <see cref="Enumerables.CreateConcurrentDictionary{TKey,TValue}(IEnumerable{KeyValuePair{TKey,TValue}}?,int,int?,IEqualityComparer{TKey}?)"/> to allow the value to be swapped with <see cref="Interlocked.Exchange{T}(ref T,T)"/> or <see cref="Enumerables.Swap{TKey,TValue}"/>.
+/// Wrapper class used as a dictionary value in <see cref="Enumerables.CreateConcurrentDictionary{TKey,TValue}(IEnumerable{KeyValuePair{TKey,TValue}}?,int,int?,IEqualityComparer{TKey}?)"/> to allow the value to be swapped with <see cref="Interlocked.Exchange{T}(ref T,T)"/> or <see cref="Enumerables.AtomicSwap{TKey,TValue}"/>.
 /// </summary>
 /// <typeparam name="T">Type of the dictionary value.</typeparam>
 /// <param name="value">Initial value for the dictionary key-value pair.</param>
 public class ValueHolder<T>(T value): IEquatable<ValueHolder<T>> {
 
     /// <summary>
-    /// Actual value of the dictionary key-value pair. Can be atomically updated and the old value returned using <see cref="Enumerables.Swap{TKey,TValue}"/>.
+    /// Actual value of the dictionary key-value pair. Can be atomically updated and the old value returned using <see cref="Enumerables.AtomicSwap{TKey,TValue}"/>.
     /// </summary>
     public T Value = value;
 
@@ -623,7 +692,7 @@ public class ValueHolder<T>(T value): IEquatable<ValueHolder<T>> {
 }
 
 /// <summary>
-/// Wrapper class for <see cref="Enum"/>s used as a dictionary value in <see cref="Enumerables.CreateConcurrentEnumDictionary{TKey,TEnumValue,TIntegralValue}"/> to allow the value to be swapped with <see cref="Enumerables.Swap{TKey,TIntegralValue,TValue}"/>.
+/// Wrapper class for <see cref="Enum"/>s used as a dictionary value in <see cref="Enumerables.CreateConcurrentEnumDictionary{TKey,TEnumValue,TIntegralValue}"/> to allow the value to be swapped with <see cref="Enumerables.AtomicSwap{TKey,TIntegralValue,TValue}"/>.
 /// </summary>
 /// <typeparam name="TEnum"><see cref="Enum"/> type, such as <c>MyEnum</c>, not the underlying integral type.</typeparam>
 /// <typeparam name="TUnderlying">Underlying integral type of <typeparamref name="TEnum"/>, such as <see cref="int"/> or <see cref="long"/>.</typeparam>
@@ -634,7 +703,7 @@ public class EnumValueHolder<TEnum, TUnderlying>(TEnum enumValue)
     private readonly TypeCode underlyingEnumType = enumValue.GetTypeCode();
 
     /// <summary>
-    /// Enum value of the dictionary key-value pair, automatically converted to and from its underlying type. Can be atomically updated and the old value returned using <see cref="Enumerables.Swap{TKey,TIntegralValue,TValue}"/>.
+    /// Enum value of the dictionary key-value pair, automatically converted to and from its underlying type. Can be atomically updated and the old value returned using <see cref="Enumerables.AtomicSwap{TKey,TIntegralValue,TValue}"/>.
     /// </summary>
     public new TEnum Value {
         get => (TEnum) Enum.ToObject(typeof(TEnum), ((ValueHolder<TUnderlying>) this).Value);
@@ -648,7 +717,7 @@ public class EnumValueHolder<TEnum, TUnderlying>(TEnum enumValue)
         object oldIntegralValue = underlyingEnumType switch {
             TypeCode.Int32 => Interlocked.Exchange(ref ((ValueHolder<int>) (object) this).Value, (int) newIntegralValue),
             TypeCode.Int64 => Interlocked.Exchange(ref ((ValueHolder<long>) (object) this).Value, (long) newIntegralValue),
-#if NET6_0_OR_GREATER
+#if NET5_0_OR_GREATER
             TypeCode.UInt32 => Interlocked.Exchange(ref ((ValueHolder<uint>) (object) this).Value, (uint) newIntegralValue),
             TypeCode.UInt64 => Interlocked.Exchange(ref ((ValueHolder<ulong>) (object) this).Value, (ulong) newIntegralValue),
 #endif
@@ -665,7 +734,7 @@ public class EnumValueHolder<TEnum, TUnderlying>(TEnum enumValue)
         object actualOldIntegralValue = underlyingEnumType switch {
             TypeCode.Int32 => Interlocked.CompareExchange(ref ((ValueHolder<int>) (object) this).Value, (int) newIntegralValue, (int) expectedOldIntegralValue),
             TypeCode.Int64 => Interlocked.CompareExchange(ref ((ValueHolder<long>) (object) this).Value, (long) newIntegralValue, (long) expectedOldIntegralValue),
-#if NET6_0_OR_GREATER
+#if NET5_0_OR_GREATER
             TypeCode.UInt32 => Interlocked.CompareExchange(ref ((ValueHolder<uint>) (object) this).Value, (uint) newIntegralValue, (uint) expectedOldIntegralValue),
             TypeCode.UInt64 => Interlocked.CompareExchange(ref ((ValueHolder<ulong>) (object) this).Value, (ulong) newIntegralValue, (ulong) expectedOldIntegralValue),
 #endif
@@ -677,13 +746,13 @@ public class EnumValueHolder<TEnum, TUnderlying>(TEnum enumValue)
 }
 
 /// <summary>
-/// Wrapper class for <see cref="bool"/>s used as a dictionary value in <see cref="Enumerables.CreateConcurrentBooleanDictionary{TKey}"/> to allow the value to be swapped with <see cref="Enumerables.Swap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.BooleanValueHolder},TKey,bool)"/>.
+/// Wrapper class for <see cref="bool"/>s used as a dictionary value in <see cref="Enumerables.CreateConcurrentBooleanDictionary{TKey}"/> to allow the value to be swapped with <see cref="Enumerables.AtomicSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.BooleanValueHolder},TKey,bool)"/>.
 /// </summary>
 /// <param name="boolValue"></param>
 public class BooleanValueHolder(bool boolValue): ValueHolder<int>(Convert.ToInt32(boolValue)) {
 
     /// <summary>
-    /// Enum value of the dictionary key-value pair, automatically converted to and from an <see cref="int"/>. Can be atomically updated and the old value returned using <see cref="Enumerables.Swap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.BooleanValueHolder},TKey,bool)"/>.
+    /// Enum value of the dictionary key-value pair, automatically converted to and from an <see cref="int"/>. Can be atomically updated and the old value returned using <see cref="Enumerables.AtomicSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.BooleanValueHolder},TKey,bool)"/>.
     /// </summary>
     public new bool Value {
         get => Convert.ToBoolean(((ValueHolder<int>) this).Value);

@@ -59,9 +59,9 @@ public class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
     }
 
     private void OnWindowOpened(object? sender, AutomationEventArgs e) {
-        if (sender is AutomationElement windowEl && windowEl.ToHwnd() is { } hwnd && AddWindow(hwnd)) {
+        if (sender is AutomationElement windowEl && windowEl.ToHwnd() is {} hwnd && AddWindow(hwnd)) {
             WindowHandleOpened?.Invoke(this, hwnd);
-            if (windowEl.ToSystemWindow() is { } systemWindow) {
+            if (windowEl.ToSystemWindow() is {} systemWindow) {
                 SystemWindowOpened?.Invoke(this, systemWindow);
             }
             AutomationElementOpened?.Invoke(this, windowEl);
@@ -72,7 +72,7 @@ public class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
         if (args.Event == ShellEventArgs.ShellEvent.WINDOW_CREATED && AddWindow(args.WindowHandle)) {
             WindowHandleOpened?.Invoke(this, args.WindowHandle);
             SystemWindowOpened?.Invoke(this, new SystemWindow(args.WindowHandle));
-            if (AutomationElement.FromHandle(args.WindowHandle) is { } automationElement) {
+            if (AutomationElement.FromHandle(args.WindowHandle) is {} automationElement) {
                 AutomationElementOpened?.Invoke(this, automationElement);
             }
         }
@@ -85,7 +85,7 @@ public class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
     /// <returns><c>true</c> if this is the first time a window has been opened with this handle, or <c>false</c> if this window has already been opened before because a duplicate window opening event was received.</returns>
     private bool AddWindow(IntPtr windowHandle) {
         DateTime now                  = DateTime.UtcNow;
-        long?    previousWindowHandle = alreadyOpenedWindows.Swap(windowHandle.ToInt32(), now.ToBinary());
+        long?    previousWindowHandle = alreadyOpenedWindows.AtomicSwap(windowHandle.ToInt32(), now.ToBinary());
         if (previousWindowHandle == null) {
             return true;
         } else {

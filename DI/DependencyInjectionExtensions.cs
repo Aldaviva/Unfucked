@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
-using System.Runtime.Serialization;
 using Unfucked.DI;
 #if !NET6_0_OR_GREATER
 using System.Reflection;
@@ -17,14 +16,6 @@ namespace Unfucked;
 /// Methods that make it easier to work with the <c>Microsoft.Extensions.Hosting</c> dependency injection/inversion of control library, which is used in the Generic Host and ASP.NET Core.
 /// </summary>
 public static partial class DependencyInjectionExtensions {
-
-    private static readonly IEnumerable<Type> InterfaceRegistrationBlacklist = [
-        typeof(IDisposable),
-        typeof(IAsyncDisposable),
-        typeof(ICloneable),
-        typeof(ISerializable),
-        typeof(IHostedService) // if you want to register a class as a hosted service and also its own interfaces, call Services.AddHostedService<MyHostedService>(SuperRegistration.INTERFACES)
-    ];
 
     /// <summary>
     /// <para>By default, the .NET host only looks for configuration files in the working directory, not the installation directory, which breaks when you run the program from any other directory.</para>
@@ -56,7 +47,7 @@ public static partial class DependencyInjectionExtensions {
             PhysicalFileProvider fileProvider = new(installationDir);
 
             IEnumerable<(int index, IConfigurationSource source)> sourcesToAdd = builder.Sources.SelectMany<IConfigurationSource, (int, IConfigurationSource)>((src, oldIndex) =>
-                src is JsonConfigurationSource { Path: { } path } source
+                src is JsonConfigurationSource { Path: {} path } source
                     ? [
                         (oldIndex, new JsonConfigurationSource {
                             FileProvider   = fileProvider,
@@ -133,7 +124,7 @@ public static partial class DependencyInjectionExtensions {
             IEnumerable<BackgroundService> backgroundServices = services.GetServices<IHostedService>().OfType<BackgroundService>().Where(service => service is not BackgroundServiceExceptionListener);
 
             services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopped.Register(() => {
-                if (backgroundServices.Select(service => service.ExecuteTask?.Exception?.InnerException).FirstOrDefault() is { } exception) {
+                if (backgroundServices.Select(service => service.ExecuteTask?.Exception?.InnerException).FirstOrDefault() is {} exception) {
                     Environment.ExitCode = exitCodeGenerator(exception);
                 }
             });

@@ -4,7 +4,13 @@ using Unfucked.DI;
 
 namespace Tests.DI;
 
-public class SuperRegistrationTest {
+public class SuperRegistrationTest: IDisposable {
+
+    public void Dispose() {
+        app?.Dispose();
+    }
+
+    private IHost? app;
 
     [Fact]
     public async Task SuperRegistrations() {
@@ -13,24 +19,48 @@ public class SuperRegistrationTest {
             .AddSingleton<MyClass>(SuperRegistration.INTERFACES | SuperRegistration.SUPERCLASSES)
             .AddHostedService<MyBackgroundService>(SuperRegistration.INTERFACES | SuperRegistration.CONCRETE_CLASS);
 
-        using IHost app = builder.Build();
+        app = builder.Build();
         await app.StartAsync();
 
-        try {
-            IServiceProvider services = app.Services;
+        IServiceProvider services = app.Services;
 
-            MyClass? myClass = services.GetService<MyClass>();
-            myClass.Should().NotBeNull();
-            services.GetService<MyInterface>().Should().BeSameAs(myClass);
-            services.GetService<MySuperClass>().Should().BeSameAs(myClass);
+        MyClass? myClass = services.GetService<MyClass>();
+        myClass.Should().NotBeNull();
+        services.GetService<MyInterface>().Should().BeSameAs(myClass);
+        services.GetService<MySuperClass>().Should().BeSameAs(myClass);
 
-            MyBackgroundService? myBackgroundService = services.GetService<MyBackgroundService>();
-            myBackgroundService.Should().NotBeNull();
-            services.GetService<IHostedService>().Should().BeSameAs(myBackgroundService);
-            services.GetService<MyHostedService>().Should().BeSameAs(myBackgroundService);
-        } finally {
-            await app.StopAsync();
-        }
+        MyBackgroundService? myBackgroundService = services.GetService<MyBackgroundService>();
+        myBackgroundService.Should().NotBeNull();
+        services.GetService<IHostedService>().Should().BeSameAs(myBackgroundService);
+        services.GetService<MyHostedService>().Should().BeSameAs(myBackgroundService);
+        services.GetServices<IHostedService>().Should().HaveCount(1);
+        services.GetServices<MyHostedService>().Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task CyclicalResolution() {
+        HostApplicationBuilder builder = new();
+        builder.Services
+            .AddHostedService<MyBackgroundService>(SuperRegistration.INTERFACES)
+            .AddHostedService<MyOtherHostedService>();
+
+        app = builder.Build();
+
+        IServiceProvider services = app.Services;
+
+        TaskCompletionSource<MyHostedService> actualHolder = new();
+        Thread thread = new(async void () => {
+            await app.StartAsync();
+            actualHolder.TrySetResult(services.GetRequiredService<MyHostedService>());
+        }, 1024) {
+            IsBackground = true
+        };
+
+        thread.Start();
+
+        MyHostedService actual = await actualHolder.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        actual.Should().NotBeNull();
     }
 
     [Fact]
@@ -40,18 +70,14 @@ public class SuperRegistrationTest {
         HostApplicationBuilder builder = new();
         builder.Services.AddKeyedTransient<MyClass>(serviceKey, SuperRegistration.INTERFACES | SuperRegistration.SUPERCLASSES);
 
-        using IHost app = builder.Build();
+        app = builder.Build();
         await app.StartAsync();
 
-        try {
-            IServiceProvider services = app.Services;
+        IServiceProvider services = app.Services;
 
-            services.GetKeyedService<MyClass>(serviceKey).Should().NotBeNull();
-            services.GetKeyedService<MyInterface>(serviceKey).Should().BeOfType<MyClass>().And.NotBeNull();
-            services.GetKeyedService<MySuperClass>(serviceKey).Should().BeOfType<MyClass>().And.NotBeNull();
-        } finally {
-            await app.StopAsync();
-        }
+        services.GetKeyedService<MyClass>(serviceKey).Should().NotBeNull();
+        services.GetKeyedService<MyInterface>(serviceKey).Should().BeOfType<MyClass>().And.NotBeNull();
+        services.GetKeyedService<MySuperClass>(serviceKey).Should().BeOfType<MyClass>().And.NotBeNull();
     }
 
     private interface MyInterface;
@@ -60,11 +86,18 @@ public class SuperRegistrationTest {
 
     private class MyClass: MySuperClass;
 
-    private interface MyHostedService;
+    private interface MyHostedService: IHostedService, IDisposable;
 
     private class MyBackgroundService: BackgroundService, MyHostedService {
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;
+
+    }
+
+    private class MyOtherHostedService(MyHostedService dependency): IHostedService {
+
+        public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     }
 

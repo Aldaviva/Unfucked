@@ -1,12 +1,20 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Serialization;
 using Unfucked.DI;
 
 namespace Unfucked;
 
 public static partial class DependencyInjectionExtensions {
+
+    private static readonly IEnumerable<Type> INTERFACE_REGISTRATION_BLACKLIST = [
+        typeof(IDisposable),
+        typeof(IAsyncDisposable),
+        typeof(ICloneable),
+        typeof(ISerializable),
+        typeof(IHostedService) // if you want to register a class as a hosted service and also its own interfaces, call Services.AddHostedService<MyHostedService>(SuperRegistration.INTERFACES)
+    ];
 
     #region Normal registrations
 
@@ -54,15 +62,38 @@ public static partial class DependencyInjectionExtensions {
     #region Hosted services
 
     /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
-    public static IServiceCollection AddHostedService<TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class, IHostedService =>
-        Add<TImpl>(services, alsoRegister, () => new ServiceDescriptor(typeof(IHostedService), typeof(TImpl), ServiceLifetime.Singleton),
-            extra => new ServiceDescriptor(extra, HostedServiceProvider<TImpl>, ServiceLifetime.Singleton));
+    public static IServiceCollection AddHostedService<TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class, IHostedService {
+        if ((alsoRegister & SuperRegistration.CONCRETE_CLASS) != 0) {
+            return Add<TImpl>(services, alsoRegister & ~SuperRegistration.CONCRETE_CLASS, () => [
+                new ServiceDescriptor(typeof(TImpl), typeof(TImpl), ServiceLifetime.Singleton),
+                new ServiceDescriptor(typeof(IHostedService), ServiceProvider<TImpl>, ServiceLifetime.Singleton)
+            ], extra => new ServiceDescriptor(extra, ServiceProvider<TImpl>, ServiceLifetime.Singleton));
+        } else {
+            Guid concreteClassKey = Guid.NewGuid();
+            return Add<TImpl>(services, alsoRegister, () => [
+                new ServiceDescriptor(typeof(TImpl), concreteClassKey, typeof(TImpl), ServiceLifetime.Singleton),
+                new ServiceDescriptor(typeof(IHostedService), provider => KeyedServiceProvider<TImpl>(provider, concreteClassKey), ServiceLifetime.Singleton)
+            ], extra => new ServiceDescriptor(extra, provider => KeyedServiceProvider<TImpl>(provider, concreteClassKey), ServiceLifetime.Singleton));
+        }
+    }
 
     /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
     /// <param name="factory">Function that creates instances of <typeparamref name="TImpl"/></param>
     public static IServiceCollection AddHostedService<TImpl>(this IServiceCollection services, Func<IServiceProvider, TImpl> factory, SuperRegistration alsoRegister)
-        where TImpl: class, IHostedService => Add<TImpl>(services, alsoRegister, () => new ServiceDescriptor(typeof(IHostedService), factory, ServiceLifetime.Singleton),
-        extra => new ServiceDescriptor(extra, HostedServiceProvider<TImpl>, ServiceLifetime.Singleton));
+        where TImpl: class, IHostedService {
+        if ((alsoRegister & SuperRegistration.CONCRETE_CLASS) != 0) {
+            return Add<TImpl>(services, alsoRegister & ~SuperRegistration.CONCRETE_CLASS, () => [
+                new ServiceDescriptor(typeof(TImpl), factory, ServiceLifetime.Singleton),
+                new ServiceDescriptor(typeof(IHostedService), ServiceProvider<TImpl>, ServiceLifetime.Singleton)
+            ], extra => new ServiceDescriptor(extra, ServiceProvider<TImpl>, ServiceLifetime.Singleton));
+        } else {
+            Guid concreteClassKey = Guid.NewGuid();
+            return Add<TImpl>(services, alsoRegister, () => [
+                new ServiceDescriptor(typeof(TImpl), concreteClassKey, (provider, _) => factory(provider), ServiceLifetime.Singleton),
+                new ServiceDescriptor(typeof(IHostedService), provider => KeyedServiceProvider<TImpl>(provider, concreteClassKey), ServiceLifetime.Singleton)
+            ], extra => new ServiceDescriptor(extra, provider => KeyedServiceProvider<TImpl>(provider, concreteClassKey), ServiceLifetime.Singleton));
+        }
+    }
 
     #endregion
 
@@ -99,56 +130,53 @@ public static partial class DependencyInjectionExtensions {
     /// <inheritdoc cref="AddKeyedSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,object?,Unfucked.DI.SuperRegistration)" />
     /// <param name="factory">Function that creates instances of <typeparamref name="TImpl"/></param>
     public static IServiceCollection AddKeyedScoped<TImpl>(this IServiceCollection services, object? serviceKey, Func<IServiceProvider, object?, TImpl> factory, SuperRegistration alsoRegister)
-        where TImpl: class =>
-        Add(services, ServiceLifetime.Scoped, alsoRegister, factory, serviceKey);
+        where TImpl: class => Add(services, ServiceLifetime.Scoped, alsoRegister, factory, serviceKey);
 
     #endregion
 
-    private static IServiceCollection Add<TImpl>(IServiceCollection services, ServiceLifetime scope, SuperRegistration alsoRegister) where TImpl: class => Add<TImpl>(services, alsoRegister,
-        () => new ServiceDescriptor(typeof(TImpl), typeof(TImpl), scope),
-        extra => scope == ServiceLifetime.Singleton ? new ServiceDescriptor(extra, ConcreteClassProvider<TImpl>, scope) : new ServiceDescriptor(extra, typeof(TImpl), scope));
+    private static IServiceCollection Add<TImpl>(IServiceCollection services, ServiceLifetime scope, SuperRegistration alsoRegister) where TImpl: class =>
+        Add<TImpl>(services, alsoRegister, () => [new ServiceDescriptor(typeof(TImpl), typeof(TImpl), scope)],
+            extra => scope == ServiceLifetime.Singleton ? new ServiceDescriptor(extra, ServiceProvider<TImpl>, scope) : new ServiceDescriptor(extra, typeof(TImpl), scope));
 
-    private static IServiceCollection Add<TImpl>(IServiceCollection services, SuperRegistration alsoRegister, TImpl instance) where TImpl: class => Add<TImpl>(services,
-        alsoRegister, () => new ServiceDescriptor(typeof(TImpl), instance, ServiceLifetime.Singleton), extra => new ServiceDescriptor(extra, _ => instance, ServiceLifetime.Singleton));
+    private static IServiceCollection Add<TImpl>(IServiceCollection services, SuperRegistration alsoRegister, TImpl instance) where TImpl: class =>
+        Add<TImpl>(services, alsoRegister, () => [new ServiceDescriptor(typeof(TImpl), instance, ServiceLifetime.Singleton)],
+            extra => new ServiceDescriptor(extra, _ => instance, ServiceLifetime.Singleton));
 
     private static IServiceCollection Add<TImpl>(IServiceCollection services, ServiceLifetime scope, SuperRegistration alsoRegister, Func<IServiceProvider, TImpl> factory) where TImpl: class =>
-        Add<TImpl>(services, alsoRegister, () => new ServiceDescriptor(typeof(TImpl), factory, scope), extra => new ServiceDescriptor(extra, ConcreteClassProvider<TImpl>, scope));
+        Add<TImpl>(services, alsoRegister, () => [new ServiceDescriptor(typeof(TImpl), factory, scope)], extra => new ServiceDescriptor(extra, ServiceProvider<TImpl>, scope));
 
-    private static IServiceCollection Add<TImpl>(IServiceCollection services, ServiceLifetime scope, SuperRegistration alsoRegister, object? serviceKey) where TImpl: class => Add<TImpl>(services,
-        alsoRegister, () => new ServiceDescriptor(typeof(TImpl), serviceKey, typeof(TImpl), scope),
-        extra => scope == ServiceLifetime.Singleton ? new ServiceDescriptor(extra, serviceKey, KeyedConcreteClassProvider<TImpl>, scope)
-            : new ServiceDescriptor(extra, serviceKey, typeof(TImpl), scope));
+    private static IServiceCollection Add<TImpl>(IServiceCollection services, ServiceLifetime scope, SuperRegistration alsoRegister, object? serviceKey) where TImpl: class =>
+        Add<TImpl>(services, alsoRegister, () => [new ServiceDescriptor(typeof(TImpl), serviceKey, typeof(TImpl), scope)],
+            extra => scope == ServiceLifetime.Singleton ? new ServiceDescriptor(extra, serviceKey, KeyedServiceProvider<TImpl>, scope)
+                : new ServiceDescriptor(extra, serviceKey, typeof(TImpl), scope));
 
-    private static IServiceCollection Add<TImpl>(IServiceCollection services, SuperRegistration alsoRegister, TImpl instance, object? serviceKey) where TImpl: class => Add<TImpl>(services,
-        alsoRegister, () => new ServiceDescriptor(typeof(TImpl), serviceKey, instance), extra => new ServiceDescriptor(extra, serviceKey, (_, _) => instance, ServiceLifetime.Singleton));
+    private static IServiceCollection Add<TImpl>(IServiceCollection services, SuperRegistration alsoRegister, TImpl instance, object? serviceKey) where TImpl: class =>
+        Add<TImpl>(services, alsoRegister, () => [new ServiceDescriptor(typeof(TImpl), serviceKey, instance)],
+            extra => new ServiceDescriptor(extra, serviceKey, (_, _) => instance, ServiceLifetime.Singleton));
 
     private static IServiceCollection Add<TImpl>(IServiceCollection services, ServiceLifetime scope, SuperRegistration alsoRegister, Func<IServiceProvider, object?, TImpl> factory, object? serviceKey)
-        where TImpl: class => Add<TImpl>(services, alsoRegister, () => new ServiceDescriptor(typeof(TImpl), serviceKey, factory, scope),
-        extra => new ServiceDescriptor(extra, serviceKey, KeyedConcreteClassProvider<TImpl>, scope));
+        where TImpl: class => Add<TImpl>(services, alsoRegister, () => [new ServiceDescriptor(typeof(TImpl), serviceKey, factory, scope)],
+        extra => new ServiceDescriptor(extra, serviceKey, KeyedServiceProvider<TImpl>, scope));
 
-    [SuppressMessage("ReSharper", "PossibleMultipleEnumeration")] // IEnumerable.Concat obviously never enumerates the lazy sequence, even if it's in a try block
-    private static IServiceCollection Add<TImpl>(IServiceCollection services, SuperRegistration alsoRegister, Func<ServiceDescriptor> defaultRegistration,
+    private static IServiceCollection Add<TImpl>(IServiceCollection services, SuperRegistration alsoRegister, Func<IEnumerable<ServiceDescriptor>> defaultRegistrations,
                                                  Func<Type, ServiceDescriptor> extraRegistration) where TImpl: class {
-        IEnumerable<ServiceDescriptor> registrations = [defaultRegistration()];
-        try {
-            Type concreteType = typeof(TImpl);
+        List<ServiceDescriptor> registrations = [..defaultRegistrations()];
 
+        try {
             if ((alsoRegister & SuperRegistration.CONCRETE_CLASS) != 0) {
-                registrations = registrations.Append(extraRegistration(concreteType));
+                registrations.Add(extraRegistration(typeof(TImpl)));
             }
 
             if ((alsoRegister & SuperRegistration.INTERFACES) != 0) {
-                registrations = registrations.Concat(concreteType.GetInterfaces().Except(InterfaceRegistrationBlacklist).Select(extraRegistration));
+                registrations.AddRange(typeof(TImpl).GetInterfaces().Except(INTERFACE_REGISTRATION_BLACKLIST).Select(extraRegistration));
             }
 
             if ((alsoRegister & SuperRegistration.SUPERCLASSES) != 0) {
-                IEnumerable<Type> superclasses = [];
-                Type              @class       = concreteType, @object = typeof(object), valueType = typeof(ValueType);
-                while (@class.BaseType is { } superclass && superclass != @object && superclass != valueType) {
-                    superclasses = superclasses.Append(superclass);
-                    @class       = superclass;
+                Type @class = typeof(TImpl);
+                while (@class.BaseType is {} superclass && superclass != typeof(object) && superclass != typeof(ValueType)) {
+                    registrations.Add(extraRegistration(superclass));
+                    @class = superclass;
                 }
-                registrations = registrations.Concat(superclasses.Select(extraRegistration));
             }
         } catch (TargetInvocationException) {
             // if an interface's static initializer is throwing an exception, it will become obvious anyway
@@ -158,10 +186,8 @@ public static partial class DependencyInjectionExtensions {
         return services;
     }
 
-    private static object ConcreteClassProvider<TImpl>(IServiceProvider services) => services.GetService<TImpl>()!;
+    private static object ServiceProvider<TImpl>(IServiceProvider services) => services.GetService<TImpl>()!;
 
-    private static object KeyedConcreteClassProvider<TImpl>(IServiceProvider services, object? serviceKey) => services.GetKeyedService<TImpl>(serviceKey)!;
-
-    private static object HostedServiceProvider<TImpl>(IServiceProvider services) => services.GetServices<IHostedService>().OfTypeExactly<TImpl>().First()!;
+    private static object KeyedServiceProvider<TImpl>(IServiceProvider services, object? serviceKey) => services.GetKeyedService<TImpl>(serviceKey)!;
 
 }

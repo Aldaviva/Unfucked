@@ -85,7 +85,7 @@ public static class Processes {
     /// <param name="workingDirectory">The working directory that the child process should start executing in, or <c>null</c> to inherit the current working directory from this process.</param>
     /// <param name="hideWindow"><c>true</c> on Windows to attempt to hide the child process' window, useful for console applications that force a command prompt window to appear, or <c>false</c> to use the default behavior for the child process. Has no effect on other operating systems.</param>
     /// <param name="cancellationToken">Used to stop waiting if the process is taking too long to exit. Does not kill the process on cancellation.</param>
-    /// <returns>Tuple that contains the numeric exit code of the child process, the standard output text, and the standard error text, or <c>(-1, "", "")</c> if the child process failed to start.</returns>
+    /// <returns>Tuple that contains the numeric exit code of the child process, the trimmed standard output text, and the trimmed standard error text, or <c>(-1, "", "")</c> if the child process failed to start.</returns>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled before the child process exited. The child process will still be running at this point—cancelling this method does not kill it. To get information about the running child process, for example if you want to kill it yourself, you can read the integer <c>pid</c> value from the <see cref="Exception.Data"/> dictionary to pass to <see cref="Process.GetProcessById(int)"/> and call <see cref="Process.Kill()"/>.</exception>
     public static async Task<(int exitCode, string stdout, string stderr)> ExecFile(
         string file,
@@ -150,9 +150,14 @@ public static class Processes {
                 await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
 #else
                 TaskCompletionSource<bool> exited = new();
-                process.Exited += (_, _) => exited.SetResult(true);
-                cancellationToken.Register(() => exited.TrySetCanceled(cancellationToken));
-                await exited.Task.ConfigureAwait(false);
+                process.Exited += (_, _) => exited.TrySetResult(true);
+                if (!process.HasExited) {
+                    process.EnableRaisingEvents = true;
+                    if (!process.HasExited) {
+                        cancellationToken.Register(() => exited.TrySetCanceled(cancellationToken));
+                        await exited.Task.ConfigureAwait(false);
+                    }
+                }
 #endif
             } catch (TaskCanceledException e) {
                 throw new OperationCanceledException(e.Message, e) { Data = { { "pid", process.Id } } };

@@ -9,7 +9,7 @@ public class ProcessesTest {
         (int exitCode, string stdout, string stderr)? gitResult = await Processes.ExecFile("git", "--version");
 
         gitResult.Should().NotBeNull();
-        gitResult!.Value.exitCode.Should().Be(0);
+        gitResult.Value.exitCode.Should().Be(0);
         gitResult.Value.stderr.Should().BeEmpty();
         gitResult.Value.stdout.Should().StartWith("git version ");
     }
@@ -20,7 +20,7 @@ public class ProcessesTest {
             await Processes.ExecFile("git", ["--version"], new Dictionary<string, string?> { { "abc", "def" }, { "removeme", null } });
 
         gitResult.Should().NotBeNull();
-        gitResult!.Value.exitCode.Should().Be(0);
+        gitResult.Value.exitCode.Should().Be(0);
         gitResult.Value.stderr.Should().BeEmpty();
         gitResult.Value.stdout.Should().StartWith("git version ");
     }
@@ -38,7 +38,7 @@ public class ProcessesTest {
         CancellationTokenSource                                           cts  = new();
         Task<(int exitCode, string standardOutput, string standardError)> task = Processes.ExecFile("ping", ["127.0.0.1"], cancellationToken: cts.Token);
 
-        await cts.CancelAsync();
+        cts.Cancel();
 
         try {
             await task;
@@ -46,7 +46,7 @@ public class ProcessesTest {
         } catch (OperationCanceledException e) {
             int? pid = e.Data["pid"] as int?;
             pid.Should().BeGreaterThan(0);
-            using Process childProcess = Process.GetProcessById(pid!.Value);
+            using Process childProcess = Process.GetProcessById(pid.Value);
             childProcess.Kill();
         }
     }

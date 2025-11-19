@@ -28,7 +28,7 @@
 
     <!-- Self version numbers -->
     <PropertyGroup>
-        <UnfuckedVersion>0.0.1-beta.26</UnfuckedVersion>
+        <UnfuckedVersion>0.0.1-beta.27</UnfuckedVersion>
         <UnfuckedCachingVersion>0.0.1-beta.2</UnfuckedCachingVersion>
     </PropertyGroup>
 

@@ -13,9 +13,8 @@ namespace Unfucked;
 
 public class UrlBuilder: ICloneable {
 
-    public static readonly object VALUELESS_QUERY_PARAM = new();
-
     private static readonly Regex  PLACEHOLDER_PATTERN              = new(@"\{(?<key>\w+?)\}");
+    private static readonly object VALUELESS_QUERY_PARAM            = new();
     private static readonly char[] QUERY_PARAM_SEPARATORS           = ['&'];
     private static readonly char[] QUERY_PARAM_KEY_VALUE_SEPARATORS = ['='];
     private static readonly char[] PATH_SEPARATORS                  = ['/'];
@@ -84,7 +83,7 @@ public class UrlBuilder: ICloneable {
     }
 
     /// <exception cref="UriFormatException"></exception>
-    public UrlBuilder(string uri): this(new Uri(uri, UriKind.Absolute)) { }
+    public UrlBuilder(string uri): this(new Uri(uri, UriKind.Absolute)) {}
 
     public static implicit operator UrlBuilder(Uri uri) => new(uri);
 
@@ -124,24 +123,24 @@ public class UrlBuilder: ICloneable {
         });
 
         UrlBuilder urlBuilder = new(templateWithFakePlaceholders) { _unusedTemplateQueryParameterRealNames = queryParameterRealNames.ToImmutableHashSet() };
-        if (restoreRealName(urlBuilder._scheme) is { } realScheme) {
+        if (restoreRealName(urlBuilder._scheme) is {} realScheme) {
             urlBuilder = urlBuilder.Scheme(realScheme);
         }
-        if (restoreRealName(urlBuilder._hostname) is { } realHostname) {
+        if (restoreRealName(urlBuilder._hostname) is {} realHostname) {
             urlBuilder = urlBuilder.Hostname(realHostname);
         }
         for (int i = 0; i < urlBuilder._path.Count; i++) {
-            if (restoreRealName(urlBuilder._path[i]) is { } realPathSegment) {
+            if (restoreRealName(urlBuilder._path[i]) is {} realPathSegment) {
                 urlBuilder = new UrlBuilder(urlBuilder) { _path = urlBuilder._path.SetItem(i, realPathSegment) };
             }
         }
         for (int i = 0; i < urlBuilder._queryParameters.Count; i++) {
-            if (urlBuilder._queryParameters[i].Value is string value && restoreRealName(value) is { } realQueryParam) {
+            if (urlBuilder._queryParameters[i].Value is string value && restoreRealName(value) is {} realQueryParam) {
                 urlBuilder = new UrlBuilder(urlBuilder)
                     { _queryParameters = urlBuilder._queryParameters.SetItem(i, new KeyValuePair<string, object>(urlBuilder._queryParameters[i].Key, realQueryParam)) };
             }
         }
-        if (restoreRealName(urlBuilder._fragment) is { } realFragment) {
+        if (restoreRealName(urlBuilder._fragment) is {} realFragment) {
             urlBuilder = urlBuilder.Fragment(realFragment);
         }
 
@@ -191,7 +190,7 @@ public class UrlBuilder: ICloneable {
             built.Append(UrlEncoder.Encode(ReplacePlaceholders(_userInfo), UrlEncoder.Component.USER_INFO)).Append('@');
         }
 
-        if (_hostname is { } hostname) {
+        if (_hostname is {} hostname) {
             hostname = ReplacePlaceholders(hostname);
             if (IPAddress.TryParse(hostname, out IPAddress? ipAddress) && ipAddress.AddressFamily == AddressFamily.InterNetworkV6) {
                 built.Append('[').Append(hostname).Append(']');

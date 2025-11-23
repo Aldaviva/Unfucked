@@ -42,10 +42,10 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
             await cacheEntry.ValueLock.WaitAsync().ConfigureAwait(false);
             try {
                 if (cacheEntry.IsNew) {
-                    cacheEntry.IsNew = false;
                     cacheEntry.Value = await LoadValue(key, loader ?? defaultLoader).ConfigureAwait(false);
                     cacheEntry.LastWritten.Start();
                     cacheEntry.RefreshTimer?.Start();
+                    cacheEntry.IsNew = false;
                 }
             } catch (KeyNotFoundException) {
                 cache.TryRemove(key, out _);
@@ -128,7 +128,7 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
                             entry.ValueLock.Release();
                         }
                         Removal?.Invoke(this, key, oldValue, RemovalCause.REPLACED);
-                    } catch (ObjectDisposedException) { }
+                    } catch (ObjectDisposedException) {}
                 } else {
                     entry.RefreshTimer.Elapsed -= refreshEntry;
                 }

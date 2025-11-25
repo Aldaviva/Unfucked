@@ -26,8 +26,12 @@ public static class Paths {
     /// <returns>Absolute path to the newly-created, empty directory.</returns>
     /// <remarks>See also <see cref="Path.GetTempPath"/></remarks>
     public static string CreateTempDir(string? parentDir = null) {
-
-        parentDir ??= Path.GetTempPath();
+        parentDir ??=
+#if NET7_0_OR_GREATER
+            Directory.CreateTempSubdirectory().FullName;
+#else
+            Path.GetTempPath(); // writable by other users on Linux
+#endif
 
         string tempDirectory;
         do {

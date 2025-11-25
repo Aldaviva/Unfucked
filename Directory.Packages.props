@@ -10,8 +10,8 @@
   <ItemGroup>
     <PackageVersion Include="Ical.Net" Version="5.1.2" />
     <PackageVersion Include="JetBrains.Annotations" Version="2025.2.2" />
-    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
     <PackageVersion Include="mwinapi" Version="0.3.0.5" />
@@ -22,7 +22,7 @@
     <PackageVersion Include="SharpCompress" Version="0.41.0" />
     <PackageVersion Include="Stun.Net" Version="9.0.1" />
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
-    <PackageVersion Include="System.Text.Encodings.Web" Version="10.0.0" />
+    <PackageVersion Include="System.Text.Encodings.Web" Version="8.0.0" />
     <PackageVersion Include="System.Text.Json" Version="8.0.6" />
     <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
     <PackageVersion Include="ThrottleDebounce" Version="3.0.0-beta5" />

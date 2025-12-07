@@ -204,4 +204,33 @@ public static class Tasks {
         }
     }
 
+    /// <summary>
+    /// Get the original <paramref name="task"/>, or <see cref="Task.CompletedTask"/> if it was <c>null</c>.
+    /// </summary>
+    /// <param name="task">A <see cref="Task"/> that can be <c>null</c>.</param>
+    /// <returns>A <see cref="Task"/> that is never <c>null</c>.</returns>
+    [Pure]
+    public static Task CompleteIfNull(this Task? task) =>
+        task ?? Task.CompletedTask;
+
+    /// <summary>
+    /// Get the original <paramref name="task"/>, or a completed <see cref="Task"/> with the value <paramref name="valueIfNull"/> if it was <c>null</c>.
+    /// </summary>
+    /// <param name="task">A <see cref="Task"/> that can be <c>null</c>.</param>
+    /// <param name="valueIfNull">The value that the returned <see cref="Task"/> should be completed with if <paramref name="task"/> is <c>null</c>.</param>
+    /// <returns>A <see cref="Task"/> that is never <c>null</c>.</returns>
+    [Pure]
+    public static Task<T?> CompleteIfNull<T>(this Task<T?>? task, T? valueIfNull = null) where T: class =>
+        task ?? Task.FromResult(valueIfNull);
+
+    /// <inheritdoc cref="CompleteIfNull{T}(Task{T},T)" />
+    [Pure]
+    public static Task<T> CompleteIfNullStruct<T>(this Task<T>? task, T valueIfNull = default) where T: struct =>
+        task ?? Task.FromResult(valueIfNull);
+
+    /// <inheritdoc cref="CompleteIfNull{T}(Task{T},T)" />
+    [Pure]
+    public static Task<T?> CompleteIfNullStruct<T>(this Task<T?>? task, T? valueIfNull = null) where T: struct =>
+        task ?? Task.FromResult(valueIfNull);
+
 }

@@ -413,6 +413,11 @@ using Unfucked;
     ```cs
     object resultWithFallback = await Task.FromException<object>(new Exception()).ResultOrNullForException() ?? new object();
     ```
+- Easily await tasks that may be null without having to add parentheses and null coalescing operators.
+    ```cs
+    Task? myOptionalTask = null;
+    await myOptionalTask.CompleteIfNull();
+    ```
 
 ### URIs
 - Fluent method to get URL query parameters

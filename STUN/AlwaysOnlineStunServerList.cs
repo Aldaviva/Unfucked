@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -29,7 +30,7 @@ public class AlwaysOnlineStunServerList: StunServerList {
     static AlwaysOnlineStunServerList() {
         Span<DnsEndPoint> fallbackServers = [
             new("stun.freeswitch.org", 3478, AddressFamily.InterNetwork),
-            new("stun.ucsb.edu", 3478, AddressFamily.InterNetwork),
+            new("stun.voip.blackberry.com", 3478, AddressFamily.InterNetwork),
             new("stun.bethesda.net", 3478, AddressFamily.InterNetwork),
             new("stun.nextcloud.com", 3478, AddressFamily.InterNetwork)
         ];
@@ -55,13 +56,13 @@ public class AlwaysOnlineStunServerList: StunServerList {
     /// <exception cref="TaskCanceledException"></exception>
     private async Task<IEnumerable<DnsEndPoint>> FetchStunServers() {
         Debug.WriteLine("Fetching list of STUN servers from pradt2/always-online-stun");
-        ICollection<DnsEndPoint> servers = (await http.GetStringAsync(STUN_SERVER_LIST_URL).ConfigureAwait(false))
+        ReadOnlyCollection<DnsEndPoint> servers = (await http.GetStringAsync(STUN_SERVER_LIST_URL).ConfigureAwait(false))
             .TrimEnd()
             .Split('\n')
             .Select(line => {
                 string[] columns = line.Split(':', 2);
                 try {
-                    return new DnsEndPoint(columns[0], columns.ElementAtOrDefault(1) is { } port ? ushort.Parse(port) : 3478, AddressFamily.InterNetwork);
+                    return new DnsEndPoint(columns[0], columns.ElementAtOrDefault(1) is {} port ? ushort.Parse(port) : 3478, AddressFamily.InterNetwork);
                 } catch (FormatException) {
                     return null;
                 }
@@ -79,8 +80,8 @@ public class AlwaysOnlineStunServerList: StunServerList {
         DnsEndPoint[] servers = [];
         try {
             servers = (await ServersCache.Get(CACHE_KEY).ConfigureAwait(false)).ToArray();
-        } catch (HttpRequestException) { } catch (TaskCanceledException) { // timeout
-        } catch (Exception e) when (e is not OutOfMemoryException) { }
+        } catch (HttpRequestException) {} catch (TaskCanceledException) { // timeout
+        } catch (Exception e) when (e is not OutOfMemoryException) {}
 
         RANDOM.Shuffle(servers);
 

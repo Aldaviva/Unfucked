@@ -77,6 +77,10 @@ using Unfucked.Windows;
     ```cs
     bool isSuspended = Process.GetProcessById(pid).IsProcessSuspended();
     ```
+- Detect if a process is elevated (running as administrator)
+    ```cs
+    bool isElevated = Process.GetCurrentProcess().IsProcessElevated();
+    ```
    
 ### Standby and screensaver
 

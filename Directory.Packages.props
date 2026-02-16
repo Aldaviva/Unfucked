@@ -8,16 +8,16 @@
             System.Text.Json
     -->
   <ItemGroup>
-    <PackageVersion Include="Ical.Net" Version="5.1.2" />
-    <PackageVersion Include="JetBrains.Annotations" Version="2025.2.2" />
+    <PackageVersion Include="Ical.Net" Version="5.2.1" />
+    <PackageVersion Include="JetBrains.Annotations" Version="2025.2.4" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.103" />
     <PackageVersion Include="mwinapi" Version="0.3.0.5" />
-    <PackageVersion Include="NodaTime" Version="3.2.2" />
+    <PackageVersion Include="NodaTime" Version="3.3.0" />
     <PackageVersion Include="OBSClient" Version="3.0.0" />
-    <PackageVersion Include="PgpCore" Version="6.5.3" />
+    <PackageVersion Include="PgpCore" Version="6.5.4" />
     <PackageVersion Include="ReSharper.ExportAnnotations.Task" Version="1.4.0" />
     <PackageVersion Include="SharpCompress" Version="0.41.0" />
     <PackageVersion Include="Stun.Net" Version="9.0.1" />

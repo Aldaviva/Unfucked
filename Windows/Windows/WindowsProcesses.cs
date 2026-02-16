@@ -1,8 +1,10 @@
 using Microsoft.Win32.SafeHandles;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Text;
 
 namespace Unfucked.Windows;
@@ -78,7 +80,7 @@ public static class WindowsProcesses {
     [Pure]
     public static Process? GetParentProcess(int? pid = null) {
         using Process process = pid.HasValue ? Process.GetProcessById(pid.Value) : Process.GetCurrentProcess();
-        return GetParentProcess(process);
+        return process.GetParentProcess();
     }
 
     /// <summary>
@@ -134,7 +136,7 @@ public static class WindowsProcesses {
         allProcesses.SelectMany(descendant => {
             bool isDescendantOfParent = false;
             try {
-                using Process? descendantParent = GetParentProcess(descendant);
+                using Process? descendantParent = descendant.GetParentProcess();
                 isDescendantOfParent = descendantParent?.Id == ancestor.Id;
             } catch (Exception e) when (e is not OutOfMemoryException) {
                 //leave isDescendentOfParent false
@@ -153,6 +155,11 @@ public static class WindowsProcesses {
 
     }
 
+    /// <summary>
+    /// Determine whether a process is suspended or not.
+    /// </summary>
+    /// <param name="process">The process to check, such as <see cref="Process.GetCurrentProcess"/>.</param>
+    /// <returns><c>true</c> if <paramref name="process"/> is suspended, or <c>false</c> if it is running normally</returns>
     [Pure]
     public static bool IsProcessSuspended(this Process process) {
         uint returnCode = NtQueryInformationProcess(process.Handle, ProcessInfoClass.PROCESS_BASIC_INFORMATION, out ProcessExtendedBasicInformation info,
@@ -365,5 +372,40 @@ public static class WindowsProcesses {
     [DllImport("kernel32.dll")]
     private static extern IntPtr CreateRemoteThread(SafeProcessHandle hProcess, IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags,
                                                     IntPtr lpThreadId);
+
+    /// <summary>
+    /// Determine whether a process is running elevated (as Administrator) or not.
+    /// </summary>
+    /// <param name="process">The process to check, such as <see cref="Process.GetCurrentProcess"/>.</param>
+    /// <returns><c>true</c> if <paramref name="process"/> is running elevated, or <c>false</c> if it is unelevated</returns>
+    /// <exception cref="Win32Exception">failed to open handle to <paramref name="process"/>, possibly due to privileges.</exception>
+    /// <remarks>
+    /// By John Smith: <see href="https://stackoverflow.com/a/55079599/979493"/>
+    /// </remarks>
+    [Pure]
+    public static bool IsProcessElevated(this Process process) {
+        const uint maximumAllowed = 0x2000000;
+
+        if (!OpenProcessToken(process.Handle, maximumAllowed, out nint token)) {
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "OpenProcessToken failed");
+        }
+
+        try {
+            using WindowsIdentity identity  = new(token);
+            WindowsPrincipal      principal = new(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator)
+                || principal.IsInRole(0x200); //Domain Administrator
+        } finally {
+            CloseHandle(token);
+        }
+    }
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool OpenProcessToken(nint processHandle, uint desiredAccess, out nint tokenHandle);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CloseHandle(nint hObject);
 
 }

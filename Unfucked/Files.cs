@@ -5,7 +5,7 @@ namespace Unfucked;
 /// </summary>
 public static class Files {
 
-    /// <summary>Deletes the specified file. If the file is read-only, makes it writable and then deletes it. Does not throw an exception for nonexistant files.</summary>
+    /// <summary>Deletes the specified file. If the file is read-only, makes it writable and then deletes it. Does not throw an exception for nonexistent files.</summary>
     /// <param name="path">The name of the file to be deleted. Wildcard characters are not supported.</param>
     /// <exception cref="ArgumentException">.NET Framework and .NET Core versions older than 2.1: <paramref name="path" /> is a zero-length string, contains only white space, or contains one or more invalid characters. You can query for invalid characters by using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method.</exception>
     /// <exception cref="ArgumentNullException">

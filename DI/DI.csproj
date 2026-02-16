@@ -10,7 +10,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all">
+          <IncludeAssets>compile</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Hosting" PrivateAssets="all" />
     </ItemGroup>
 

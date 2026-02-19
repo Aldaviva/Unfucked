@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
-        <Version>0.0.1-beta.22</Version>
+        <Version>0.0.1-beta.23</Version>
         <Description>Fix egregiously broken or missing functionality in System.Net.Http.HttpClient.</Description>
         <PackageTags>http HttpClient web request $(PackageTags)</PackageTags>
     </PropertyGroup>

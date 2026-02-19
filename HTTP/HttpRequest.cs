@@ -4,6 +4,23 @@ namespace Unfucked.HTTP;
 
 public readonly record struct HttpRequest(HttpMethod Verb, Uri Uri, IEnumerable<KeyValuePair<string, string>> Headers, HttpContent? Body, IClientConfig? ClientConfig) {
 
+    public static async Task<HttpRequest> Copy(HttpRequestMessage original) {
+        IEnumerable<KeyValuePair<string, string>> replayedHeaders = original.Headers.SelectMany(header => header.Value.Select(val => new KeyValuePair<string, string>(header.Key, val)));
+
+        HttpContent? replayedRequestBody = null;
+        if (original.Content is {} originalBody) {
+            MemoryStream replayedRequestBodyStream = new();
+            // CopyToAsync may fail if the original stream isn't seekable, in which case we should buffer all request bodies before their original request is sent
+            await originalBody.CopyToAsync(replayedRequestBodyStream).ConfigureAwait(false);
+            replayedRequestBody = new StreamContent(replayedRequestBodyStream);
+            foreach (KeyValuePair<string, IEnumerable<string>> originalRequestBodyHeader in originalBody.Headers) {
+                replayedRequestBody.Headers.Add(originalRequestBodyHeader.Key, originalRequestBodyHeader.Value);
+            }
+        }
+
+        return new HttpRequest(original.Method, original.RequestUri, replayedHeaders, replayedRequestBody, null);
+    }
+
     /*
      * These crappy methods are only used for testing, so some are synchronous and inefficient
      */
@@ -28,11 +45,11 @@ public readonly record struct HttpRequest(HttpMethod Verb, Uri Uri, IEnumerable<
 
     public override string ToString() =>
         $"""
-         {Verb} {Uri}
-         {Headers.Select(pair => $"{pair.Key}: {pair.Value}").Join('\n')}
+        {Verb} {Uri}
+        {Headers.Select(pair => $"{pair.Key}: {pair.Value}").Join('\n')}
 
-         {SerializeBodySync()}
-         """;
+        {SerializeBodySync()}
+        """;
 
     private string? SerializeBodySync() => Body?.ReadAsStringAsync().GetAwaiter().GetResult();
 

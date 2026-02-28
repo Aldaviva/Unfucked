@@ -24,12 +24,17 @@ public static class Extensions {
     public static IWebTarget Target<H>(this H httpClient, Uri uri) where H: IHttpClient => new WebTarget(httpClient, uri);
 
     /// <inheritdoc cref="Target(System.Net.Http.HttpClient,System.Uri)" />
+    /// <param name="isTemplate"><c>false</c> if <paramref name="uri"/> is a regular URI, or <c>true</c> if it is a URI Template with <c>{placeholders}</c></param>
     [Pure]
-    public static IWebTarget Target(this HttpClient httpClient, string uri) => new WebTarget(HttpClientWrapper.Wrap(httpClient), uri);
+    public static IWebTarget Target(this HttpClient httpClient, string uri, bool isTemplate = false) {
+        IHttpClient client = HttpClientWrapper.Wrap(httpClient);
+        return isTemplate ? new WebTarget(client, UrlBuilder.FromTemplate(uri)) : new WebTarget(client, uri);
+    }
 
-    /// <inheritdoc cref="Target(System.Net.Http.HttpClient,string)" />
+    /// <inheritdoc cref="Target(System.Net.Http.HttpClient,string,bool)" />
     [Pure]
-    public static IWebTarget Target<H>(this H httpClient, string uri) where H: IHttpClient => new WebTarget(httpClient, uri);
+    public static IWebTarget Target<H>(this H httpClient, string uri, bool isTemplate = false) where H: IHttpClient =>
+        isTemplate ? new WebTarget(httpClient, UrlBuilder.FromTemplate(uri)) : new WebTarget(httpClient, uri);
 
     /// <summary>
     /// Begin building an HTTP request for a given URL
@@ -119,13 +124,13 @@ public static class Extensions {
     /// <inheritdoc cref="Property{T}(IHttpClient,PropertyKey{T},out T)" />
     [Pure]
     public static bool Property<H, T>(this H httpClient, PropertyKey<T> key, out T? existingValue) where H: HttpClient where T: notnull =>
-        UnfuckedHttpHandler.FindHandler(httpClient) is { } handler ? handler.Property(key, out existingValue) : throw WebTarget.ConfigUnavailable;
+        UnfuckedHttpHandler.FindHandler(httpClient) is {} handler ? handler.Property(key, out existingValue) : throw WebTarget.ConfigUnavailable;
 
     /// <summary>Get a property from the client.</summary>
     /// <exception cref="InvalidOperationException">the <paramref name="httpClient"/> does not have a usable configuration because of how it was constructed</exception>
     [Pure]
     public static bool Property<T>(this IHttpClient httpClient, PropertyKey<T> key, out T? existingValue) where T: notnull =>
-        httpClient.Handler is { } handler ? handler.Property(key, out existingValue) : throw WebTarget.ConfigUnavailable;
+        httpClient.Handler is {} handler ? handler.Property(key, out existingValue) : throw WebTarget.ConfigUnavailable;
 
     #endregion
 

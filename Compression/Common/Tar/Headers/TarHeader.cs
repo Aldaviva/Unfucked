@@ -15,7 +15,7 @@ namespace Unfucked.Compression.Common.Tar.Headers;
 /// <para>This is generally used inside <see cref="TarWriter"/>, but if you're subclassing it, you may need to create an instance of this yourself.</para>
 /// <para>Usage: construct a new instance and set all the properties you want like <see cref="Name"/> and <see cref="EntryType"/>, then call <see cref="Write"/>, passing the <see cref="Stream"/> from <c>TarWriter.OutputStream</c>.</para>
 /// </summary>
-public class TarHeader(ArchiveEncoding archiveEncoding) {
+public class TarHeader(IArchiveEncoding archiveEncoding) {
 
     internal static readonly DateTime EPOCH = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
@@ -46,7 +46,7 @@ public class TarHeader(ArchiveEncoding archiveEncoding) {
     public EntryType EntryType { get; set; }
 
     internal Stream PackedStream { get; set; }
-    internal ArchiveEncoding ArchiveEncoding { get; } = archiveEncoding;
+    internal IArchiveEncoding ArchiveEncoding { get; } = archiveEncoding;
 
     internal const int BLOCK_SIZE = 512;
 

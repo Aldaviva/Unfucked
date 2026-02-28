@@ -17,10 +17,9 @@
     <PackageVersion Include="mwinapi" Version="0.3.0.5" />
     <PackageVersion Include="NodaTime" Version="3.3.0" />
     <PackageVersion Include="OBSClient" Version="3.0.0" />
-    <PackageVersion Include="PgpCore" Version="6.5.4" />
+    <PackageVersion Include="PgpCore" Version="7.0.0" />
     <PackageVersion Include="ReSharper.ExportAnnotations.Task" Version="1.4.0" />
-    <PackageVersion Include="SharpCompress" Version="0.41.0" />
-    <PackageVersion Include="Stun.Net" Version="9.0.1" />
+    <PackageVersion Include="SharpCompress" Version="0.46.3" />
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
     <PackageVersion Include="System.Text.Encodings.Web" Version="8.0.0" />
     <PackageVersion Include="System.Text.Json" Version="8.0.6" />
@@ -28,6 +27,18 @@
     <PackageVersion Include="ThrottleDebounce" Version="3.0.0-beta5" />
     <PackageVersion Include="TwitchApi.Net" Version="3.2.0" />
   </ItemGroup>
+  <Choose>
+      <When Condition="'$(TargetFramework)' != 'net10.0'">
+          <ItemGroup>
+              <PackageVersion Include="Stun.Net" Version="9.0.1" />
+          </ItemGroup>
+      </When>
+      <Otherwise>
+          <ItemGroup>
+              <PackageVersion Include="Stun.Net" Version="10.0.0" />
+          </ItemGroup>
+      </Otherwise>
+  </Choose>
   <ItemGroup>
     <PackageVersion Include="Unfucked" Version="$(UnfuckedVersion)" />
     <PackageVersion Include="Unfucked.Caching" Version="$(UnfuckedCachingVersion)" />

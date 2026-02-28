@@ -28,7 +28,6 @@ public class TarWriter(Stream destination, TarWriterOptions options): SharpCompr
         }
 
         long realSize = size ?? source.Length;
-
         TarHeader header = new(WriterOptions.ArchiveEncoding) {
             LastModifiedTime = modificationTime ?? TarHeader.EPOCH,
             Name             = NormalizeFilename(filename),

@@ -241,7 +241,7 @@ public class TarHeader(IArchiveEncoding archiveEncoding) {
         }
     }
 
-    /// <exception cref="FormatException"></exception>
+    /*/// <exception cref="FormatException"></exception>
     private static int ReadAsciiInt32Base8(byte[] buffer, int offset, int count) {
         string s = Encoding.UTF8.GetString(buffer, offset, count).TrimNulls();
         if (string.IsNullOrEmpty(s)) {
@@ -249,7 +249,7 @@ public class TarHeader(IArchiveEncoding archiveEncoding) {
         }
 
         return Convert.ToInt32(s, 8);
-    }
+    }*/
 
     /// <exception cref="FormatException"></exception>
     private static long ReadAsciiInt64Base8(byte[] buffer, int offset, int count) {
@@ -279,7 +279,7 @@ public class TarHeader(IArchiveEncoding archiveEncoding) {
         return Convert.ToInt64(s, 8);
     }
 
-    /// <exception cref="FormatException"></exception>
+    /*/// <exception cref="FormatException"></exception>
     private static long ReadAsciiInt64(byte[] buffer, int offset, int count) {
         string s = Encoding.UTF8.GetString(buffer, offset, count).TrimNulls();
         if (string.IsNullOrEmpty(s)) {
@@ -287,7 +287,7 @@ public class TarHeader(IArchiveEncoding archiveEncoding) {
         }
 
         return Convert.ToInt64(s);
-    }
+    }*/
 
     private static readonly byte[] eightSpaces = "        "u8.ToArray();
 

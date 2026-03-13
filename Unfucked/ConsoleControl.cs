@@ -77,7 +77,7 @@ public static partial class ConsoleControl {
 
     private static string fullColorToControlSequence(Color? color) => color switch {
         { A: 0 } => "1",
-        { } c    => $"2;{c.R:D};{c.G:D};{c.B:D}",
+        {} c     => $"2;{c.R:D};{c.G:D};{c.B:D}",
         _        => string.Empty,
     };
 
@@ -204,10 +204,10 @@ public static partial class ConsoleControl {
 
     private enum StandardHandle: uint {
 
-        /// <summary>
+        /*/// <summary>
         /// The standard input device. Initially, this is the console input buffer, <c>CONIN$</c>.
         /// </summary>
-        STANDARD_INPUT_HANDLE = 4294967286,
+        STANDARD_INPUT_HANDLE = 4294967286,*/
 
         /// <summary>
         /// The standard output device. Initially, this is the active console screen buffer, <c>CONOUT$</c>.
@@ -251,21 +251,21 @@ public static partial class ConsoleControl {
     private enum ConsoleMode: uint {
 
         // stdin
-        ENABLE_PROCESSED_INPUT        = 1 << 0,
+        /*ENABLE_PROCESSED_INPUT        = 1 << 0,
         ENABLE_LINE_INPUT             = 1 << 1,
         ENABLE_ECHO_INPUT             = 1 << 2,
         ENABLE_WINDOW_INPUT           = 1 << 3,
         ENABLE_MOUSE_INPUT            = 1 << 4,
         ENABLE_INSERT_MODE            = 1 << 5,
         ENABLE_QUICK_EDIT_MODE        = 1 << 6,
-        ENABLE_VIRTUAL_TERMINAL_INPUT = 1 << 9,
+        ENABLE_VIRTUAL_TERMINAL_INPUT = 1 << 9,*/
 
         // stdout
-        ENABLE_PROCESSED_OUTPUT            = 1 << 0,
-        ENABLE_WRAP_AT_EOL_OUTPUT          = 1 << 1,
+        /*ENABLE_PROCESSED_OUTPUT            = 1 << 0,
+        ENABLE_WRAP_AT_EOL_OUTPUT          = 1 << 1,*/
         ENABLE_VIRTUAL_TERMINAL_PROCESSING = 1 << 2,
-        DISABLE_NEWLINE_AUTO_RETURN        = 1 << 3,
-        ENABLE_LVB_GRID_WORLDWIDE          = 1 << 4
+        /*DISABLE_NEWLINE_AUTO_RETURN        = 1 << 3,
+        ENABLE_LVB_GRID_WORLDWIDE          = 1 << 4*/
 
     }
 #pragma warning restore CA1069

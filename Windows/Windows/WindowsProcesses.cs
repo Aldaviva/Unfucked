@@ -183,16 +183,16 @@ public static class WindowsProcesses {
         [Flags]
         public enum ProcessFlags: uint {
 
-            IS_PROTECTED_PROCESS    = 1 << 0,
+            /*IS_PROTECTED_PROCESS    = 1 << 0,
             IS_WOW64_PROCESS        = 1 << 1,
             IS_PROCESS_DELETING     = 1 << 2,
-            IS_CROSS_SESSION_CREATE = 1 << 3,
-            IS_FROZEN               = 1 << 4,
-            IS_BACKGROUND           = 1 << 5,
+            IS_CROSS_SESSION_CREATE = 1 << 3,*/
+            IS_FROZEN = 1 << 4,
+            /*IS_BACKGROUND           = 1 << 5,
             IS_STRONGLY_NAMED       = 1 << 6,
             IS_SECURE_PROCESS       = 1 << 7,
             IS_SUBSYSTEM_PROCESS    = 1 << 8,
-            SPARE_BITS              = 1 << 9
+            SPARE_BITS              = 1 << 9*/
 
         }
 
@@ -212,8 +212,8 @@ public static class WindowsProcesses {
 
     private enum ProcessInfoClass: uint {
 
-        PROCESS_BASIC_INFORMATION                          = 0x00,
-        PROCESS_QUOTA_LIMITS                               = 0x01,
+        PROCESS_BASIC_INFORMATION = 0x00,
+        /*PROCESS_QUOTA_LIMITS                               = 0x01,
         PROCESS_IO_COUNTERS                                = 0x02,
         PROCESS_VM_COUNTERS                                = 0x03,
         PROCESS_TIMES                                      = 0x04,
@@ -312,7 +312,7 @@ public static class WindowsProcesses {
         PROCESS_LEAP_SECOND_INFORMATION                    = 0x61,
         PROCESS_FIBER_SHADOW_STACK_ALLOCATION              = 0x62,
         PROCESS_FREE_FIBER_SHADOW_STACK_ALLOCATION         = 0x63,
-        MAX_PROCESS_INFO_CLASS                             = 0x64
+        MAX_PROCESS_INFO_CLASS                             = 0x64*/
 
     }
 
@@ -348,11 +348,12 @@ public static class WindowsProcesses {
     [Flags]
     private enum ProcessSecurityAndAccessRight: uint {
 
-        PROCESS_CREATE_THREAD     = 0x2,
-        PROCESS_QUERY_INFORMATION = 0x400,
+        PROCESS_CREATE_THREAD = 0x2,
+
+        /*PROCESS_QUERY_INFORMATION = 0x400,
         PROCESS_VM_OPERATION      = 0x8,
         PROCESS_VM_WRITE          = 0x20,
-        PROCESS_VM_READ           = 0x10
+        PROCESS_VM_READ = 0x10*/
 
     }
 

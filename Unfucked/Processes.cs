@@ -70,9 +70,9 @@ public static class Processes {
     /// <remarks>Inspired by Node.js' <c>child_process.execFile()</c>: <see href="https://nodejs.org/api/child_process.html#child_processexecfilefile-args-options-callback"/></remarks>
     /// <param name="file">The name or path of the executable file to run</param>
     /// <param name="arguments">Arguments to pass to the child process</param>
-    /// <returns>Tuple that contains the numeric exit code of the child process, the standard output text, and the standard error text, or <c>null</c> if the child process failed to start.</returns>
+    /// <returns>Struct that contains the numeric exit code of the child process, the standard output text, and the standard error text, or <c>null</c> if the child process failed to start.</returns>
 #pragma warning disable Ex0100 // No cancellation token is passed, so it can't be canceled.
-    public static Task<(int exitCode, string stdout, string stderr)> ExecFile(string file, params IEnumerable<string> arguments) => ExecFile(file, arguments, extraEnvironment: null);
+    public static Task<ProcessResult> ExecFile(string file, params IEnumerable<string> arguments) => ExecFile(file, arguments, extraEnvironment: null);
 #pragma warning restore Ex0100
 
     /// <summary>
@@ -85,9 +85,9 @@ public static class Processes {
     /// <param name="workingDirectory">The working directory that the child process should start executing in, or <c>null</c> to inherit the current working directory from this process.</param>
     /// <param name="hideWindow"><c>true</c> on Windows to attempt to hide the child process' window, useful for console applications that force a command prompt window to appear, or <c>false</c> to use the default behavior for the child process. Has no effect on other operating systems.</param>
     /// <param name="cancellationToken">Used to stop waiting if the process is taking too long to exit. Does not kill the process on cancellation.</param>
-    /// <returns>Tuple that contains the numeric exit code of the child process, the trimmed standard output text, and the trimmed standard error text, or <c>(-1, "", "")</c> if the child process failed to start.</returns>
+    /// <returns>Struct that contains the numeric exit code of the child process, the trimmed standard output text, and the trimmed standard error text, or <c>(-1, "", "")</c> if the child process failed to start.</returns>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled before the child process exited. The child process will still be running at this point—cancelling this method does not kill it. To get information about the running child process, for example if you want to kill it yourself, you can read the integer <c>pid</c> value from the <see cref="Exception.Data"/> dictionary to pass to <see cref="Process.GetProcessById(int)"/> and call <see cref="Process.Kill()"/>.</exception>
-    public static async Task<(int exitCode, string stdout, string stderr)> ExecFile(
+    public static async Task<ProcessResult> ExecFile(
         string file,
         IEnumerable<string> arguments,
         IDictionary<string, string?>? extraEnvironment = null,
@@ -124,13 +124,13 @@ public static class Processes {
 
             process = Process.Start(processStartInfo);
         } catch (Win32Exception) {
-            return (-1, string.Empty, string.Empty);
+            return new ProcessResult(-1, string.Empty, string.Empty);
         } catch (PlatformNotSupportedException) {
-            return (-1, string.Empty, string.Empty);
+            return new ProcessResult(-1, string.Empty, string.Empty);
         }
 
         if (process == null) {
-            return (-1, string.Empty, string.Empty);
+            return new ProcessResult(-1, string.Empty, string.Empty);
         }
 
         using (process) {
@@ -167,7 +167,7 @@ public static class Processes {
             }
 
             string[] std = await Task.WhenAll(stdout, stderr).ConfigureAwait(false);
-            return (process.ExitCode, std[0].Trim(), std[1].Trim());
+            return new ProcessResult(process.ExitCode, std[0].Trim(), std[1].Trim());
         }
     }
 
@@ -192,3 +192,11 @@ public static class Processes {
     private static extern IntPtr GetModuleHandleW(IntPtr filename = default);
 
 }
+
+/// <summary>
+/// The result of a process exiting.
+/// </summary>
+/// <param name="ExitCode">Status code that the process returned when it exited, or <c>-</c> if the process failed to start.</param>
+/// <param name="StdOut">Trimmed text the process printed to its standard output stream.</param>
+/// <param name="StdErr">Trimmed text the process printed to its standard error stream.</param>
+public readonly record struct ProcessResult(int ExitCode, string StdOut, string StdErr);

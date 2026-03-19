@@ -28,25 +28,31 @@ public static partial class ConsoleControl {
     /// Clear screen and move to the top-left position
     /// </summary>
     [ExcludeFromCodeCoverage]
-    public static void Clear() {
-        if (IsColorSupported()) {
-            Console.Write("\e[1J\e[1;1H");
+    public static void WriteClear() {
+        if (EnableColorSupport()) {
+            Console.Write(CLEAR);
         } else {
             Console.Clear();
         }
     }
 
+    /// <inheritdoc cref="WriteClear" />
+    public const string CLEAR = "\e[1J\e[1;1H";
+
     /// <summary>
     /// Clear the line and most to the leftmost position
     /// </summary>
     [ExcludeFromCodeCoverage]
-    public static void ClearLine() {
-        if (IsColorSupported()) {
-            Console.Write("\r\e[2K");
+    public static void WriteClearLine() {
+        if (EnableColorSupport()) {
+            Console.Write(CLEAR_LINE);
         } else {
             Console.WriteLine();
         }
     }
+
+    /// <inheritdoc cref="WriteClearLine" />
+    public const string CLEAR_LINE = "\r\e[2K";
 
     /// <summary>
     /// Get ANSI control characters to change the foreground and background colors.
@@ -56,7 +62,7 @@ public static partial class ConsoleControl {
     /// <returns>An ANSI escape sequence that changes the text and background color, if specified.</returns>
     [Pure]
     public static string Color(ConsoleColor? foregroundColor, ConsoleColor? backgroundColor = null) {
-        if (IsColorSupported()) {
+        if (EnableColorSupport()) {
             bool hasForegroundAndBackground = foregroundColor != null && backgroundColor != null;
             return $"\e[{foregroundColor.ToAnsiEscapeCode():D}{(hasForegroundAndBackground ? ";" : "")}{backgroundColor.ToAnsiEscapeCode() + 10:D}m";
         } else {
@@ -66,16 +72,10 @@ public static partial class ConsoleControl {
 
     /// <inheritdoc cref="Color(System.ConsoleColor?,System.ConsoleColor?)" />
     [Pure]
-    public static string Color(Color? foregroundColor, Color? backgroundColor = null) {
-        if (IsColorSupported()) {
-            return
-                $"{(foregroundColor != null ? $"\e[38;{fullColorToControlSequence(foregroundColor)}m" : string.Empty)}{(backgroundColor != null ? $"\e[48;{fullColorToControlSequence(backgroundColor)}m" : string.Empty)}";
-        } else {
-            return string.Empty;
-        }
-    }
+    public static string Color(Color? foregroundColor, Color? backgroundColor = null) => !EnableColorSupport() ? string.Empty :
+        $"{(foregroundColor != null ? $"\e[38;{colorToControlSequence(foregroundColor)}m" : "")}{(backgroundColor != null ? $"\e[48;{colorToControlSequence(backgroundColor)}m" : "")}";
 
-    private static string fullColorToControlSequence(Color? color) => color switch {
+    private static string colorToControlSequence(Color? color) => color switch {
         { A: 0 } => "1",
         {} c     => $"2;{c.R:D};{c.G:D};{c.B:D}",
         _        => string.Empty,
@@ -145,7 +145,7 @@ public static partial class ConsoleControl {
     /// <remarks><see href="https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences#example-of-enabling-virtual-terminal-processing"/></remarks>
     /// <returns><c>true</c> if virtual terminal processing is enabled, or <c>false</c> if it is unavailable</returns>
     [ExcludeFromCodeCoverage]
-    public static bool IsColorSupported() {
+    public static bool EnableColorSupport() {
         if (virtualTerminalProcessingState == VirtualTerminalProcessing.DISABLED) {
             IntPtr stdout = GetStdHandle(StandardHandle.STANDARD_OUTPUT_HANDLE);
             virtualTerminalProcessingState = stdout == INVALID_HANDLE_VALUE
@@ -159,7 +159,6 @@ public static partial class ConsoleControl {
     }
 
     private static int? ToAnsiEscapeCode(this ConsoleColor? color) => color switch {
-        null                     => null,
         ConsoleColor.Black       => 30,
         ConsoleColor.Blue        => 94,
         ConsoleColor.Cyan        => 96,
@@ -243,7 +242,6 @@ public static partial class ConsoleControl {
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool SetConsoleMode(IntPtr consoleHandle, ConsoleMode mode);
 
-#pragma warning disable CA1069
     /// <summary>
     /// <see href="https://learn.microsoft.com/en-us/windows/console/setconsolemode#parameters"/>
     /// </summary>
@@ -268,6 +266,5 @@ public static partial class ConsoleControl {
         ENABLE_LVB_GRID_WORLDWIDE          = 1 << 4*/
 
     }
-#pragma warning restore CA1069
 
 }

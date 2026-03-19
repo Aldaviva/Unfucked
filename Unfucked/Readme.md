@@ -56,14 +56,14 @@ using Unfucked;
     ```
 - Clear screen and move cursor.
     ```cs
-    ConsoleControl.Clear();     // clear screen and move to top-left corner
-    ConsoleControl.ClearLine(); // clear line and move to left side
+    ConsoleControl.WriteClear();     // clear screen and move to top-left corner
+    ConsoleControl.WriteClearLine(); // clear line and move to left side
     ```
 - Enable colored output on Windows 10 1511 and later.
     - Called implicitly whenever you call the `ConsoleControl.Color`, `Write`, `WriteLine`, `Clear`, or `ClearLine` methods.
     - Can be manually checked and opportunistically enabled.
         ```cs
-        bool colorable = ConsoleControl.IsColorSupported();
+        bool colorable = ConsoleControl.EnableColorSupport();
         ```
 
 ### Cryptography

@@ -34,7 +34,7 @@ public class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOptions> 
     private static readonly char[] LEVEL_LABELS = ['t', 'd', 'i', 'W', 'E', 'C', ' '];
 
     private readonly UnfuckedConsoleFormatterOptions options  = options.Value;
-    private readonly bool                            useColor = options.Value.Color && ConsoleControl.IsColorSupported();
+    private readonly bool                            useColor = options.Value.Color && ConsoleControl.EnableColorSupport();
 
     private readonly string[] levelColors = [
         ConsoleControl.Color(ConsoleColor.DarkGray),                         // trace

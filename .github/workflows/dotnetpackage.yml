@@ -15,7 +15,7 @@ jobs:
       run: git config set --global core.autocrlf false
 
     - name: Clone
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Initialize test reporting
       uses: testspace-com/setup-testspace@v1
@@ -61,7 +61,7 @@ jobs:
       run: exit $env:TEST_EXIT_CODE
 
     - name: Upload package
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Unfucked
         path: bin/*.*nupkg

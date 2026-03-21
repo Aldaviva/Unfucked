@@ -18,7 +18,7 @@ public readonly record struct HttpRequest(HttpMethod Verb, Uri Uri, IEnumerable<
             }
         }
 
-        return new HttpRequest(original.Method, original.RequestUri, replayedHeaders, replayedRequestBody, null);
+        return new HttpRequest(original.Method, original.RequestUri!, replayedHeaders, replayedRequestBody, null);
     }
 
     /*

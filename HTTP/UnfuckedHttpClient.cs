@@ -37,7 +37,7 @@ public interface IHttpClient: IDisposable {
 /// <para><c>using HttpClient client = new UnfuckedHttpClient();
 /// MyObject response = await client.Target(url).Get&lt;MyObject&gt;();</c></para>
 /// </summary>
-public sealed class UnfuckedHttpClient: HttpClient, IHttpClient {
+public class UnfuckedHttpClient: HttpClient, IHttpClient {
 
     private static readonly TimeSpan DEFAULT_TIMEOUT = new(0, 0, 30);
 
@@ -53,6 +53,7 @@ public sealed class UnfuckedHttpClient: HttpClient, IHttpClient {
     /// </summary>
     public UnfuckedHttpClient(): this((IUnfuckedHttpHandler) new UnfuckedHttpHandler()) {}
 
+#pragma warning disable CS1574, CS1584, CS1581, CS1580
     // This is not a factory method because it lets us both pass a SocketsHttpHandler with custom properties like PooledConnectionLifetime, as well as init properties on the UnfuckedHttpClient like Timeout. If this were a factory method, init property accessors would not be available, and callers would have to set them later on a temporary variable which can't all fit in one expression.
     /// <summary>
     /// Create a new <see cref="UnfuckedHttpClient"/> instance with the given handler.
@@ -60,6 +61,7 @@ public sealed class UnfuckedHttpClient: HttpClient, IHttpClient {
     /// <param name="handler">An <see cref="HttpMessageHandler"/> used to send requests, typically a <see cref="SocketsHttpHandler"/> with custom properties.</param>
     /// <param name="disposeHandler"><c>true</c> to dispose of <paramref name="handler"/> when this instance is disposed, or <c>false</c> to not dispose it.</param>
     public UnfuckedHttpClient(HttpMessageHandler handler, bool disposeHandler = true): this(handler as IUnfuckedHttpHandler ?? new UnfuckedHttpHandler(handler), disposeHandler) {}
+#pragma warning restore CS1574, CS1584, CS1581, CS1580
 
     /// <summary>
     /// Create a new <see cref="UnfuckedHttpClient"/> instance with a new handler and the given <paramref name="configuration"/>.
@@ -126,7 +128,7 @@ public sealed class UnfuckedHttpClient: HttpClient, IHttpClient {
     }
 
     /// <inheritdoc />
-    public Task<HttpResponseMessage> SendAsync(HttpRequest request, CancellationToken cancellationToken = default) {
+    public virtual Task<HttpResponseMessage> SendAsync(HttpRequest request, CancellationToken cancellationToken = default) {
 #if NET8_0_OR_GREATER
         WireLogFilter.ASYNC_STATE.Value = new WireLogFilter.WireAsyncState();
 #endif

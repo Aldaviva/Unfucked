@@ -266,7 +266,7 @@ internal static class JsonContentDelegate {
     public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null) =>
         JsonContent.Create(inputValue, inputType, mediaType, options);
 
-    /// <inheritdoc cref="JsonContent.Create{T}(T?,System.Text.Json.Serialization.Metadata.JsonTypeInfo{T},System.Net.Http.Headers.MediaTypeHeaderValue?)" />
+    /// <inheritdoc cref="JsonContent.Create{T}(T,System.Text.Json.Serialization.Metadata.JsonTypeInfo{T},System.Net.Http.Headers.MediaTypeHeaderValue?)" />
     /// <exception cref="FileNotFoundException"><c>System.Net.Http.Json</c> is not on the classpath</exception>
     public static JsonContent Create<T>(T? inputValue, JsonTypeInfo<T> jsonTypeInfo, MediaTypeHeaderValue? mediaType = null) => JsonContent.Create(inputValue, jsonTypeInfo, mediaType);
 

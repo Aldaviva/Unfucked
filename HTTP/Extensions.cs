@@ -161,7 +161,7 @@ public static class Extensions {
                         } else {
                             encoding = Encoding.GetEncoding(charset);
                         }
-                    } catch (ArgumentException e) {
+                    } catch (ArgumentException) {
                         // leave encoding null
                     }
 

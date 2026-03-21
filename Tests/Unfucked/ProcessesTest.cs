@@ -6,37 +6,37 @@ public class ProcessesTest {
 
     [Fact]
     public async Task ExecFile() {
-        (int exitCode, string stdout, string stderr)? gitResult = await Processes.ExecFile("git", "--version");
+        ProcessResult gitResult = await Processes.ExecFile("git", "--version");
 
         gitResult.Should().NotBeNull();
-        gitResult.Value.exitCode.Should().Be(0);
-        gitResult.Value.stderr.Should().BeEmpty();
-        gitResult.Value.stdout.Should().StartWith("git version ");
+        gitResult.ExitCode.Should().Be(0);
+        gitResult.StdErr.Should().BeEmpty();
+        gitResult.StdOut.Should().StartWith("git version ");
     }
 
     [Fact]
     public async Task ExecFileWithEnvironment() {
-        (int exitCode, string stdout, string stderr)? gitResult =
+        ProcessResult gitResult =
             await Processes.ExecFile("git", ["--version"], new Dictionary<string, string?> { { "abc", "def" }, { "removeme", null } });
 
         gitResult.Should().NotBeNull();
-        gitResult.Value.exitCode.Should().Be(0);
-        gitResult.Value.stderr.Should().BeEmpty();
-        gitResult.Value.stdout.Should().StartWith("git version ");
+        gitResult.ExitCode.Should().Be(0);
+        gitResult.StdErr.Should().BeEmpty();
+        gitResult.StdOut.Should().StartWith("git version ");
     }
 
     [Fact]
     public async Task ExecMissingFile() {
-        (int exitCode, string stdout, string stderr) gitResult = await Processes.ExecFile("missing_file");
+        ProcessResult gitResult = await Processes.ExecFile("missing_file");
 
         gitResult.Should().NotBeNull();
-        gitResult.exitCode.Should().Be(-1);
+        gitResult.ExitCode.Should().Be(-1);
     }
 
     [Fact]
     public async Task CancelExecFile() {
-        CancellationTokenSource                                           cts  = new();
-        Task<(int exitCode, string standardOutput, string standardError)> task = Processes.ExecFile("ping", ["127.0.0.1"], cancellationToken: cts.Token);
+        CancellationTokenSource cts  = new();
+        Task<ProcessResult>     task = Processes.ExecFile("ping", ["127.0.0.1"], cancellationToken: cts.Token);
 
         cts.Cancel();
 

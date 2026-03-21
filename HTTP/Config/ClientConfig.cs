@@ -7,7 +7,7 @@ namespace Unfucked.HTTP.Config;
 
 public interface IClientConfig: Configurable<IClientConfig>, ICloneable;
 
-public class ClientConfig: IClientConfig {
+public sealed class ClientConfig: IClientConfig {
 
     public const int FIRST_FILTER_POSITION = 0;
     public const int LAST_FILTER_POSITION  = int.MaxValue;

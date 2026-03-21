@@ -13,7 +13,7 @@ public interface StunServerList: IDisposable {
 
 }
 
-public class AlwaysOnlineStunServerList: StunServerList {
+public sealed class AlwaysOnlineStunServerList: StunServerList {
 
     private const string CACHE_KEY = "always-on-stun";
 
@@ -88,18 +88,11 @@ public class AlwaysOnlineStunServerList: StunServerList {
         return servers.Concat(FALLBACK_SERVERS);
     }
 
-    protected virtual void Dispose(bool disposing) {
-        if (disposing) {
-            ServersCache.Dispose();
-            if (ownsHttpClient) {
-                http.Dispose();
-            }
-        }
-    }
-
     public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+        ServersCache.Dispose();
+        if (ownsHttpClient) {
+            http.Dispose();
+        }
     }
 
 }

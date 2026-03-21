@@ -37,7 +37,7 @@ public interface IHttpClient: IDisposable {
 /// <para><c>using HttpClient client = new UnfuckedHttpClient();
 /// MyObject response = await client.Target(url).Get&lt;MyObject&gt;();</c></para>
 /// </summary>
-public class UnfuckedHttpClient: HttpClient, IHttpClient {
+public sealed class UnfuckedHttpClient: HttpClient, IHttpClient {
 
     private static readonly TimeSpan DEFAULT_TIMEOUT = new(0, 0, 30);
 
@@ -72,7 +72,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
     /// </summary>
     /// <param name="unfuckedHandler"></param>
     /// <param name="disposeHandler"></param>
-    protected UnfuckedHttpClient(IUnfuckedHttpHandler unfuckedHandler, bool disposeHandler = true): base(unfuckedHandler as HttpMessageHandler ?? new IUnfuckedHttpHandlerWrapper(unfuckedHandler),
+    private UnfuckedHttpClient(IUnfuckedHttpHandler unfuckedHandler, bool disposeHandler = true): base(unfuckedHandler as HttpMessageHandler ?? new IUnfuckedHttpHandlerWrapper(unfuckedHandler),
         disposeHandler) {
         Handler = unfuckedHandler;
         Timeout = DEFAULT_TIMEOUT;
@@ -126,7 +126,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
     }
 
     /// <inheritdoc />
-    public virtual Task<HttpResponseMessage> SendAsync(HttpRequest request, CancellationToken cancellationToken = default) {
+    public Task<HttpResponseMessage> SendAsync(HttpRequest request, CancellationToken cancellationToken = default) {
 #if NET8_0_OR_GREATER
         WireLogFilter.ASYNC_STATE.Value = new WireLogFilter.WireAsyncState();
 #endif
@@ -170,7 +170,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
 
 }
 
-internal class HttpClientWrapper: IHttpClient {
+internal sealed class HttpClientWrapper: IHttpClient {
 
     private readonly HttpClient realClient;
 
@@ -198,8 +198,6 @@ internal class HttpClientWrapper: IHttpClient {
         return UnfuckedHttpClient.SendAsync(realClient, new UnfuckedHttpRequestMessage(request), cancellationToken);
     }
 
-    public void Dispose() {
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() {}
 
 }

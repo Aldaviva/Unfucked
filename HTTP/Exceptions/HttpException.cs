@@ -37,7 +37,7 @@ public abstract class HttpException(HttpStatusCode? status, string message, Exce
 }
 
 #pragma warning disable CS0618 // Type or member is obsolete - it's not obsolete in .NET Standard 2.0, which this library targets
-public record HttpExceptionParams(
+public sealed record HttpExceptionParams(
     HttpMethod Verb,
     Uri? RequestUrl,
     HttpResponseHeaders? ResponseHeaders = null,
@@ -104,41 +104,43 @@ public class WebApplicationException(HttpStatusCode status, string reasonPhrase,
 public class ClientErrorException(HttpStatusCode status, string reasonPhrase, HttpExceptionParams exceptionParams): WebApplicationException(status, reasonPhrase, exceptionParams);
 
 /// <summary>400</summary>
-public class BadRequestException(string? reasonPhrase, HttpExceptionParams exceptionParams): ClientErrorException(HttpStatusCode.BadRequest, reasonPhrase ?? "Bad Request", exceptionParams);
+public sealed class BadRequestException(string? reasonPhrase, HttpExceptionParams exceptionParams): ClientErrorException(HttpStatusCode.BadRequest, reasonPhrase ?? "Bad Request", exceptionParams);
 
 /// <summary>401</summary>
-public class NotAuthorizedException(string? reasonPhrase, HttpExceptionParams exceptionParams): ClientErrorException(HttpStatusCode.Unauthorized, reasonPhrase ?? "Unauthorized", exceptionParams);
+public sealed class NotAuthorizedException(string? reasonPhrase, HttpExceptionParams exceptionParams)
+    : ClientErrorException(HttpStatusCode.Unauthorized, reasonPhrase ?? "Unauthorized", exceptionParams);
 
 /// <summary>403</summary>
-public class ForbiddenException(string? reasonPhrase, HttpExceptionParams exceptionParams): ClientErrorException(HttpStatusCode.Forbidden, reasonPhrase ?? "Forbidden", exceptionParams);
+public sealed class ForbiddenException(string? reasonPhrase, HttpExceptionParams exceptionParams): ClientErrorException(HttpStatusCode.Forbidden, reasonPhrase ?? "Forbidden", exceptionParams);
 
 /// <summary>404</summary>
-public class NotFoundException(string? reasonPhrase, HttpExceptionParams exceptionParams): ClientErrorException(HttpStatusCode.NotFound, reasonPhrase ?? "Not Found", exceptionParams);
+public sealed class NotFoundException(string? reasonPhrase, HttpExceptionParams exceptionParams): ClientErrorException(HttpStatusCode.NotFound, reasonPhrase ?? "Not Found", exceptionParams);
 
 /// <summary>405</summary>
-public class NotAllowedException(string? reasonPhrase, HttpExceptionParams exceptionParams)
+public sealed class NotAllowedException(string? reasonPhrase, HttpExceptionParams exceptionParams)
     : ClientErrorException(HttpStatusCode.MethodNotAllowed, reasonPhrase ?? "Method Not Allowed", exceptionParams);
 
 /// <summary>406</summary>
-public class NotAcceptableException(string? reasonPhrase, HttpExceptionParams exceptionParams): ClientErrorException(HttpStatusCode.NotAcceptable, reasonPhrase ?? "Not Acceptable", exceptionParams);
+public sealed class NotAcceptableException(string? reasonPhrase, HttpExceptionParams exceptionParams)
+    : ClientErrorException(HttpStatusCode.NotAcceptable, reasonPhrase ?? "Not Acceptable", exceptionParams);
 
 /// <summary>415</summary>
-public class NotSupportedException(string? reasonPhrase, HttpExceptionParams exceptionParams)
+public sealed class NotSupportedException(string? reasonPhrase, HttpExceptionParams exceptionParams)
     : ClientErrorException(HttpStatusCode.UnsupportedMediaType, reasonPhrase ?? "Unsupported Media Type", exceptionParams);
 
 /// <summary>500–599</summary>
 public class ServerErrorException(HttpStatusCode statusCode, string reasonPhrase, HttpExceptionParams exceptionParams): WebApplicationException(statusCode, reasonPhrase, exceptionParams);
 
 /// <summary>500</summary>
-public class InternalServerErrorException(string? reasonPhrase, HttpExceptionParams exceptionParams)
+public sealed class InternalServerErrorException(string? reasonPhrase, HttpExceptionParams exceptionParams)
     : ServerErrorException(HttpStatusCode.InternalServerError, reasonPhrase ?? "Internal Server Error", exceptionParams);
 
 /// <summary>503</summary>
-public class ServiceUnavailableException(string? reasonPhrase, HttpExceptionParams exceptionParams)
+public sealed class ServiceUnavailableException(string? reasonPhrase, HttpExceptionParams exceptionParams)
     : ServerErrorException(HttpStatusCode.ServiceUnavailable, reasonPhrase ?? "Service Unavailable", exceptionParams);
 
 /// <summary>300–399</summary>
-public class RedirectionException(HttpStatusCode statusCode, Uri? destination, string reasonPhrase, HttpExceptionParams exceptionParams)
+public sealed class RedirectionException(HttpStatusCode statusCode, Uri? destination, string reasonPhrase, HttpExceptionParams exceptionParams)
     : WebApplicationException(statusCode, reasonPhrase, exceptionParams) {
 
     public Uri? Destination { get; } = destination;
@@ -146,7 +148,7 @@ public class RedirectionException(HttpStatusCode statusCode, Uri? destination, s
 }
 
 /// <summary>Network, filter, or deserialization error</summary>
-public class ProcessingException(Exception cause, HttpExceptionParams exceptionParams): HttpException(null,
+public sealed class ProcessingException(Exception cause, HttpExceptionParams exceptionParams): HttpException(null,
     $"Network, filter, or deserialization error during HTTP {exceptionParams.Verb} request to {exceptionParams.RequestUrl?.AbsoluteUri}", cause, exceptionParams) {
 
 #if NET5_0_OR_GREATER

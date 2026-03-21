@@ -568,7 +568,7 @@ public static partial class Enumerables {
 
         TValue? toAdd = default;
 
-        TValue result = GetOrAdd(dictionary, key, k => {
+        TValue result = dictionary.GetOrAdd(key, k => {
             toAdd = valueFactory(k);
             return toAdd;
         }, out bool innerAdded);
@@ -599,7 +599,7 @@ public static partial class Enumerables {
 
         TValue? toAdd = default;
 
-        TValue result = GetOrAdd(dictionary, key, k => {
+        TValue result = dictionary.GetOrAdd(key, k => {
             toAdd = valueFactory(k);
             return toAdd;
         }, out bool innerAdded);
@@ -697,7 +697,7 @@ public class ValueHolder<T>(T value): IEquatable<ValueHolder<T>> {
 /// <typeparam name="TEnum"><see cref="Enum"/> type, such as <c>MyEnum</c>, not the underlying integral type.</typeparam>
 /// <typeparam name="TUnderlying">Underlying integral type of <typeparamref name="TEnum"/>, such as <see cref="int"/> or <see cref="long"/>.</typeparam>
 /// <param name="enumValue">Initial enum value for the dictionary key-value pair.</param>
-public class EnumValueHolder<TEnum, TUnderlying>(TEnum enumValue)
+public sealed class EnumValueHolder<TEnum, TUnderlying>(TEnum enumValue)
     : ValueHolder<TUnderlying>((TUnderlying) Convert.ChangeType(enumValue, enumValue.GetTypeCode())) where TUnderlying: struct where TEnum: struct, Enum {
 
     private readonly TypeCode underlyingEnumType = enumValue.GetTypeCode();
@@ -749,7 +749,7 @@ public class EnumValueHolder<TEnum, TUnderlying>(TEnum enumValue)
 /// Wrapper class for <see cref="bool"/>s used as a dictionary value in <see cref="Enumerables.CreateConcurrentBooleanDictionary{TKey}"/> to allow the value to be swapped with <see cref="Enumerables.AtomicSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.BooleanValueHolder},TKey,bool)"/>.
 /// </summary>
 /// <param name="boolValue"></param>
-public class BooleanValueHolder(bool boolValue): ValueHolder<int>(Convert.ToInt32(boolValue)) {
+public sealed class BooleanValueHolder(bool boolValue): ValueHolder<int>(Convert.ToInt32(boolValue)) {
 
     /// <summary>
     /// Enum value of the dictionary key-value pair, automatically converted to and from an <see cref="int"/>. Can be atomically updated and the old value returned using <see cref="Enumerables.AtomicSwap{TKey}(System.Collections.Concurrent.ConcurrentDictionary{TKey,Unfucked.BooleanValueHolder},TKey,bool)"/>.

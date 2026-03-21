@@ -3,7 +3,7 @@ using Unfucked.HTTP.Config;
 
 namespace Unfucked.HTTP.Serialization;
 
-public class StreamBodyReader: MessageBodyReader {
+public sealed class StreamBodyReader: MessageBodyReader {
 
     public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(Stream);
 

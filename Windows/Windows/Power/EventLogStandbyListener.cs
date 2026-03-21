@@ -21,7 +21,7 @@ public interface IStandbyListener: IDisposable {
 }
 
 /// <inheritdoc />
-public class EventLogStandbyListener: IStandbyListener {
+public sealed class EventLogStandbyListener: IStandbyListener {
 
     private const int STAND_BY_EVENT_ID = 42;
     private const int RESUME_EVENT_ID   = 107;
@@ -63,7 +63,6 @@ public class EventLogStandbyListener: IStandbyListener {
     public void Dispose() {
         logWatcher.EventRecordWritten -= onEventRecord;
         logWatcher.Dispose();
-        GC.SuppressFinalize(this);
     }
 
 }

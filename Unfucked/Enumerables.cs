@@ -505,7 +505,7 @@ public static partial class Enumerables {
         return (head: enumerator.MoveNext() ? enumerator.Current : null, tail: new Enumerable<T?>(enumerator));
     }
 
-    private class Enumerable<T>(IEnumerator<T> enumerator): IEnumerable<T> {
+    private sealed class Enumerable<T>(IEnumerator<T> enumerator): IEnumerable<T> {
 
         public IEnumerator<T> GetEnumerator() => enumerator;
 
@@ -607,8 +607,7 @@ public static partial class Enumerables {
     /// <param name="source">Enumerable of zero or more objects.</param>
     /// <returns>An enumerable that contains all the elements from <paramref name="source"/>, in order, which are exactly of type <typeparamref name="T"/>.</returns>
     [System.Diagnostics.Contracts.Pure]
-    public static IEnumerable<T> OfTypeExactly<T>(this IEnumerable source) =>
-        OfTypeExactly(source, typeof(T)).Cast<T>();
+    public static IEnumerable<T> OfTypeExactly<T>(this IEnumerable source) => source.OfTypeExactly(typeof(T)).Cast<T>();
 
     /// <summary>
     /// Like <see cref="Enumerable.OfType{TResult}"/> but it excludes subclasses. It only includes objects which are the exact same class as <paramref name="exactType"/>.

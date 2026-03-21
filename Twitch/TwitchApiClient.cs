@@ -11,7 +11,7 @@ namespace Unfucked.Twitch;
 /// <param name="client">The underlying <see cref="TwitchApi"/> client to wrap and delegate to.</param>
 [ExcludeFromCodeCoverage]
 [GeneratedCode("TwitchApi.Net", "3.2.0")]
-public class TwitchApiClient(TwitchApi client): ITwitchApi {
+public sealed class TwitchApiClient(TwitchApi client): ITwitchApi {
 
     /// <inheritdoc />
     public IClipActions Clips => client.Clips;

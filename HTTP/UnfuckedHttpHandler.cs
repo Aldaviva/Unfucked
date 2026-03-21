@@ -35,7 +35,7 @@ public interface IUnfuckedHttpHandler: Configurable<IUnfuckedHttpHandler> {
 
 }
 
-public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
+public sealed class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 
     private static readonly ConcurrentDictionary<int, WeakReference<IUnfuckedHttpHandler>?> HTTP_CLIENT_HANDLER_CACHE = new();
 
@@ -168,7 +168,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
     }
 
     /// <inheritdoc />
-    public virtual Task<HttpResponseMessage> TestableSendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => base.SendAsync(request, cancellationToken);
+    public Task<HttpResponseMessage> TestableSendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => base.SendAsync(request, cancellationToken);
 
     private UnfuckedHttpHandler With(IClientConfig newConfig) {
         ClientConfig = newConfig;
@@ -222,7 +222,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 /// <summary>
 /// This is used when a consumer passes an IUnfuckedHttpHandler to an UnfuckedHttpClient constructor. Just because it implements IUnfuckedHttpHandler doesn't mean it's a subclass of HttpMessageHandler, and Microsoft stupidly decided to never use interfaces for anything. This class is an adapter that actually has the superclass needed to be used as an HttpMessageHandler.
 /// </summary>
-internal class IUnfuckedHttpHandlerWrapper(IUnfuckedHttpHandler realHandler): HttpMessageHandler {
+internal sealed class IUnfuckedHttpHandlerWrapper(IUnfuckedHttpHandler realHandler): HttpMessageHandler {
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => realHandler.FilterAndSendAsync(request, cancellationToken);
 

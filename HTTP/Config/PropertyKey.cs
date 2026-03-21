@@ -15,7 +15,7 @@ public class PropertyKey(string id) {
     public static PropertyKey<JsonSerializerOptions> JsonSerializerOptions { get; } = new($"{NAMESPACE}.{nameof(JsonSerializerOptions)}");
 
     /// <summary>
-    /// Whether an HTTP response status code greater than 299 should throw a <see cref="WebApplicationException"/> (<c>true</c>, default), or proceed with handling the response body and treat the response as successful (<c>false</c>)
+    /// Whether an HTTP response status code greater than 299 should throw a <see cref="WebApplicationException"/> (<c>true</c>, default), or proceed with handling the response body and treat the response as successful (<c>false</c>).
     /// </summary>
     public static PropertyKey<bool> ThrowOnUnsuccessfulStatusCode { get; } = new($"{NAMESPACE}.{nameof(ThrowOnUnsuccessfulStatusCode)}");
 
@@ -31,4 +31,4 @@ public class PropertyKey(string id) {
 }
 
 // ReSharper disable once UnusedTypeParameter - it's used for parameter constraints in Configurable
-public class PropertyKey<T>(string id): PropertyKey(id);
+public sealed class PropertyKey<T>(string id): PropertyKey(id);

@@ -7,7 +7,7 @@ namespace Unfucked.STUN;
 /// A STUN client where each instance is safe to use from multiple callers concurrently without locking. Each client makes requests to a pool of servers, falling back to other servers in case any of them are not responding.
 /// </summary>
 /// <param name="stunProvider">Factory method that constructs STUN clients.</param>
-public class ThreadSafeMultiServerStunClient(Func<IStunClient5389> stunProvider): ISelfWanAddressClient {
+public sealed class ThreadSafeMultiServerStunClient(Func<IStunClient5389> stunProvider): ISelfWanAddressClient {
 
     /// <inheritdoc />
     public async Task<SelfWanAddressResponse> GetSelfWanAddress(CancellationToken cancellationToken = default) {

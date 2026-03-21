@@ -4,7 +4,7 @@ using Timer = System.Timers.Timer;
 
 namespace Unfucked.Caching;
 
-public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
+public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
 
     public event RemovalNotification<K, V>? Removal;
 
@@ -207,21 +207,14 @@ public class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
         }
     }
 
-    protected virtual void Dispose(bool disposing) {
-        if (disposing) {
-            isDisposed = true;
-            if (expirationTimer != null) {
-                expirationTimer.Elapsed -= ScanForExpirations;
-                expirationTimer.Dispose();
-            }
-            InvalidateAll();
-        }
-    }
-
     /// <inheritdoc />
     public void Dispose() {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+        isDisposed = true;
+        if (expirationTimer != null) {
+            expirationTimer.Elapsed -= ScanForExpirations;
+            expirationTimer.Dispose();
+        }
+        InvalidateAll();
     }
 
 }

@@ -20,17 +20,18 @@ public static class Paths {
         path?.TrimEnd(Path.DirectorySeparatorChar, forceTrimBackslashes ? '\\' : Path.AltDirectorySeparatorChar);
 
     /// <summary>
-    /// Create a new, empty subdirectory in a given parent directory with a random, 8-character alphanumeric name that starts with <c>temp-</c>, such as <c>temp-Hi884Xbd</c>.
+    /// Create a new, empty subdirectory in a given parent directory with a random name.
     /// </summary>
     /// <param name="parentDir">Directory in which to create this new subdirectory. If <c>null</c>, it will be created in the OS user's temporary directory (generally either <c>%TEMP%</c> on Windows, or <c>%TMPDIR%</c> or <c>/tmp</c> on Linux).</param>
     /// <returns>Absolute path to the newly-created, empty directory.</returns>
     /// <remarks>See also <see cref="Path.GetTempPath"/></remarks>
     public static string CreateTempDir(string? parentDir = null) {
-        parentDir ??=
 #if NET7_0_OR_GREATER
-            Directory.CreateTempSubdirectory().FullName;
+        if (parentDir is null) {
+            return Directory.CreateTempSubdirectory("temp-").FullName;
+        }
 #else
-            Path.GetTempPath(); // writable by other users on Linux
+        parentDir ??= Path.GetTempPath(); // writable by other users on Linux
 #endif
 
         string tempDirectory;

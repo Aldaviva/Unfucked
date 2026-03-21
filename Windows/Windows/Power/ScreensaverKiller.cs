@@ -18,7 +18,7 @@ public interface IScreensaverKiller {
 
 /// <inheritdoc />
 /// <remarks>By BatteryBackupUnit: <see href="https://stackoverflow.com/a/36292070/979493"/></remarks>
-public class ScreensaverKiller: IScreensaverKiller {
+public sealed class ScreensaverKiller: IScreensaverKiller {
 
     /// <inheritdoc />
     /// <remarks>By BatteryBackupUnit: <see href="https://stackoverflow.com/a/36292070/979493"/></remarks>

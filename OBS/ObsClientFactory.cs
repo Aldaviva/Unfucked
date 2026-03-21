@@ -1,4 +1,4 @@
-﻿using OBSStudioClient.Enums;
+using OBSStudioClient.Enums;
 using System.ComponentModel;
 
 namespace Unfucked.OBS;

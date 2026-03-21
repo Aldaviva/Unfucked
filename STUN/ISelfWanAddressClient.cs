@@ -22,4 +22,4 @@ public interface ISelfWanAddressClient {
 /// <param name="SelfWanAddress">The current self IP address of this computer on the Internet, or <c>null</c> if it could not be determined.</param>
 /// <param name="Server">The hostname of the server used to determine this WAN address.</param>
 /// <param name="ServerAddress">The IP address of the server used to determine this WAN address.</param>
-public record SelfWanAddressResponse(IPAddress? SelfWanAddress, DnsEndPoint Server, IPEndPoint ServerAddress);
+public sealed record SelfWanAddressResponse(IPAddress? SelfWanAddress, DnsEndPoint Server, IPEndPoint ServerAddress);

@@ -15,7 +15,7 @@ namespace Unfucked.Compression.Common.Tar.Headers;
 /// <para>This is generally used inside <see cref="TarWriter"/>, but if you're subclassing it, you may need to create an instance of this yourself.</para>
 /// <para>Usage: construct a new instance and set all the properties you want like <see cref="Name"/> and <see cref="EntryType"/>, then call <see cref="Write"/>, passing the <see cref="Stream"/> from <c>TarWriter.OutputStream</c>.</para>
 /// </summary>
-public class TarHeader(IArchiveEncoding archiveEncoding) {
+public sealed class TarHeader(IArchiveEncoding archiveEncoding) {
 
     internal static readonly DateTime EPOCH = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
@@ -54,7 +54,7 @@ public class TarHeader(IArchiveEncoding archiveEncoding) {
     /// Serialize the file into the TAR archive.
     /// </summary>
     /// <param name="output">TAR archive output stream, usually provided by <c>TarWriter.OutputStream</c> in <see cref="TarWriter"/>.</param>
-    protected internal virtual void Write(Stream output) {
+    internal void Write(Stream output) {
         byte[] buffer = new byte[BLOCK_SIZE];
 
         WriteOctalBytes(Mode != -1 ? Mode : 511, buffer, 100, 8); // file mode fixed by Ben: not hardcoded to 0o777

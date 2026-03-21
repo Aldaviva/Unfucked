@@ -145,7 +145,7 @@ public static class WindowsProcesses {
             return isDescendantOfParent ? new[] { descendant }.Concat(GetDescendantProcesses(descendant, allProcesses)) : [];
         });
 
-    private class ProcessIdEqualityComparer: IEqualityComparer<Process> {
+    private sealed class ProcessIdEqualityComparer: IEqualityComparer<Process> {
 
         public static readonly ProcessIdEqualityComparer INSTANCE = new();
 

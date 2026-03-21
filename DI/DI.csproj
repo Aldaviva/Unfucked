@@ -10,9 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all">
-            <IncludeAssets>compile</IncludeAssets>
-        </PackageReference>
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" IncludeAssets="compile" />
         <PackageReference Include="Microsoft.Extensions.Hosting" PrivateAssets="all" />
     </ItemGroup>
 
@@ -20,14 +18,14 @@
         <When Condition="'$(Configuration)' != 'Debug'">
             <ItemGroup>
                 <PackageReference Include="Unfucked" />
+
+                <!-- Avoid rebuilding and repackaging all projects on every single test execution, even if nothing changed, by not running in Debug -->
+                <PackageReference Include="ReSharper.ExportAnnotations.Task" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
             </ItemGroup>
         </When>
         <Otherwise>
             <ItemGroup>
                 <ProjectReference Include="..\Unfucked\Unfucked.csproj" />
-
-                <!-- Avoid rebuilding and repackaging all projects on every single test execution, even if nothing changed, by not running in Debug -->
-                <PackageReference Include="ReSharper.ExportAnnotations.Task" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
             </ItemGroup>
         </Otherwise>
     </Choose>

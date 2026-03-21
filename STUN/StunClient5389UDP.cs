@@ -24,7 +24,7 @@ public interface IStunClient5389: global::STUN.Client.IStunClient5389 {
 }
 
 /// <inheritdoc cref="IStunClient5389" />
-public class StunClient5389UDP(IPEndPoint server, string serverName, IPEndPoint local, IUdpProxy? proxy = null): global::STUN.Client.StunClient5389UDP(server, local, proxy), IStunClient5389 {
+public sealed class StunClient5389UDP(IPEndPoint server, string serverName, IPEndPoint local, IUdpProxy? proxy = null): global::STUN.Client.StunClient5389UDP(server, local, proxy), IStunClient5389 {
 
     /// <inheritdoc />
     public IPEndPoint ServerAddress { get; } = server;

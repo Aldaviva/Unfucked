@@ -8,7 +8,7 @@ namespace Unfucked.STUN;
 /// <summary>
 /// A STUN client that makes requests to a constantly-updated pool of online public STUN servers, retrying with different servers if any of them are not responding, including a hardcoded fallback list if the online pool is unavailable.
 /// </summary>
-public class MultiServerStunClient: IStunClient5389 {
+public sealed class MultiServerStunClient: IStunClient5389 {
 
     private readonly IStunClientFactory stunClientFactory;
     private readonly StunServerList     stunServerList;
@@ -40,7 +40,7 @@ public class MultiServerStunClient: IStunClient5389 {
 
     private async IAsyncEnumerable<IStunClient5389> GetStunClients() {
         foreach (DnsEndPoint host in await stunServerList.ListStunServers().ConfigureAwait(false)) {
-            if (await stunClientFactory.CreateStunClient(host).ConfigureAwait(false) is { } stunClient) {
+            if (await stunClientFactory.CreateStunClient(host).ConfigureAwait(false) is {} stunClient) {
                 yield return stunClient;
             }
         }
@@ -121,11 +121,11 @@ public class MultiServerStunClient: IStunClient5389 {
         response.MappingBehavior != MappingBehavior.UnsupportedServer &&
         response.BindingTestResult != BindingTestResult.Fail &&
         response.BindingTestResult != BindingTestResult.UnsupportedServer &&
-        (response.BindingTestResult != BindingTestResult.Success || (response.PublicEndPoint?.Address is { } wanAddr && !IsPrivateAddress(wanAddr)));
+        (response.BindingTestResult != BindingTestResult.Success || (response.PublicEndPoint?.Address is {} wanAddr && !IsPrivateAddress(wanAddr)));
 
     private static bool IsPrivateAddress(IPAddress addr) => addr.GetAddressBytes() is [127, _, _, _] or [10, _, _, _] or [192, 168, _, _] or [172, >= 16 and <= 31, _, _];
 
     /// <inheritdoc />
-    public void Dispose() => GC.SuppressFinalize(this);
+    public void Dispose() {}
 
 }

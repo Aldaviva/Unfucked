@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Text;
 using Unfucked.HTTP.Config;
 using Unfucked.HTTP.Exceptions;
 using Unfucked.HTTP.Filters;
@@ -143,5 +145,33 @@ public static class Extensions {
     /// <returns>a Task that resolves with no return value if if the response status code is successful</returns>
     /// <exception cref="WebApplicationException">the response status code was not successful</exception>
     public static Task ThrowIfUnsuccessful(this HttpResponseMessage response, CancellationToken cancellationToken = default) => WebTarget.ThrowIfUnsuccessful(response, cancellationToken);
+
+    extension(HttpContent httpContent) {
+
+        // Copied from .NET BCL JsonHelpers.GetEncoding
+        internal Encoding? Encoding {
+            get {
+                Encoding? encoding = null;
+
+                if (httpContent.Headers.ContentType?.CharSet is {} charset) {
+                    try {
+                        // Remove at most a single set of quotes.
+                        if (charset.Length > 2 && charset[0] == '\"' && charset[charset.Length - 1] == '\"') {
+                            encoding = Encoding.GetEncoding(charset.Substring(1, charset.Length - 2));
+                        } else {
+                            encoding = Encoding.GetEncoding(charset);
+                        }
+                    } catch (ArgumentException e) {
+                        // leave encoding null
+                    }
+
+                    Debug.Assert(encoding != null);
+                }
+
+                return encoding;
+            }
+        }
+
+    }
 
 }

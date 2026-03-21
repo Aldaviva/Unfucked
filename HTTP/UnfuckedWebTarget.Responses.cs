@@ -25,7 +25,8 @@ public partial class WebTarget {
     ];
 
     /// <exception cref="ProcessingException">response parsing failed</exception>
-    /// <exception cref="WebApplicationException">the response status code was not succesful, and <see cref="PropertyKey.ThrowOnUnsuccessfulStatusCode"/> was left enabled</exception>
+    /// <exception cref="WebApplicationException">the response status code was not successful, and <see cref="PropertyKey.ThrowOnUnsuccessfulStatusCode"/> was left enabled</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled</exception>
     private async Task<T> ParseResponseBody<T>(HttpResponseMessage response, CancellationToken cancellationToken) {
         if (!Property(PropertyKey.ThrowOnUnsuccessfulStatusCode, out bool value) || value) {
             await ThrowIfUnsuccessful(response, cancellationToken).ConfigureAwait(false);
@@ -34,14 +35,15 @@ public partial class WebTarget {
         MediaTypeHeaderValue? responseContentType = response.Content.Headers.ContentType;
         Encoding?             responseEncoding    = null;
         try {
-            responseEncoding = responseContentType?.CharSet is { } responseEncodingName ? Encoding.GetEncoding(responseEncodingName) : null;
-        } catch (ArgumentException) { }
+            responseEncoding = responseContentType?.CharSet is {} responseEncodingName ? Encoding.GetEncoding(responseEncodingName) : null;
+        } catch (ArgumentException) {}
 
         IEnumerable<MessageBodyReader> messageBodyReaders = (clientConfig?.MessageBodyReaders ?? []).Concat(DEFAULT_MESSAGE_BODY_READERS).ToList();
 
         foreach (MessageBodyReader reader in messageBodyReaders) {
+            cancellationToken.ThrowIfCancellationRequested();
             // not sure if the read stream needs to be rewound between attempts
-            if (reader.CanRead<T>(responseContentType?.MediaType, null) && !cancellationToken.IsCancellationRequested) {
+            if (reader.CanRead<T>(responseContentType?.MediaType, null)) {
                 try {
                     return await reader.Read<T>(response.Content, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
                 } catch (Exception e) when (e is not OutOfMemoryException) {
@@ -78,7 +80,8 @@ public partial class WebTarget {
         bodyStream.Position = 0;
 
         foreach (MessageBodyReader reader in messageBodyReaders) {
-            if (reader.CanRead<T>(responseContentType?.MediaType, bodyPrefix) && !cancellationToken.IsCancellationRequested) {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (reader.CanRead<T>(responseContentType?.MediaType, bodyPrefix)) {
                 try {
                     return await reader.Read<T>(response.Content, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
                 } catch (Exception e) when (e is not OutOfMemoryException) {
@@ -95,26 +98,26 @@ public partial class WebTarget {
     /// <exception cref="WebApplicationException">the response status code was not successful</exception>
     internal static async Task ThrowIfUnsuccessful(HttpResponseMessage response, CancellationToken cancellationToken) {
         if (!response.IsSuccessStatusCode) {
-            HttpStatusCode      statusCode = response.StatusCode;
-            string              reason     = response.ReasonPhrase ?? statusCode.ToString();
-            HttpExceptionParams p          = await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false);
+            HttpStatusCode      statusCode      = response.StatusCode;
+            string              reason          = response.ReasonPhrase ?? statusCode.ToString();
+            HttpExceptionParams exceptionParams = await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false);
             response.Dispose();
             throw statusCode switch {
-                HttpStatusCode.BadRequest           => new BadRequestException(reason, p),
-                HttpStatusCode.Unauthorized         => new NotAuthorizedException(reason, p),
-                HttpStatusCode.Forbidden            => new ForbiddenException(reason, p),
-                HttpStatusCode.NotFound             => new NotFoundException(reason, p),
-                HttpStatusCode.MethodNotAllowed     => new NotAllowedException(reason, p),
-                HttpStatusCode.NotAcceptable        => new NotAcceptableException(reason, p),
-                HttpStatusCode.UnsupportedMediaType => new NotSupportedException(reason, p),
-                HttpStatusCode.InternalServerError  => new InternalServerErrorException(reason, p),
-                HttpStatusCode.ServiceUnavailable   => new ServiceUnavailableException(reason, p),
+                HttpStatusCode.BadRequest           => new BadRequestException(reason, exceptionParams),
+                HttpStatusCode.Unauthorized         => new NotAuthorizedException(reason, exceptionParams),
+                HttpStatusCode.Forbidden            => new ForbiddenException(reason, exceptionParams),
+                HttpStatusCode.NotFound             => new NotFoundException(reason, exceptionParams),
+                HttpStatusCode.MethodNotAllowed     => new NotAllowedException(reason, exceptionParams),
+                HttpStatusCode.NotAcceptable        => new NotAcceptableException(reason, exceptionParams),
+                HttpStatusCode.UnsupportedMediaType => new NotSupportedException(reason, exceptionParams),
+                HttpStatusCode.InternalServerError  => new InternalServerErrorException(reason, exceptionParams),
+                HttpStatusCode.ServiceUnavailable   => new ServiceUnavailableException(reason, exceptionParams),
 
-                >= HttpStatusCode.MultipleChoices and < HttpStatusCode.BadRequest     => new RedirectionException(statusCode, response.Headers.Location, reason, p),
-                >= HttpStatusCode.BadRequest and < HttpStatusCode.InternalServerError => new ClientErrorException(statusCode, reason, p),
-                >= HttpStatusCode.InternalServerError and < (HttpStatusCode) 600      => new ServerErrorException(statusCode, reason, p),
+                >= HttpStatusCode.MultipleChoices and < HttpStatusCode.BadRequest     => new RedirectionException(statusCode, response.Headers.Location, reason, exceptionParams),
+                >= HttpStatusCode.BadRequest and < HttpStatusCode.InternalServerError => new ClientErrorException(statusCode, reason, exceptionParams),
+                >= HttpStatusCode.InternalServerError and < (HttpStatusCode) 600      => new ServerErrorException(statusCode, reason, exceptionParams),
 
-                _ => new WebApplicationException(statusCode, reason, p)
+                _ => new WebApplicationException(statusCode, reason, exceptionParams)
             };
         }
     }

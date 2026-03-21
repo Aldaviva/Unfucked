@@ -1,9 +1,9 @@
-﻿using System.Text;
+using System.Text;
 using Unfucked.HTTP.Config;
 
 namespace Unfucked.HTTP.Serialization;
 
-public class StringBodyReader: MessageBodyReader {
+public sealed class StringBodyReader: MessageBodyReader {
 
     public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(string);
 

@@ -23,14 +23,14 @@ namespace Unfucked.HTTP.Filters;
 /// <see cref="UnfuckedHttpClient"/> (such as <c>new UnfuckedHttpClient()</c> or <c>new UnfuckedHttpHandler.CreateClient()</c>.</para>
 /// </summary>
 /// <param name="config">Configure how to log the messages.</param>
-public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter {
+public sealed class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter {
 
 #pragma warning restore CS9113 // Parameter is unread.
 
     /// <summary>
     /// Configure the wire logging filter
     /// </summary>
-    public record WireConfig {
+    public sealed record WireConfig {
 
         /// <summary>
         /// Callback that logs an HTTP request or response to any logging library.
@@ -69,9 +69,9 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
     }
 
 #if NET8_0_OR_GREATER
-    private static readonly  PropertyKey<bool>          ACTIVATED = new($"{typeof(WireLogFilter).Namespace!}.{nameof(WireLogFilter)}.{nameof(ACTIVATED)}");
+    private static readonly  PropertyKey<bool>          ACTIVATED       = new($"{typeof(WireLogFilter).Namespace!}.{nameof(WireLogFilter)}.{nameof(ACTIVATED)}");
     private static readonly  object                     ACTIVATION_LOCK = new();
-    internal static readonly AsyncLocal<WireAsyncState> ASYNC_STATE = new();
+    internal static readonly AsyncLocal<WireAsyncState> ASYNC_STATE     = new();
 
     private static readonly Lazy<FieldInfo?> SOCKETS_HTTP_HANDLER_FIELD = new(() => typeof(HttpClientHandler).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
         .FirstOrDefault(field => field.FieldType == typeof(SocketsHttpHandler)), LazyThreadSafetyMode.PublicationOnly);
@@ -79,8 +79,8 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
     public ValueTask<HttpRequestMessage> Filter(HttpRequestMessage request, FilterContext context, CancellationToken cancellationToken) {
         lock (ACTIVATION_LOCK) {
             if (!context.Handler.Property(ACTIVATED, out bool isActivated) || !isActivated) {
-                if (FindDescendantSocketsHandler(context.Handler as UnfuckedHttpHandler) is { } socketsHttpHandler) {
-                    socketsHttpHandler.PlaintextStreamFilter = socketsHttpHandler.PlaintextStreamFilter is { } existingStreamProvider
+                if (FindDescendantSocketsHandler(context.Handler as UnfuckedHttpHandler) is {} socketsHttpHandler) {
+                    socketsHttpHandler.PlaintextStreamFilter = socketsHttpHandler.PlaintextStreamFilter is {} existingStreamProvider
                         ? async (ctx, ct) => new WireLoggingStream(await existingStreamProvider(ctx, ct).ConfigureAwait(false), config)
                         : (ctx, _) => ValueTask.FromResult<Stream>(new WireLoggingStream(ctx.PlaintextStream, config));
 
@@ -108,9 +108,9 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
         _                    => null
     };
 
-    internal class WireLoggingStream: Stream {
+    internal sealed class WireLoggingStream: Stream {
 
-        private static readonly Encoding MESSAGE_ENCODING = new UTF8Encoding(false, false); // MaxMessageSize might truncate trailing bytes of a multi-byte character
+        private static readonly Encoding MESSAGE_ENCODING  = new UTF8Encoding(false, false); // MaxMessageSize might truncate trailing bytes of a multi-byte character
         private static readonly byte[]   LINE_ENDINGS_UTF8 = "\r\n"u8.ToArray();
 
         private static ulong mostRecentRequestId;
@@ -121,15 +121,15 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
         private readonly Stream     responseBuffer;
 
         private ulong requestId;
-        private bool  isNewRequest = true;
+        private bool  isNewRequest                = true;
         private bool  isFinalResponseChunkWritten = true;
         private bool  warnedAboutClientClass;
 
         public WireLoggingStream(Stream httpStream, WireConfig config) {
             this.httpStream = httpStream;
-            this.config = config;
+            this.config     = config;
 
-            requestBuffer = config.ReassembleChunks ? new MemoryStream() : Null;
+            requestBuffer  = config.ReassembleChunks ? new MemoryStream() : Null;
             responseBuffer = config.ReassembleChunks ? new MemoryStream() : Null;
 
             if (config.ReassembleChunks && ASYNC_STATE.Value != null) {
@@ -148,7 +148,7 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
                 }
 
                 if (isNewRequest) {
-                    isNewRequest = false;
+                    isNewRequest                = false;
                     isFinalResponseChunkWritten = true;
 
                     if (responseBuffer.Length != 0) { // log previously buffered response from a different request
@@ -287,32 +287,27 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
             base.Dispose(disposing);
         }
 
-        protected virtual async ValueTask DisposeAsyncCore() {
+        public override async ValueTask DisposeAsync() {
             await httpStream.DisposeAsync().ConfigureAwait(false);
             await requestBuffer.DisposeAsync().ConfigureAwait(false);
             await responseBuffer.DisposeAsync().ConfigureAwait(false);
-        }
-
-        public sealed override async ValueTask DisposeAsync() {
-            await DisposeAsyncCore().ConfigureAwait(false);
             await base.DisposeAsync().ConfigureAwait(false);
-            GC.SuppressFinalize(this);
         }
 
         #endregion
 
     }
 
-    internal class WireAsyncState {
+    internal sealed class WireAsyncState {
 
         public WireLoggingStream? WireStream { get; set; }
 
     }
 
-    internal class WireLoggingMeterFactory: IMeterFactory {
+    internal sealed class WireLoggingMeterFactory: IMeterFactory {
 
         private const string INSTRUMENT_NAME = "http.client.open_connections";
-        private const string TAG_NAME = "http.connection.state";
+        private const string TAG_NAME        = "http.connection.state";
 
         private readonly MeterListener meterListener = new();
 
@@ -347,7 +342,6 @@ public class WireLogFilter(WireLogFilter.WireConfig config): ClientRequestFilter
 
         public void Dispose() {
             meterListener.Dispose();
-            GC.SuppressFinalize(this);
         }
 
     }

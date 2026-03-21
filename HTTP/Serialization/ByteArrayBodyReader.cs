@@ -1,9 +1,9 @@
-﻿using System.Text;
+using System.Text;
 using Unfucked.HTTP.Config;
 
 namespace Unfucked.HTTP.Serialization;
 
-public class ByteArrayBodyReader: MessageBodyReader {
+public sealed class ByteArrayBodyReader: MessageBodyReader {
 
     public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(byte[]);
 
@@ -17,7 +17,7 @@ public class ByteArrayBodyReader: MessageBodyReader {
         responseBody.ReadAsByteArrayAsync();
 #endif
 
-    public class MemoryBodyReader: MessageBodyReader {
+    public sealed class MemoryBodyReader: MessageBodyReader {
 
         public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(Memory<byte>);
 
@@ -26,7 +26,7 @@ public class ByteArrayBodyReader: MessageBodyReader {
 
     }
 
-    public class ReadOnlyMemoryBodyReader: MessageBodyReader {
+    public sealed class ReadOnlyMemoryBodyReader: MessageBodyReader {
 
         public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(ReadOnlyMemory<byte>);
 

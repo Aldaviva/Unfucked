@@ -23,7 +23,7 @@ namespace Unfucked.DI.Logging;
 /// <para>This will change the log messages from <c>Microsoft.AspNetCore.SignalR.Internal.DefaultHubDispatcher</c> which have any of the specified event IDs from their default debug level to warning. Other messages from that category with different event IDs will be logged at their original levels.</para>
 /// </summary>
 [ProviderAlias("amplify")] // case-sensitive, strangely
-public class AmplifyingLoggerProvider: ILoggerProvider {
+public sealed class AmplifyingLoggerProvider: ILoggerProvider {
 
     private readonly IServiceProvider                                context;
     private readonly IDictionary<string, IDictionary<int, LogLevel>> categoryAndEventIdToAmplifiedLevels;
@@ -49,7 +49,7 @@ public class AmplifyingLoggerProvider: ILoggerProvider {
         return NullLogger.Instance;
     }
 
-    private class EventIdAmplifyingLogger(IDictionary<int, LogLevel> eventIdsToAmplify, ILogger actualLogger): ILogger {
+    private sealed class EventIdAmplifyingLogger(IDictionary<int, LogLevel> eventIdsToAmplify, ILogger actualLogger): ILogger {
 
         public bool IsEnabled(LogLevel logLevel) => false;
 
@@ -71,12 +71,11 @@ public class AmplifyingLoggerProvider: ILoggerProvider {
         foreach (IDisposable @lock in locks) {
             @lock.Dispose();
         }
-        GC.SuppressFinalize(this);
     }
 
 }
 
-public class AmplifiedLogOptions {
+public sealed class AmplifiedLogOptions {
 
     private readonly IDictionary<string, IDictionary<int, LogLevel>> categoryAndEventIdToAmplifiedLevels;
 

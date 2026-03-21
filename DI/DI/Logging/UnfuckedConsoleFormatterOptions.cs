@@ -7,7 +7,7 @@ namespace Unfucked.DI.Logging;
 /// Options to control the <see cref="UnfuckedConsoleFormatter"/>.
 /// </summary>
 [SuppressMessage("ReSharper", "PropertyCanBeMadeInitOnly.Global")] // users must be able to set these in a builder pattern call where the class instance has already been constructed for them
-public class UnfuckedConsoleFormatterOptions: ConsoleFormatterOptions {
+public sealed class UnfuckedConsoleFormatterOptions: ConsoleFormatterOptions {
 
     /// <summary>
     /// <para>By default, the type name of the class that emitted the log message is printed as the class' simple name, without its namespace (such as <c>MyClass</c>).</para>

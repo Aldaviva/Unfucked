@@ -28,7 +28,7 @@ public interface IWindowOpenedEventEmitter: IDisposable {
 }
 
 /// <inheritdoc />
-public class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
+public sealed class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
 
     private static readonly TimeSpan CLEAN_UP_INTERVAL = TimeSpan.FromMinutes(14);
 
@@ -110,7 +110,6 @@ public class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
         cleanUpTimer.Dispose();
         shellHook.Dispose();
         Automation.RemoveAutomationEventHandler(WindowPattern.WindowOpenedEvent, AutomationElement.RootElement, OnWindowOpened);
-        GC.SuppressFinalize(this);
     }
 
 }

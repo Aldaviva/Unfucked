@@ -103,7 +103,7 @@ public static partial class DependencyInjectionExtensions {
     /// </summary>
     /// <param name="services">From <see cref="HostApplicationBuilder.Services"/> or similar.</param>
     /// <param name="exitCode">The numeric status code you want the application to exit with when a <see cref="BackgroundService"/> throws an uncaught exception. To customize the exit code for different exceptions, use the overload that takes a function for this parameter.</param>
-    public static IServiceCollection SetExitCodeOnBackgroundServiceException(this IServiceCollection services, int exitCode = 1) => SetExitCodeOnBackgroundServiceException(services, _ => exitCode);
+    public static IServiceCollection SetExitCodeOnBackgroundServiceException(this IServiceCollection services, int exitCode = 1) => services.SetExitCodeOnBackgroundServiceException(_ => exitCode);
 
     /// <summary>
     /// <para>By default in .NET 6 and later, an uncaught exception in a <see cref="BackgroundService"/> will log a critical error and cause the host application to exit with status code 0. This makes it very difficult to automatically determine if the application crashed, such as when it's run from a script or Task Scheduler.</para>
@@ -118,7 +118,7 @@ public static partial class DependencyInjectionExtensions {
         return services;
     }
 
-    internal class BackgroundServiceExceptionListener(IServiceProvider services, Func<Exception, int> exitCodeGenerator): BackgroundService {
+    internal sealed class BackgroundServiceExceptionListener(IServiceProvider services, Func<Exception, int> exitCodeGenerator): BackgroundService {
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken) {
             IEnumerable<BackgroundService> backgroundServices = services.GetServices<IHostedService>().OfType<BackgroundService>().Where(service => service is not BackgroundServiceExceptionListener);

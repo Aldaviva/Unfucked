@@ -1,8 +1,8 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 namespace Unfucked.Windows;
 
-internal class ShellHook: Form {
+internal sealed class ShellHook: Form {
 
     public event EventHandler<ShellEventArgs>? ShellEvent;
 
@@ -37,7 +37,7 @@ internal class ShellHook: Form {
 
 }
 
-internal class ShellEventArgs: EventArgs {
+internal sealed class ShellEventArgs: EventArgs {
 
     public readonly ShellEvent Event;
     public readonly IntPtr     WindowHandle;

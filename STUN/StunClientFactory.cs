@@ -19,11 +19,11 @@ public interface IStunClientFactory {
 /// <summary>
 /// Factory class that can generate STUN clients which point to one specific STUN server by its FQDN.
 /// </summary>
-public class StunClient5389Factory: IStunClientFactory {
+public sealed class StunClient5389Factory: IStunClientFactory {
 
     private static readonly IPEndPoint LOCAL_HOST = new(IPAddress.Any, 0);
 
     /// <inheritdoc />
-    public async Task<IStunClient5389?> CreateStunClient(DnsEndPoint server) => await server.Resolve().ConfigureAwait(false) is { } addr ? new StunClient5389UDP(addr, server.Host, LOCAL_HOST) : null;
+    public async Task<IStunClient5389?> CreateStunClient(DnsEndPoint server) => await server.Resolve().ConfigureAwait(false) is {} addr ? new StunClient5389UDP(addr, server.Host, LOCAL_HOST) : null;
 
 }

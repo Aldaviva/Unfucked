@@ -9,7 +9,7 @@ namespace Unfucked.Compression.Writers.Tar;
 /// <param name="destination">stream to write TAR to</param>
 /// <param name="options">options for how to write the TAR file</param>
 // ReSharper disable InconsistentNaming - extension methods
-public class TarWriter(Stream destination, TarWriterOptions options): SharpCompress.Writers.Tar.TarWriter(destination, options) {
+public sealed class TarWriter(Stream destination, TarWriterOptions options): SharpCompress.Writers.Tar.TarWriter(destination, options) {
 
     /// <summary>
     /// Add a file to the TAR archive. This overload allows you to additionally specify the file permissions mode, owner ID, and group ID.
@@ -22,7 +22,7 @@ public class TarWriter(Stream destination, TarWriterOptions options): SharpCompr
     /// <param name="ownerId">User ID of the owner of this file to set during extraction, or <c>0</c> to inherit the user ID from the parent directory.</param>
     /// <param name="groupId">Group ID of the group of this file to set during extraction, or <c>0</c> to inherit the group ID from the parent directory.</param>
     /// <exception cref="ArgumentException"><paramref name="source"/> cannot seek and <paramref name="size"/> is <c>null</c></exception>
-    public virtual void WriteFile(string filename, Stream source, DateTime? modificationTime, long? size, int? fileMode, int ownerId = 0, int groupId = 0) {
+    public void WriteFile(string filename, Stream source, DateTime? modificationTime, long? size, int? fileMode, int ownerId = 0, int groupId = 0) {
         if (!source.CanSeek && size is null) {
             throw new ArgumentException("Seekable stream is required if no size is given.");
         }
@@ -42,7 +42,7 @@ public class TarWriter(Stream destination, TarWriterOptions options): SharpCompr
 
         header.Write(OutputStream);
 
-        size = source.TransferTo(OutputStream);
+        size = source.TransferTo(OutputStream!);
         PadTo512(size.Value);
     }
 
@@ -55,7 +55,7 @@ public class TarWriter(Stream destination, TarWriterOptions options): SharpCompr
     /// <param name="directoryMode">Unix file permissions mode to set on this directory during extraction, or <c>null</c> to use the most permissive <c>777</c> mode (world readable and writable).</param>
     /// <param name="ownerId">User ID of the owner of this directory to set during extraction, or <c>0</c> to inherit the user ID from the parent directory on extraction.</param>
     /// <param name="groupId">Group ID of the group of this directory to set during extraction, or <c>0</c> to inherit the group ID from the parent directory on extraction.</param>
-    public virtual void WriteDirectory(string directoryName, DateTime? modificationTime, int? directoryMode, int ownerId = 0, int groupId = 0) {
+    public void WriteDirectory(string directoryName, DateTime? modificationTime, int? directoryMode, int ownerId = 0, int groupId = 0) {
         TarHeader header = new(WriterOptions.ArchiveEncoding) {
             LastModifiedTime = modificationTime ?? TarHeader.EPOCH,
             Name             = NormalizeFilename(directoryName),
@@ -79,7 +79,7 @@ public class TarWriter(Stream destination, TarWriterOptions options): SharpCompr
     /// <param name="modificationTime">The date and time this symlink was last modified, or <c>null</c> to use the start of the Unix epoch (1970-01-01T00:00Z).</param>
     /// <param name="ownerId">User ID of the owner of this symlink to set during extraction, or <c>0</c> to inherit the user ID from the parent directory on extraction.</param>
     /// <param name="groupId">Group ID of the group of this symlink to set during extraction, or <c>0</c> to inherit the group ID from the parent directory on extraction.</param>
-    public virtual void WriteSymLink(string source, string destination, DateTime? modificationTime, int ownerId = 0, int groupId = 0) {
+    public void WriteSymLink(string source, string destination, DateTime? modificationTime, int ownerId = 0, int groupId = 0) {
         TarHeader header = new(WriterOptions.ArchiveEncoding) {
             LastModifiedTime = modificationTime ?? TarHeader.EPOCH,
             Name             = NormalizeFilename(source),
@@ -97,11 +97,11 @@ public class TarWriter(Stream destination, TarWriterOptions options): SharpCompr
     /// For an<c>TarWriter.OutputStream</c> of size <paramref name="size"/>, write enough null bytes to the stream to make its new length an integer multiple of 512.
     /// </summary>
     /// <param name="size">Existing length of <c>TarWriter.OutputStream</c>.</param>
-    protected void PadTo512(long size) {
+    private void PadTo512(long size) {
         int        length = unchecked((int) (((size + 511L) & ~511L) - size));
         Span<byte> zeroes = stackalloc byte[length];
 
-        OutputStream.Write(zeroes);
+        OutputStream?.Write(zeroes);
     }
 
     /// <summary>
@@ -109,7 +109,7 @@ public class TarWriter(Stream destination, TarWriterOptions options): SharpCompr
     /// </summary>
     /// <param name="filename">Possibly Windows-style filename.</param>
     /// <returns>Normalized filename</returns>
-    protected static string NormalizeFilename(string filename) {
+    private static string NormalizeFilename(string filename) {
         filename = filename.Replace('\\', '/');
 
         int pos = filename.IndexOf(':');

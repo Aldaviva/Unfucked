@@ -28,7 +28,7 @@ public interface Provider<out T>: OptionalProvider<T> where T: notnull {
 }
 
 /// <inheritdoc />
-public class MicrosoftDependencyInjectionServiceProvider<T>(IServiceProvider services): Provider<T> where T: notnull {
+public sealed class MicrosoftDependencyInjectionServiceProvider<T>(IServiceProvider services): Provider<T> where T: notnull {
 
     /// <inheritdoc />
     public T Get() => services.GetRequiredService<T>();

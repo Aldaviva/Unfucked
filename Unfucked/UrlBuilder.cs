@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 
 namespace Unfucked;
 
-public class UrlBuilder: ICloneable {
+public sealed class UrlBuilder: ICloneable {
 
     private static readonly Regex  PLACEHOLDER_PATTERN              = new(@"\{(?<key>\w+?)\}");
     private static readonly object VALUELESS_QUERY_PARAM            = new();

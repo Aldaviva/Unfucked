@@ -15,7 +15,7 @@ namespace Unfucked.DI.Logging;
 /// </summary>
 /// <param name="options">Whether the formatter should include full class names including their namespace, what character to use to separate columns, and whether to use colored output</param>
 [ExcludeFromCodeCoverage]
-public class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOptions> options): ConsoleFormatter(ID) {
+public sealed class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOptions> options): ConsoleFormatter(ID) {
 
     /// <summary>
     /// Name of this logger class, used by <see cref="ConsoleLoggerExtensions.AddConsole(Microsoft.Extensions.Logging.ILoggingBuilder,Action{ConsoleLoggerOptions})"/>.

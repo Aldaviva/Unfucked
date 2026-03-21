@@ -53,7 +53,7 @@ public readonly record struct HttpRequest(HttpMethod Verb, Uri Uri, IEnumerable<
 
     private string? SerializeBodySync() => Body?.ReadAsStringAsync().GetAwaiter().GetResult();
 
-    private class HeaderNameEqualityComparer: IEqualityComparer<KeyValuePair<string, string>> {
+    private sealed class HeaderNameEqualityComparer: IEqualityComparer<KeyValuePair<string, string>> {
 
         public static readonly HeaderNameEqualityComparer INSTANCE = new();
 

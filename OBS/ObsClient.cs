@@ -1,4 +1,4 @@
 namespace Unfucked.OBS;
 
 /// <inheritdoc cref="OBSStudioClient.ObsClient"/>
-public class ObsClient: OBSStudioClient.ObsClient, IObsClient;
+public sealed class ObsClient: OBSStudioClient.ObsClient, IObsClient;

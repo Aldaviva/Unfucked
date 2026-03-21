@@ -1,7 +1,7 @@
 namespace Unfucked.STUN;
 
-public struct StunOptions {
+public readonly struct StunOptions {
 
-    public IEnumerable<string>? ServerHostnameBlacklist { get; set; }
+    public IEnumerable<string>? ServerHostnameBlacklist { get; init; }
 
 }

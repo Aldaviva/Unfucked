@@ -2,7 +2,12 @@ version: 2
 updates:
   - package-ecosystem: "nuget"
     directory: "/"
-    exclude-paths:
+    exclude-paths: # path exclusions broke on 2026-03-23, prompting for unwanted test dependency updates
+      - "Tests"
+      - "tests"
       - "Tests/**"
+      - "tests/**"
+      - "Tests/Tests.csproj"
+      - "tests/tests.csproj"
     schedule:
       interval: "weekly"

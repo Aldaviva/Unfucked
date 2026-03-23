@@ -11,7 +11,7 @@
         <Company>$(Authors)</Company>
         <PackageTags>boilerplate polyfill common utilities helpers toolbelt swiss-army-knife facades</PackageTags>
         <PackageProjectUrl>https://github.com/Aldaviva/Unfucked</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/Aldaviva/Unfucked.git</RepositoryUrl>
+        <RepositoryUrl>$(PackageProjectUrl).git</RepositoryUrl>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -23,7 +23,7 @@
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <PackageIcon>icon.png</PackageIcon>
         <PackageReadmeFile>Readme.md</PackageReadmeFile>
-        <NoWarn>$(NoWarn);8524;VSTHRD200;NU1507</NoWarn>
+        <NoWarn>$(NoWarn);VSTHRD200;NU1507;1591</NoWarn>
         <RestoreEnablePackagePruning>true</RestoreEnablePackagePruning>
     </PropertyGroup>
 

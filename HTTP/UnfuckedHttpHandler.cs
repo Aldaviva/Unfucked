@@ -35,7 +35,7 @@ public interface IUnfuckedHttpHandler: Configurable<IUnfuckedHttpHandler> {
 
 }
 
-public sealed class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
+public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 
     private static readonly ConcurrentDictionary<int, WeakReference<IUnfuckedHttpHandler>?> HTTP_CLIENT_HANDLER_CACHE = new();
 
@@ -78,15 +78,15 @@ public sealed class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler
 #if NETCOREAPP2_1_OR_GREATER
         new SocketsHttpHandler {
             PooledConnectionLifetime = TimeSpan.FromHours(1),
-            ConnectTimeout           = TimeSpan.FromSeconds(10),
-            AutomaticDecompression   = DecompressionMethods.All,
+            ConnectTimeout = TimeSpan.FromSeconds(10),
+            AutomaticDecompression = DecompressionMethods.All,
             // MaxConnectionsPerServer defaults to MAX_INT, so we don't need to increase it here
 #if NET8_0_OR_GREATER
             MeterFactory = new WireLogFilter.WireLoggingMeterFactory()
 #endif
         }
 #else
-        new HttpClientHandler {AutomaticDecompression = DecompressionMethods.GZip|DecompressionMethods.Deflate}
+        new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate }
 #endif
     ) {
         ClientConfig        = configuration ?? new ClientConfig();
@@ -168,7 +168,7 @@ public sealed class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler
     }
 
     /// <inheritdoc />
-    public Task<HttpResponseMessage> TestableSendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => base.SendAsync(request, cancellationToken);
+    public virtual Task<HttpResponseMessage> TestableSendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => base.SendAsync(request, cancellationToken);
 
     private UnfuckedHttpHandler With(IClientConfig newConfig) {
         ClientConfig = newConfig;
@@ -192,27 +192,25 @@ public sealed class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler
     IUnfuckedHttpHandler Configurable<IUnfuckedHttpHandler>.Property<T>(PropertyKey<T> key, T? newValue) where T: default => Property(key, newValue);
 
     protected override void Dispose(bool disposing) {
-        if (!disposed) {
+        if (disposing && !disposed) {
             disposed = true;
-            if (disposing) {
-                if (disposeInnerHandler) {
-                    InnerHandler?.Dispose();
-                }
+            if (disposeInnerHandler) {
+                InnerHandler?.Dispose();
+            }
 
-                List<KeyValuePair<int, WeakReference<IUnfuckedHttpHandler>?>> evictions =
-                    HTTP_CLIENT_HANDLER_CACHE.Where(pair => pair.Value != null && (!pair.Value.TryGetTarget(out IUnfuckedHttpHandler? handler) || handler == this)).ToList();
-                foreach (KeyValuePair<int, WeakReference<IUnfuckedHttpHandler>?> eviction in evictions) {
+            List<KeyValuePair<int, WeakReference<IUnfuckedHttpHandler>?>> evictions =
+                HTTP_CLIENT_HANDLER_CACHE.Where(pair => pair.Value != null && (!pair.Value.TryGetTarget(out IUnfuckedHttpHandler? handler) || handler == this)).ToList();
+            foreach (KeyValuePair<int, WeakReference<IUnfuckedHttpHandler>?> eviction in evictions) {
 #if NET5_0_OR_GREATER
-                    HTTP_CLIENT_HANDLER_CACHE.TryRemove(eviction);
+                HTTP_CLIENT_HANDLER_CACHE.TryRemove(eviction);
 #else
-                    HTTP_CLIENT_HANDLER_CACHE.TryRemove(eviction.Key, out _);
-#endif
-                }
-
-#if NET8_0_OR_GREATER
-                wireLoggingMeterFactory?.Dispose();
+                HTTP_CLIENT_HANDLER_CACHE.TryRemove(eviction.Key, out _);
 #endif
             }
+
+#if NET8_0_OR_GREATER
+            wireLoggingMeterFactory?.Dispose();
+#endif
         }
         base.Dispose(disposing);
     }

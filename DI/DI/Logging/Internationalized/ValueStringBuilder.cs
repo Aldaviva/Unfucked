@@ -5,6 +5,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -13,6 +14,7 @@ namespace Unfucked.DI.Logging.Internationalized;
 /**
  * Copied unmodified from .NET BCL because it was not public
  */
+[ExcludeFromCodeCoverage]
 internal ref partial struct ValueStringBuilder {
 
     private char[]?    _arrayToReturnToPool;

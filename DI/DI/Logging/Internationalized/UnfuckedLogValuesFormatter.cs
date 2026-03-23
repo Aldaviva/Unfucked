@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+#if NET8_0_OR_GREATER
 using System.Text;
+#endif
 
 // ReSharper disable All
 #pragma warning disable CS8603 // Possible null reference return.
@@ -16,6 +19,7 @@ namespace Unfucked.DI.Logging.Internationalized;
 /// <summary>
 /// Formatter to convert the named format items like {NamedformatItem} to <see cref="string.Format(IFormatProvider, string, object)"/> format.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class UnfuckedLogValuesFormatter {
 
     internal static IFormatProvider Culture = CultureInfo.CurrentCulture;

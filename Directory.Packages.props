@@ -13,7 +13,7 @@
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="[10.0.105,10.0.200)" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.201" />
     <PackageVersion Include="mwinapi" Version="0.3.0.6" />
     <PackageVersion Include="NodaTime" Version="3.3.1" />
     <PackageVersion Include="OBSClient" Version="3.0.0" />

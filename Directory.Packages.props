@@ -20,7 +20,7 @@
     <PackageVersion Include="PgpCore" Version="7.0.0" />
     <PackageVersion Include="ReSharper.ExportAnnotations.Task" Version="1.4.0" />
     <PackageVersion Include="SharpCompress" Version="0.47.2" />
-    <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
+    <PackageVersion Include="System.Collections.Immutable" Version="9.0.14" />
     <PackageVersion Include="System.Net.Http.Json" Version="8.0.1" />
     <PackageVersion Include="System.Text.Encodings.Web" Version="8.0.0" />
     <PackageVersion Include="System.Text.Json" Version="8.0.6" />

@@ -71,7 +71,7 @@ public class TasksTest: IDisposable {
                 await Task.Delay(TimeSpan.FromHours(24), ct);
                 return "b";
             }, ct)
-        ], result => result == "a", ct);
+        ], result => result == "a", cts);
 
         actual.Should().Be("a");
         stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromMinutes(1));
@@ -88,7 +88,7 @@ public class TasksTest: IDisposable {
                 await Task.Delay(TimeSpan.FromMilliseconds(50), ct);
                 return 2;
             }, ct)
-        ], result => result == 3, ct);
+        ], result => result == 3, cts);
 
         actual.Should().BeNull("no tasks passed the predicate");
         stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromMinutes(1));

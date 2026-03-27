@@ -96,12 +96,12 @@ public static class Tasks {
     /// <typeparam name="T">The result type of the tasks.</typeparam>
     /// <param name="innerTasks">Tasks to wait for.</param>
     /// <param name="predicate">Test for each inner task's result value. It should return <c>true</c> to make this method return the inner task's result value.</param>
-    /// <param name="ct">If you want to stop waiting early.</param>
+    /// <param name="cts">If you want to stop waiting early. It's a <see cref="CancellationTokenSource"/> instead of a <see cref="CancellationToken"/> because this method will cancel it when it finishes so other <paramref name="innerTasks"/> can short-circuit.</param>
     /// <returns>The result value of the first <paramref name="innerTasks"/> to finish successfully and have its return value pass <paramref name="predicate"/>, or <c>null</c> if all of the <paramref name="innerTasks"/> finished either unsuccessfully or with result values that failed <paramref name="predicate"/>.</returns>
     [Pure]
-    public static async Task<T?> FirstOrDefault<T>(IEnumerable<Task<T>> innerTasks, Predicate<T> predicate, CancellationToken ct = default) where T: class {
+    public static async Task<T?> FirstOrDefault<T>(IEnumerable<Task<T>> innerTasks, Predicate<T> predicate, CancellationTokenSource? cts = null) where T: class {
         TaskCompletionSource<T> predicatePassed = new();
-        CancellationTokenSource cts             = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts ??= new CancellationTokenSource();
 
         Task<T[]> allInnerTasksDone = Task.WhenAll(innerTasks.Select(innerTask => innerTask.ContinueWith(c => {
             if (!cts.IsCancellationRequested && predicate(c.Result)) {
@@ -110,7 +110,7 @@ public static class Tasks {
             }
 
             return c.Result;
-        }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current)));
+        }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion)));
 
         await Task.WhenAny(predicatePassed.Task, allInnerTasksDone).ConfigureAwait(false);
 
@@ -118,9 +118,10 @@ public static class Tasks {
     }
 
     /// <inheritdoc cref="FirstOrDefault{T}" />
-    public static async Task<T?> FirstOrDefaultStruct<T>(IEnumerable<Task<T>> childTasks, Predicate<T> predicate, CancellationToken ct = default) where T: struct {
+    [Pure]
+    public static async Task<T?> FirstOrDefaultStruct<T>(IEnumerable<Task<T>> childTasks, Predicate<T> predicate, CancellationTokenSource? cts = null) where T: struct {
         TaskCompletionSource<T> predicatePassed = new();
-        CancellationTokenSource cts             = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts ??= new CancellationTokenSource();
 
         Task<T[]> allChildrenDone = Task.WhenAll(childTasks.Select(childTask => childTask.ContinueWith(c => {
             if (!cts.IsCancellationRequested && predicate(c.Result)) {
@@ -129,7 +130,7 @@ public static class Tasks {
             }
 
             return c.Result;
-        }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current)));
+        }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion)));
 
         await Task.WhenAny(predicatePassed.Task, allChildrenDone).ConfigureAwait(false);
 
@@ -150,7 +151,7 @@ public static class Tasks {
             registration = token.Register(_ => {
                 // ReSharper disable once AccessToModifiedClosure - callback won't run after outer scope finishes, because it waits for this, and this can't run twice because the registration is disposed
                 registration.Dispose();
-                completion.SetResult(true);
+                completion.TrySetResult(true);
             }, false);
             return completion.Task;
         }
@@ -170,7 +171,7 @@ public static class Tasks {
     }
 
     /// <summary>
-    /// Get the result of a task or, if it threw an exception, <c>null</c>, rather than rethrowing the inner exception. This allows fluent null-coalescing fallback chaining instead of a bunch of multi-line, temporary variable declaraing try/catch blocks which aren't expression-valued.
+    /// Asynchronously get the result of a task or, if it threw an exception, <c>null</c>, rather than rethrowing the inner exception. This allows fluent null-coalescing fallback chaining instead of a bunch of multi-line, temporary variable declaring try/catch blocks which aren't expression-valued.
     /// </summary>
     /// <typeparam name="T">Type of result</typeparam>
     /// <param name="task">A task that return a result of type <typeparamref name="T"/> or throws an exception</param>
@@ -232,5 +233,22 @@ public static class Tasks {
     [Pure]
     public static Task<T?> CompleteIfNullStruct<T>(this Task<T?>? task, T? valueIfNull = null) where T: struct =>
         task ?? Task.FromResult(valueIfNull);
+
+    /// <inheritdoc cref="Task.ContinueWith(Action{Task},CancellationToken,TaskContinuationOptions,TaskScheduler)" path="//*[not(self::param[@name='scheduler'])]" />
+    public static Task ContinueWith(this Task source, Action<Task> continuationAction, CancellationToken cancellationToken, TaskContinuationOptions continuationOptions) =>
+        source.ContinueWith(continuationAction, cancellationToken, continuationOptions, TaskScheduler.Current);
+
+    /// <inheritdoc cref="Task{T}.ContinueWith(Action{Task{T}},CancellationToken,TaskContinuationOptions,TaskScheduler)" path="//*[not(self::param[@name='scheduler'])]" />
+    public static Task ContinueWith<T>(this Task<T> source, Action<Task<T>> continuationAction, CancellationToken cancellationToken, TaskContinuationOptions continuationOptions) =>
+        source.ContinueWith(continuationAction, cancellationToken, continuationOptions, TaskScheduler.Current);
+
+    /// <inheritdoc cref="Task.ContinueWith{TResult}(Func{Task, TResult},CancellationToken,TaskContinuationOptions,TaskScheduler)" path="//*[not(self::param[@name='scheduler'])]" />
+    public static Task<TResult> ContinueWith<TResult>(this Task source, Func<Task, TResult> continuationAction, CancellationToken cancellationToken, TaskContinuationOptions continuationOptions) =>
+        source.ContinueWith(continuationAction, cancellationToken, continuationOptions, TaskScheduler.Current);
+
+    /// <inheritdoc cref="Task{T}.ContinueWith{TResult}(Func{Task{T}, TResult},CancellationToken,TaskContinuationOptions,TaskScheduler)" path="//*[not(self::param[@name='scheduler'])]" />
+    public static Task<TResult> ContinueWith<T, TResult>(this Task<T> source, Func<Task<T>, TResult> continuationAction, CancellationToken cancellationToken,
+                                                         TaskContinuationOptions continuationOptions) =>
+        source.ContinueWith(continuationAction, cancellationToken, continuationOptions, TaskScheduler.Current);
 
 }

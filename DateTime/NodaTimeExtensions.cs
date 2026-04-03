@@ -24,7 +24,7 @@ public static class NodaTimeExtensions {
     /// <param name="input">a duration that may be positive, negative, or zero</param>
     extension(Duration? input) {
 
-        /// <inheritdoc cref="Abs"/>
+        /// <inheritdoc cref="get_Abs(Duration)"/>
         [Pure]
         public Duration? Abs => input != null && input < Duration.Zero ? Duration.Negate(input.Value) : input;
 

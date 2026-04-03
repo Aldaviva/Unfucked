@@ -142,12 +142,12 @@ public static class Tasks {
     }
 
     /// <param name="task">A task that return a result of type <typeparamref name="T"/> or throws an exception</param>
+    /// <typeparam name="T">Type of result</typeparam>
     extension<T>(Task<T> task) where T: class? {
 
         /// <summary>
         /// Asynchronously get the result of a task or, if it threw an exception, <c>null</c>, rather than rethrowing the inner exception. This allows fluent null-coalescing fallback chaining instead of a bunch of multi-line, temporary variable declaring try/catch blocks which aren't expression-valued.
         /// </summary>
-        /// <typeparam name="T">Type of result</typeparam>
         /// <returns><paramref name="task"/>'s awaited return value, or <c>null</c> if <paramref name="task"/> threw an exception. This method doesn't throw exceptions (except <see cref="OutOfMemoryException"/>).</returns>
         [Pure]
         public async Task<T?> ExceptionsToNull() {
@@ -161,6 +161,7 @@ public static class Tasks {
     }
 
     /// <param name="task">A task that return a result of type <typeparamref name="T"/> or throws an exception</param>
+    /// <typeparam name="T">Type of result</typeparam>
     extension<T>(Task<T> task) where T: struct {
 
         /// <inheritdoc cref="Tasks.ExceptionsToNull{T}" />
@@ -176,6 +177,7 @@ public static class Tasks {
     }
 
     /// <param name="task">A task that return a result of type <typeparamref name="T"/> or throws an exception</param>
+    /// <typeparam name="T">Type of result</typeparam>
     extension<T>(Task<T?> task) where T: struct {
 
         /// <inheritdoc cref="Tasks.ExceptionsToNull{T}" />

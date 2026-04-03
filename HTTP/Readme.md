@@ -18,7 +18,7 @@
 
 ## Installation
 ```sh
-dotnet add package Unfucked.HTTP
+dotnet package add Unfucked.HTTP
 ```
 ```cs
 using Unfucked;

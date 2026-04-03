@@ -61,7 +61,7 @@ public sealed class JsonBodyReader: MessageBodyReader {
 internal sealed class KernighanRitchieCEnumToLowerCamelCaseNamingPolicy: JsonNamingPolicy {
 
     public override string ConvertName(string name) {
-        if (!name.HasText()) return name;
+        if (!name.HasText) return name;
 
         bool isNewWord    = false;
         bool allUppercase = true;

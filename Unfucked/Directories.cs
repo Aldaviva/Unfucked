@@ -5,38 +5,67 @@ namespace Unfucked;
 /// </summary>
 public static class Directories {
 
-    /// <summary>Deletes the specified directory and, if indicated, any subdirectories and files in the directory.</summary>
-    /// <param name="directory">The name of the directory to remove.</param>
-    /// <param name="recursive"><c>true</c> to remove directories, subdirectories, and files in <paramref name="directory" />; otherwise, <c>false</c>.</param>
-    /// <returns><c>true</c> if <paramref name="directory"/> was deleted, or <c>false</c> if it was not found.</returns>
-    /// <exception cref="IOException">A file with the same name and location specified by <paramref name="directory" /> exists.
-    /// 
-    /// -or-
-    /// 
-    /// The directory specified by <paramref name="directory" /> is read-only, or <paramref name="recursive" /> is <c>false</c> and <paramref name="directory" /> is not an empty directory.
-    /// 
-    /// -or-
-    /// 
-    /// The directory is the application's current working directory.
-    /// 
-    /// -or-
-    /// 
-    /// The directory contains a read-only file.
-    /// 
-    /// -or-
-    /// 
-    /// The directory is being used by another process.</exception>
-    /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
-    /// <exception cref="ArgumentException">.NET Framework and .NET Core versions older than 2.1: <paramref name="directory" /> is a zero-length string, contains only white space, or contains one or more invalid characters. You can query for invalid characters by using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="directory" /> is <c>null</c>.</exception>
-    /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
-    public static bool TryDelete(string directory, bool recursive = false) {
-        try {
-            Directory.Delete(directory, recursive);
-            return true;
-        } catch (DirectoryNotFoundException) {
-            return false;
+    extension(Directory) {
+
+        /// <summary>Deletes the specified directory and, if indicated, any subdirectories and files in the directory.</summary>
+        /// <param name="directory">The name of the directory to remove.</param>
+        /// <param name="recursive"><c>true</c> to remove directories, subdirectories, and files in <paramref name="directory" />; otherwise, <c>false</c>.</param>
+        /// <returns><c>true</c> if <paramref name="directory"/> was deleted, or <c>false</c> if it was not found.</returns>
+        /// <exception cref="IOException">A file with the same name and location specified by <paramref name="directory" /> exists.
+        /// 
+        /// -or-
+        /// 
+        /// The directory specified by <paramref name="directory" /> is read-only, or <paramref name="recursive" /> is <c>false</c> and <paramref name="directory" /> is not an empty directory.
+        /// 
+        /// -or-
+        /// 
+        /// The directory is the application's current working directory.
+        /// 
+        /// -or-
+        /// 
+        /// The directory contains a read-only file.
+        /// 
+        /// -or-
+        /// 
+        /// The directory is being used by another process.</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="ArgumentException">.NET Framework and .NET Core versions older than 2.1: <paramref name="directory" /> is a zero-length string, contains only white space, or contains one or more invalid characters. You can query for invalid characters by using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="directory" /> is <c>null</c>.</exception>
+        /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.</exception>
+        public static bool TryDelete(string directory, bool recursive = false) {
+            try {
+                Directory.Delete(directory, recursive);
+                return true;
+            } catch (DirectoryNotFoundException) {
+                return false;
+            }
         }
+
+        /// <summary>
+        /// Create a new, empty subdirectory in a given parent directory with a random name.
+        /// </summary>
+        /// <param name="parentDir">Directory in which to create this new subdirectory. If <c>null</c>, it will be created in the OS user's temporary directory (generally either <c>%TEMP%</c> on Windows, or <c>%TMPDIR%</c> or <c>/tmp</c> on Linux).</param>
+        /// <returns>Absolute path to the newly-created, empty directory.</returns>
+        /// <remarks>See also <see cref="Path.GetTempPath"/></remarks>
+        public static string CreateTempDir(string? parentDir = null) {
+#if NET7_0_OR_GREATER
+            if (parentDir is null) {
+                return Directory.CreateTempSubdirectory("temp-").FullName;
+            }
+#else
+        parentDir ??= Path.GetTempPath(); // writable by other users on Linux
+#endif
+
+            string tempDirectory;
+            do {
+                tempDirectory = Path.Combine(parentDir, "temp-" + Cryptography.GenerateRandomString(8));
+            } while (Directory.Exists(tempDirectory));
+
+            Directory.CreateDirectory(tempDirectory);
+
+            return Path.GetFullPath(tempDirectory);
+        }
+
     }
 
 }

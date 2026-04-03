@@ -12,40 +12,43 @@ public static class Strings {
 
     internal static readonly UTF8Encoding UTF8 = new(false, true);
 
-    /// <summary>
-    /// Coerce strings with length 0 to <c>null</c>, which is easier to deal with than empty strings using null coalescing.
-    /// </summary>
     /// <param name="str">A string that could be <c>null</c> or empty.</param>
-    /// <returns>The input string or <c>null</c>, but never the empty string.</returns>
-    /// <seealso cref="string.IsNullOrEmpty"/>
-    [Pure]
-    public static string? EmptyToNull(this string? str) => string.IsNullOrEmpty(str) ? null : str;
+    extension(string? str) {
 
-    /// <summary>
-    /// Determine if a string contains any non-whitespace characters.
-    /// </summary>
+        /// <summary>
+        /// Coerce strings with length 0 to <c>null</c>, which is easier to deal with than empty strings using null coalescing.
+        /// </summary>
+        /// <returns>The input string or <c>null</c>, but never the empty string.</returns>
+        /// <seealso cref="string.IsNullOrEmpty"/>
+        [Pure]
+        public string? EmptyToNull => string.IsNullOrEmpty(str) ? null : str;
+
+    }
+
     /// <param name="str">A string that could be <c>null</c>, empty, or whitespace only.</param>
-    /// <returns><c>true</c> if the input string contains at least one non-whitespace character, or <c>false</c> if it is <c>null</c>, empty, or consists only of whitespace characters.</returns>
-    /// <seealso cref="string.IsNullOrWhiteSpace"/>
-    [Pure]
-    public static bool HasText(
+    extension(
 #if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         [NotNullWhen(true)]
 #endif
-        this string? str) => !string.IsNullOrWhiteSpace(str);
+        string? str) {
 
-    /// <summary>
-    /// Determine if a string contains any characters.
-    /// </summary>
-    /// <param name="str">A string that could be <c>null</c> or empty.</param>
-    /// <returns><c>true</c> if the input string contains at least one character, or <c>false</c> if it is <c>null</c> or the empty string.</returns>
-    /// <seealso cref="string.IsNullOrEmpty"/>
-    [Pure]
-    public static bool HasLength(
-#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-        [NotNullWhen(true)]
-#endif
-        this string? str) => !string.IsNullOrEmpty(str);
+        /// <summary>
+        /// Determine if a string contains any non-whitespace characters.
+        /// </summary>
+        /// <returns><c>true</c> if the input string contains at least one non-whitespace character, or <c>false</c> if it is <c>null</c>, empty, or consists only of whitespace characters.</returns>
+        /// <seealso cref="string.IsNullOrWhiteSpace"/>
+        [Pure]
+        public bool HasText => !string.IsNullOrWhiteSpace(str);
+
+        /// <summary>
+        /// Determine if a string contains any characters.
+        /// </summary>
+        /// <returns><c>true</c> if the input string contains at least one character, or <c>false</c> if it is <c>null</c> or the empty string.</returns>
+        /// <seealso cref="string.IsNullOrEmpty"/>
+        [Pure]
+        public bool HasLength => !string.IsNullOrEmpty(str);
+
+    }
 
     /// <summary>
     /// Concatenate multiple strings together, with a separator between each one.

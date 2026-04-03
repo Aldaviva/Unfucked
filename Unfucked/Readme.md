@@ -33,7 +33,7 @@
 
 ## Installation
 ```sh
-dotnet add package Unfucked
+dotnet package add Unfucked
 ```
 ```cs
 using Unfucked;

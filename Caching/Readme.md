@@ -26,7 +26,7 @@
 
 ## Installation
 ```sh
-dotnet add package Unfucked.Caching
+dotnet package add Unfucked.Caching
 ```
 ```cs
 using Unfucked.Caching;

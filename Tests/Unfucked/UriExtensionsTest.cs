@@ -6,7 +6,7 @@ public class UriExtensionsTest {
 
     [Fact]
     public void GetQuery() {
-        NameValueCollection query = new Uri("https://auth@sub.sld.tld:13245/p/a/t/h?q=u&e=r&y#hash").GetQuery();
+        NameValueCollection query = new Uri("https://auth@sub.sld.tld:13245/p/a/t/h?q=u&e=r&y#hash").QueryParams;
 
         query["q"].Should().Be("u");
         query["e"].Should().Be("r");

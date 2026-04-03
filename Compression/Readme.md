@@ -23,7 +23,7 @@
 
 ## Installation
 ```sh
-dotnet add package Unfucked.Compression
+dotnet package add Unfucked.Compression
 ```
 ```cs
 using TarWriter = Unfucked.Compression.Writers.Tar.TarWriter;

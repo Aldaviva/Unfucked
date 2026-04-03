@@ -17,7 +17,7 @@
 
 ## Installation
 ```sh
-dotnet add package Unfucked.PGP
+dotnet package add Unfucked.PGP
 ```
 ```cs
 using Unfucked;

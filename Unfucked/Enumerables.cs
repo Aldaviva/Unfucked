@@ -118,7 +118,17 @@ public static partial class Enumerables {
     public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value, out bool added) {
         added = !dictionary.TryGetValue(key, out TValue? oldValue);
         if (added) {
-            dictionary.Add(key, value);
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+            added = dictionary.TryAdd(key, value);
+#else
+            try {
+                dictionary.Add(key, value);
+                added = true;
+            } catch (ArgumentException) {
+                added = false;
+                return dictionary[key];
+            }
+#endif
             return value;
         } else {
             return oldValue!;
@@ -140,9 +150,19 @@ public static partial class Enumerables {
     public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TValue> valueFactory, out bool added) {
         added = !dictionary.TryGetValue(key, out TValue? oldValue);
         if (added) {
-            TValue newValue = valueFactory();
-            dictionary.Add(key, newValue);
-            return newValue;
+            TValue value = valueFactory();
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+            added = dictionary.TryAdd(key, value);
+#else
+            try {
+                dictionary.Add(key, value);
+                added = true;
+            } catch (ArgumentException) {
+                added = false;
+                return dictionary[key];
+            }
+#endif
+            return value;
         } else {
             return oldValue!;
         }
@@ -161,9 +181,20 @@ public static partial class Enumerables {
     /// <exception cref="NotSupportedException"><paramref name="dictionary"/> is read-only</exception>
     public static async Task<(TValue value, bool added)> GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<Task<TValue>> valueFactory) {
         if (!dictionary.TryGetValue(key, out TValue? oldValue)) {
-            TValue newValue = await valueFactory().ConfigureAwait(false);
-            dictionary.Add(key, newValue);
-            return (value: newValue, added: true);
+            TValue value = await valueFactory().ConfigureAwait(false);
+            bool   added;
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+            added = dictionary.TryAdd(key, value);
+#else
+            try {
+                dictionary.Add(key, value);
+                added = true;
+            } catch (ArgumentException) {
+                value = dictionary[key];
+                added = false;
+            }
+#endif
+            return (value, added);
         } else {
             return (value: oldValue, added: false);
         }

@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 namespace Tests.Windows;
 
@@ -6,10 +6,10 @@ public class CultureTest {
 
     [Fact]
     public void CurrentMachineCulture() {
-        CultureInfo actual = Cultures.CurrentMachineCulture;
+        CultureInfo actual = CultureInfo.CurrentMachineCulture;
 
         actual.Name.Should().Be("en-US");
-        Cultures.CurrentMachineCulture.Should().BeSameAs(actual); // don't regenerate on each call
+        CultureInfo.CurrentMachineCulture.Should().BeSameAs(actual); // don't regenerate on each call
     }
 
 }

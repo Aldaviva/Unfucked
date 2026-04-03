@@ -1,13 +1,13 @@
-﻿namespace Tests.Unfucked;
+namespace Tests.Unfucked;
 
 public class DirectoriesTest {
 
     [Fact]
     public void DeleteQuietlyIfExtant() {
-        string tempDirectory = Paths.CreateTempDir();
+        string tempDirectory = Directory.CreateTempDir();
         Directory.Exists(tempDirectory).Should().BeTrue();
 
-        Directories.TryDelete(tempDirectory);
+        Directory.TryDelete(tempDirectory);
         Directory.Exists(tempDirectory).Should().BeFalse();
     }
 
@@ -16,7 +16,7 @@ public class DirectoriesTest {
         string tempDirectory = Path.Combine(Path.GetTempPath(), "temp-" + Cryptography.GenerateRandomString(8));
         Directory.Exists(tempDirectory).Should().BeFalse();
 
-        Directories.TryDelete(tempDirectory);
+        Directory.TryDelete(tempDirectory);
         Directory.Exists(tempDirectory).Should().BeFalse();
     }
 

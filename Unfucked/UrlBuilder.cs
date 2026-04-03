@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Collections.Immutable;
+using System.Collections.Specialized;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -42,22 +43,21 @@ public sealed class UrlBuilder: ICloneable {
     }
 
     public UrlBuilder(Uri uri) {
-        _scheme        = uri.Scheme.EmptyToNull();
-        _userInfo      = uri.UserInfo.EmptyToNull();
-        _hostname      = uri.Host.EmptyToNull();
-        _port          = uri.Port == -1 ? null : (ushort?) uri.Port;
-        _path          = uri.Segments.SkipWhile(s => s == "/").Select(s => s.TrimEnd('/')).ToImmutableList();
-        _trailingSlash = uri.Segments.LastOrDefault()?.EndsWith('/') ?? false;
-        _queryParameters = uri.GetQuery() is var originalQuery
-            ? originalQuery.Keys.Cast<string>().Select(k => new KeyValuePair<string, object>(k, originalQuery[k] ?? VALUELESS_QUERY_PARAM)).ToImmutableList()
-            : ImmutableList<KeyValuePair<string, object>>.Empty;
-        _fragment = uri.Fragment.TrimStart(1, '#').EmptyToNull();
+        NameValueCollection originalQuery = uri.QueryParams;
+        _scheme          = uri.Scheme.EmptyToNull;
+        _userInfo        = uri.UserInfo.EmptyToNull;
+        _hostname        = uri.Host.EmptyToNull;
+        _port            = uri.Port == -1 ? null : (ushort?) uri.Port;
+        _path            = uri.Segments.SkipWhile(s => s == "/").Select(s => s.TrimEnd('/')).ToImmutableList();
+        _trailingSlash   = uri.Segments.LastOrDefault()?.EndsWith('/') ?? false;
+        _queryParameters = originalQuery.Keys.Cast<string>().Select(k => new KeyValuePair<string, object>(k, originalQuery[k] ?? VALUELESS_QUERY_PARAM)).ToImmutableList();
+        _fragment        = uri.Fragment.TrimStart(1, '#').EmptyToNull;
     }
 
     public UrlBuilder(UriBuilder uriBuilder) {
-        _scheme        = uriBuilder.Scheme.EmptyToNull();
-        _userInfo      = uriBuilder.UserName.HasLength() || uriBuilder.Password.HasLength() ? $"{uriBuilder.UserName}:{uriBuilder.Password}" : null;
-        _hostname      = uriBuilder.Host.EmptyToNull();
+        _scheme        = uriBuilder.Scheme.EmptyToNull;
+        _userInfo      = uriBuilder.UserName.HasLength || uriBuilder.Password.HasLength ? $"{uriBuilder.UserName}:{uriBuilder.Password}" : null;
+        _hostname      = uriBuilder.Host.EmptyToNull;
         _port          = uriBuilder.Port == -1 ? null : (ushort?) uriBuilder.Port;
         _path          = uriBuilder.Path.TrimStart('/').Split(PATH_SEPARATORS, StringSplitOptions.RemoveEmptyEntries).ToImmutableList();
         _trailingSlash = uriBuilder.Path.EndsWith('/');
@@ -65,7 +65,7 @@ public sealed class UrlBuilder: ICloneable {
             string[] split = p.Split(QUERY_PARAM_KEY_VALUE_SEPARATORS, 2);
             return new KeyValuePair<string, object>(split[0], split.ElementAtOrDefault(1) ?? VALUELESS_QUERY_PARAM);
         }).ToImmutableList();
-        _fragment = uriBuilder.Fragment.TrimStart(1, '#').EmptyToNull();
+        _fragment = uriBuilder.Fragment.TrimStart(1, '#').EmptyToNull;
     }
 
     private UrlBuilder(UrlBuilder other) {

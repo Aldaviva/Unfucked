@@ -21,7 +21,7 @@ public class StringsTest {
     [InlineData("a", "a")]
     [InlineData("abc def", "abc def")]
     public void EmptyToNull(string? input, string? expected) {
-        input.EmptyToNull().Should().Be(expected);
+        input.EmptyToNull.Should().Be(expected);
     }
 
     [Theory]
@@ -33,7 +33,7 @@ public class StringsTest {
     [InlineData("\n")]
     [InlineData("\r\n")]
     public void HasNoText(string? input) {
-        input.HasText().Should().BeFalse();
+        input.HasText.Should().BeFalse();
     }
 
     [Theory]
@@ -43,14 +43,14 @@ public class StringsTest {
     [InlineData(" . ")]
     [InlineData(". .")]
     public void HasText(string? input) {
-        input.HasText().Should().BeTrue();
+        input.HasText.Should().BeTrue();
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     public void HasNoLength(string? input) {
-        input.HasLength().Should().BeFalse();
+        input.HasLength.Should().BeFalse();
     }
 
     [Theory]
@@ -65,7 +65,7 @@ public class StringsTest {
     [InlineData(" . ")]
     [InlineData(". .")]
     public void HasLength(string? input) {
-        input.HasLength().Should().BeTrue();
+        input.HasLength.Should().BeTrue();
     }
 
     [Fact]

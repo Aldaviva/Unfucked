@@ -23,7 +23,7 @@
 
 ## Installation
 ```sh
-dotnet add package Unfucked.Windows
+dotnet package add Unfucked.Windows
 ```
 ```cs
 using Unfucked;

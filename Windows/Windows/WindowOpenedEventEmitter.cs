@@ -90,7 +90,7 @@ public sealed class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
             return true;
         } else {
             DateTime previousOpenTime = DateTime.FromBinary(previousWindowHandle.Value);
-            TimeSpan timeDifference   = (now - previousOpenTime).Abs();
+            TimeSpan timeDifference   = (now - previousOpenTime).Abs;
             return timeDifference > TimeSpan.FromMinutes(1);
         }
     }

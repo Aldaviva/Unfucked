@@ -19,7 +19,7 @@
 
 ## Installation
 ```sh
-dotnet add package Unfucked.DI
+dotnet package add Unfucked.DI
 ```
 ```cs
 using Unfucked;

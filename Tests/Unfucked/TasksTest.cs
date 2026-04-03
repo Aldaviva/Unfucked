@@ -16,20 +16,20 @@ public class TasksTest: IDisposable {
         TimeSpan duration = TimeSpan.FromDays(999999);
         Action   thrower  = () => { Task.Delay(duration, ct); };
         thrower.Should().Throw<ArgumentOutOfRangeException>();
-        _ = Tasks.Delay(duration, ct);
+        _ = Task.DelayLong(duration, ct);
     }
 
     [Fact]
     public async Task LongDelay() {
         Stopwatch stopwatch = Stopwatch.StartNew();
-        await Tasks.Delay(TimeSpan.FromMilliseconds(100), ct);
+        await Task.DelayLong(TimeSpan.FromMilliseconds(100), ct);
         stopwatch.ElapsedMilliseconds.Should().BeGreaterOrEqualTo(90);
     }
 
     [Fact]
     public async Task LongDelayWithTimeProvider() {
         Stopwatch stopwatch = Stopwatch.StartNew();
-        await Tasks.Delay(TimeSpan.FromMilliseconds(100), TimeProvider.System, ct);
+        await Task.DelayLong(TimeSpan.FromMilliseconds(100), TimeProvider.System, ct);
         stopwatch.ElapsedMilliseconds.Should().BeGreaterOrEqualTo(90);
     }
 
@@ -42,8 +42,8 @@ public class TasksTest: IDisposable {
             Task.FromResult(2)
         ];
 
-        (await Tasks.WhenAny(tasks, result => result == 2, ct)).Should().BeTrue();
-        (await Tasks.WhenAny(tasks, result => result == 3, ct)).Should().BeFalse();
+        (await Task.WhenAny(tasks, result => result == 2, ct)).Should().BeTrue();
+        (await Task.WhenAny(tasks, result => result == 3, ct)).Should().BeFalse();
     }
 
     [Fact]
@@ -57,13 +57,13 @@ public class TasksTest: IDisposable {
             }, ct)
         ];
 
-        (await Tasks.WhenAny(tasks, result => result == 1, ct)).Should().BeTrue();
+        (await Task.WhenAny(tasks, result => result == 1, ct)).Should().BeTrue();
     }
 
     [Fact]
     public async Task FirstOrDefault() {
         Stopwatch stopwatch = Stopwatch.StartNew();
-        string? actual = await Tasks.FirstOrDefault([
+        string? actual = await Task.FirstOrDefault([
             Task.FromCanceled<string>(new CancellationToken(true)),
             Task.FromException<string>(new ApplicationException()),
             Task.FromResult("a"),
@@ -80,7 +80,7 @@ public class TasksTest: IDisposable {
     [Fact]
     public async Task FirstOrDefaultNull() {
         Stopwatch stopwatch = Stopwatch.StartNew();
-        int? actual = await Tasks.FirstOrDefaultStruct([
+        int? actual = await Task.FirstOrDefaultStruct([
             Task.FromCanceled<int>(new CancellationToken(true)),
             Task.FromException<int>(new ApplicationException()),
             Task.FromResult(1),

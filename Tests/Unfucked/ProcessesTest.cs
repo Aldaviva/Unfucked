@@ -6,7 +6,7 @@ public class ProcessesTest {
 
     [Fact]
     public async Task ExecFile() {
-        ProcessResult gitResult = await Processes.ExecFile("git", "--version");
+        ProcessResult gitResult = await Process.ExecFile("git", "--version");
 
         gitResult.Should().NotBeNull();
         gitResult.ExitCode.Should().Be(0);
@@ -17,7 +17,7 @@ public class ProcessesTest {
     [Fact]
     public async Task ExecFileWithEnvironment() {
         ProcessResult gitResult =
-            await Processes.ExecFile("git", ["--version"], new Dictionary<string, string?> { { "abc", "def" }, { "removeme", null } });
+            await Process.ExecFile("git", ["--version"], new Dictionary<string, string?> { { "abc", "def" }, { "removeme", null } });
 
         gitResult.Should().NotBeNull();
         gitResult.ExitCode.Should().Be(0);
@@ -27,7 +27,7 @@ public class ProcessesTest {
 
     [Fact]
     public async Task ExecMissingFile() {
-        ProcessResult gitResult = await Processes.ExecFile("missing_file");
+        ProcessResult gitResult = await Process.ExecFile("missing_file");
 
         gitResult.Should().NotBeNull();
         gitResult.ExitCode.Should().Be(-1);
@@ -36,7 +36,7 @@ public class ProcessesTest {
     [Fact]
     public async Task CancelExecFile() {
         CancellationTokenSource cts  = new();
-        Task<ProcessResult>     task = Processes.ExecFile("ping", ["127.0.0.1"], cancellationToken: cts.Token);
+        Task<ProcessResult>     task = Process.ExecFile("ping", ["127.0.0.1"], cancellationToken: cts.Token);
 
         cts.Cancel();
 

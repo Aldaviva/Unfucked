@@ -17,7 +17,7 @@
 
 ## Installation
 ```sh
-dotnet add package Unfucked.OBS
+dotnet package add Unfucked.OBS
 ```
 ```cs
 using Unfucked.OBS;

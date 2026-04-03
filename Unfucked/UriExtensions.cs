@@ -8,13 +8,17 @@ namespace Unfucked;
 /// </summary>
 public static class UriExtensions {
 
-    /// <summary>
-    /// Get the query parameters from a URI.
-    /// </summary>
     /// <param name="uri">A URI that could have query parameters.</param>
-    /// <returns>Collection of string key-value pairs of the query parameters.</returns>
-    [Pure]
-    public static NameValueCollection GetQuery(this Uri uri) => HttpUtility.ParseQueryString(uri.Query);
+    extension(Uri uri) {
+
+        /// <summary>
+        /// Get the query parameters from a URI.
+        /// </summary>
+        /// <returns>Collection of string key-value pairs of the query parameters.</returns>
+        [Pure]
+        public NameValueCollection QueryParams => HttpUtility.ParseQueryString(uri.Query);
+
+    }
 
     /// <summary>Test if a URL has the same domain as <paramref name="ancestorOrSelfDomain"/>, or if it is a subdomain of it. This can be used for site locking.</summary>
     /// <param name="url">A URL to test, such as <c>https://west.aldaviva.com</c>.</param>
@@ -32,7 +36,7 @@ public static class UriExtensions {
     /// <param name="ancestorOrSelfUri">A URI with the expected exact domain or ancestor domain of <paramref name="url"/>, such as <c>aldaviva.com</c>.</param>
     /// <returns><c>true</c> if the <paramref name="url"/> hostname is the same as the host of <paramref name="ancestorOrSelfUri"/> or is a subdomain of it; <c>false</c> otherwise. For example, <c>https://west.aldaviva.com</c> does belong to the domain of <c>http://aldaviva.com/</c>, so this would return <c>true</c>.</returns>
     [Pure]
-    public static bool BelongsToDomain(this Uri url, Uri ancestorOrSelfUri) => BelongsToDomain(url, ancestorOrSelfUri.Host);
+    public static bool BelongsToDomain(this Uri url, Uri ancestorOrSelfUri) => url.BelongsToDomain(ancestorOrSelfUri.Host);
 
     /// <summary>Test if a request's URL has the same domain as <paramref name="ancestorOrSelfDomain"/>, or if it is a subdomain of it. This can be used for site locking.</summary>
     /// <param name="request">A request whose URL (such as <c>https://west.aldaviva.com/</c>) will be tested.</param>
@@ -92,6 +96,11 @@ public static class UriExtensions {
 
     }
 
+    /// <summary>
+    /// Convert this <see cref="Uri"/> to a <see cref="UrlBuilder"/> so you can manipulate it and generate a modified URL from it.
+    /// </summary>
+    /// <param name="uri">Source</param>
+    /// <returns>URL builder initialized to the value of <paramref name="uri"/></returns>
     [Pure]
     public static UrlBuilder ToBuilder(this Uri uri) => new(uri);
 

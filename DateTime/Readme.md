@@ -17,7 +17,7 @@
 
 ## Installation
 ```sh
-dotnet add package Unfucked.DateTime
+dotnet package add Unfucked.DateTime
 ```
 ```cs
 using Unfucked;

@@ -13,128 +13,181 @@ public static class Tasks {
         TimeSpan.FromMilliseconds(int.MaxValue);
 #endif
 
-    /// <summary>
-    /// Like <see cref="Task.Delay(TimeSpan,CancellationToken)"/>, but with support for arbitrarily long delays.
-    /// </summary>
-    /// <param name="duration">How long to wait.</param>
-    /// <param name="cancellationToken">To stop waiting before <paramref name="duration"/> has elapsed.</param>
-    // ExceptionAdjustment: M:System.TimeSpan.Subtract(System.TimeSpan) -T:System.OverflowException
-    [Pure]
-    public static Task Delay(TimeSpan duration, CancellationToken cancellationToken = default) {
-        Task result = Task.CompletedTask;
+    extension(Task) {
 
-        for (TimeSpan remaining = duration; remaining > TimeSpan.Zero; remaining = remaining.Subtract(MAX_SHORT_DELAY)) {
-            TimeSpan shortDelay = remaining > MAX_SHORT_DELAY ? MAX_SHORT_DELAY : remaining;
-            result = result.ContinueWith(_ => Task.Delay(shortDelay, cancellationToken), cancellationToken,
-                TaskContinuationOptions.LongRunning | TaskContinuationOptions.NotOnCanceled, TaskScheduler.Current).Unwrap();
+        /// <summary>
+        /// Like <see cref="Task.Delay(TimeSpan,CancellationToken)"/>, but with support for arbitrarily long delays.
+        /// </summary>
+        /// <param name="duration">How long to wait.</param>
+        /// <param name="cancellationToken">To stop waiting before <paramref name="duration"/> has elapsed.</param>
+        // ExceptionAdjustment: M:System.TimeSpan.Subtract(System.TimeSpan) -T:System.OverflowException
+        [Pure]
+        public static Task DelayLong(TimeSpan duration, CancellationToken cancellationToken = default) {
+            Task result = Task.CompletedTask;
+
+            for (TimeSpan remaining = duration; remaining > TimeSpan.Zero; remaining = remaining.Subtract(MAX_SHORT_DELAY)) {
+                TimeSpan shortDelay = remaining > MAX_SHORT_DELAY ? MAX_SHORT_DELAY : remaining;
+                result = result.ContinueWith(_ => Task.Delay(shortDelay, cancellationToken), cancellationToken,
+                    TaskContinuationOptions.LongRunning | TaskContinuationOptions.NotOnCanceled).Unwrap();
+            }
+
+            return result;
         }
-
-        return result;
-    }
 
 #if NET8_0_OR_GREATER
-    /// <summary>
-    /// Like <see cref="Task.Delay(TimeSpan,TimeProvider,CancellationToken)"/>, except this supports arbitrarily long delays.
-    /// </summary>
-    /// <param name="duration">How long to wait.</param>
-    /// <param name="timeProvider">Useful for mocking.</param>
-    /// <param name="cancellationToken">To stop waiting before <paramref name="duration"/> has elapsed.</param>
-    // ExceptionAdjustment: M:System.TimeSpan.Subtract(System.TimeSpan) -T:System.OverflowException
-    [Pure]
-    public static Task Delay(TimeSpan duration, TimeProvider timeProvider, CancellationToken cancellationToken = default) {
-        timeProvider ??= TimeProvider.System;
-        Task result = Task.CompletedTask;
+        /// <summary>
+        /// Like <see cref="Task.Delay(TimeSpan,TimeProvider,CancellationToken)"/>, except this supports arbitrarily long delays.
+        /// </summary>
+        /// <param name="duration">How long to wait.</param>
+        /// <param name="timeProvider">Useful for mocking.</param>
+        /// <param name="cancellationToken">To stop waiting before <paramref name="duration"/> has elapsed.</param>
+        // ExceptionAdjustment: M:System.TimeSpan.Subtract(System.TimeSpan) -T:System.OverflowException
+        [Pure]
+        public static Task DelayLong(TimeSpan duration, TimeProvider? timeProvider, CancellationToken cancellationToken = default) {
+            timeProvider ??= TimeProvider.System;
+            Task result = Task.CompletedTask;
 
-        for (TimeSpan remaining = duration; remaining > TimeSpan.Zero; remaining = remaining.Subtract(MAX_SHORT_DELAY)) {
-            TimeSpan shortDelay = remaining > MAX_SHORT_DELAY ? MAX_SHORT_DELAY : remaining;
-            result = result.ContinueWith(_ => Task.Delay(shortDelay, timeProvider, cancellationToken), cancellationToken,
-                TaskContinuationOptions.LongRunning | TaskContinuationOptions.NotOnCanceled, TaskScheduler.Current).Unwrap();
+            for (TimeSpan remaining = duration; remaining > TimeSpan.Zero; remaining = remaining.Subtract(MAX_SHORT_DELAY)) {
+                TimeSpan shortDelay = remaining > MAX_SHORT_DELAY ? MAX_SHORT_DELAY : remaining;
+                result = result.ContinueWith(_ => Task.Delay(shortDelay, timeProvider, cancellationToken), cancellationToken,
+                    TaskContinuationOptions.LongRunning | TaskContinuationOptions.NotOnCanceled).Unwrap();
+            }
+
+            return result;
         }
-
-        return result;
-    }
 #endif
 
-    /// <summary>
-    /// <para>Resolve a <see cref="Task{T}"/> when any of a sequence of tasks resolve and their result value passes a predicate.</para>
-    /// <para>This method returns <c>true</c> iff the predicate passed on any of the inner tasks. To instead get the result value from one of the passing inner tasks, see <seealso cref="FirstOrDefault{T}"/>.</para>
-    /// </summary>
-    /// <typeparam name="T">Return type of the inner tasks</typeparam>
-    /// <param name="innerTasks">Tasks to wait for.</param>
-    /// <param name="predicate">Test for each inner task's result value. It should return <c>true</c> to make this method return <c>true</c>.</param>
-    /// <param name="ct">If you want to stop waiting early.</param>
-    /// <returns><c>true</c> if any of the <paramref name="innerTasks"/> completed successfully with a result that cause <paramref name="predicate"/> to return <c>true</c>, or <c>false</c> if none of them pass.</returns>
-    [Pure]
-    public static async Task<bool> WhenAny<T>(IEnumerable<Task<T>> innerTasks, Predicate<T> predicate, CancellationToken ct = default) {
-        TaskCompletionSource<bool> predicatePassed = new();
-        CancellationTokenSource    cts             = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        /// <summary>
+        /// <para>Resolve a <see cref="Task{T}"/> when any of a sequence of tasks resolve and their result value passes a predicate.</para>
+        /// <para>This method returns <c>true</c> iff the predicate passed on any of the inner tasks. To instead get the result value from one of the passing inner tasks, see <seealso cref="FirstOrDefault{T}"/>.</para>
+        /// </summary>
+        /// <typeparam name="T">Return type of the inner tasks</typeparam>
+        /// <param name="innerTasks">Tasks to wait for.</param>
+        /// <param name="predicate">Test for each inner task's result value. It should return <c>true</c> to make this method return <c>true</c>.</param>
+        /// <param name="ct">If you want to stop waiting early.</param>
+        /// <returns><c>true</c> if any of the <paramref name="innerTasks"/> completed successfully with a result that cause <paramref name="predicate"/> to return <c>true</c>, or <c>false</c> if none of them pass.</returns>
+        [Pure]
+        public static async Task<bool> WhenAny<T>(IEnumerable<Task<T>> innerTasks, Predicate<T> predicate, CancellationToken ct = default) {
+            TaskCompletionSource<bool> predicatePassed = new();
+            CancellationTokenSource    cts             = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-        Task allInnerTasksDone = Task.WhenAll(innerTasks.Select(innerTask => innerTask.ContinueWith(c => {
-            if (!cts.IsCancellationRequested && predicate(c.Result)) {
-                predicatePassed.TrySetResult(true);
-                cts.Cancel();
-            }
-        }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Current)));
+            Task allInnerTasksDone = Task.WhenAll(innerTasks.Select(innerTask => innerTask.ContinueWith(c => {
+                if (!cts.IsCancellationRequested && predicate(c.Result)) {
+                    predicatePassed.TrySetResult(true);
+                    cts.Cancel();
+                }
+            }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion)));
 
-        await Task.WhenAny(predicatePassed.Task, allInnerTasksDone).ConfigureAwait(false);
+            await Task.WhenAny(predicatePassed.Task, allInnerTasksDone).ConfigureAwait(false);
 
-        return predicatePassed.Task.Status == TaskStatus.RanToCompletion;
+            return predicatePassed.Task.Status == TaskStatus.RanToCompletion;
+        }
+
+        // public static Task<bool> Any(Task childTask1, Task childTask2, Predicate<Task> predicate, CancellationToken? ct = default) {
+        //     return Any([childTask1, childTask2], predicate, ct);
+        // }
+        //
+        // public static Task<bool> Any(Predicate<Task> predicate, CancellationToken? ct = default, params Task[] childTasks) {
+        //     return Any(childTasks, predicate, ct);
+        // }
+
+        /// <summary>
+        /// <para>Resolve a <see cref="Task{T}"/> when any of a sequence of tasks resolve and their result value passes a predicate.</para>
+        /// <para>This method returns the result value of the first inner task to pass the predicate, or <c>null</c> if none of them passed the predicate after all of them finished.</para>
+        /// </summary>
+        /// <typeparam name="T">The result type of the tasks.</typeparam>
+        /// <param name="innerTasks">Tasks to wait for.</param>
+        /// <param name="predicate">Test for each inner task's result value. It should return <c>true</c> to make this method return the inner task's result value.</param>
+        /// <param name="cts">If you want to stop waiting early. It's a <see cref="CancellationTokenSource"/> instead of a <see cref="CancellationToken"/> because this method will cancel it when it finishes so other <paramref name="innerTasks"/> can short-circuit.</param>
+        /// <returns>The result value of the first <paramref name="innerTasks"/> to finish successfully and have its return value pass <paramref name="predicate"/>, or <c>null</c> if all of the <paramref name="innerTasks"/> finished either unsuccessfully or with result values that failed <paramref name="predicate"/>.</returns>
+        [Pure]
+        public static async Task<T?> FirstOrDefault<T>(IEnumerable<Task<T>> innerTasks, Predicate<T> predicate, CancellationTokenSource? cts = null) where T: class {
+            TaskCompletionSource<T> predicatePassed = new();
+            cts ??= new CancellationTokenSource();
+
+            Task<T[]> allInnerTasksDone = Task.WhenAll(innerTasks.Select(innerTask => innerTask.ContinueWith(c => {
+                if (!cts.IsCancellationRequested && predicate(c.Result)) {
+                    predicatePassed.TrySetResult(c.Result);
+                    cts.Cancel();
+                }
+
+                return c.Result;
+            }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion)));
+
+            await Task.WhenAny(predicatePassed.Task, allInnerTasksDone).ConfigureAwait(false);
+
+            return predicatePassed.Task is { Status: TaskStatus.RanToCompletion, Result: var result } ? result : null;
+        }
+
+        /// <inheritdoc cref="FirstOrDefault{T}" />
+        [Pure]
+        public static async Task<T?> FirstOrDefaultStruct<T>(IEnumerable<Task<T>> childTasks, Predicate<T> predicate, CancellationTokenSource? cts = null) where T: struct {
+            TaskCompletionSource<T> predicatePassed = new();
+            cts ??= new CancellationTokenSource();
+
+            Task<T[]> allChildrenDone = Task.WhenAll(childTasks.Select(childTask => childTask.ContinueWith(c => {
+                if (!cts.IsCancellationRequested && predicate(c.Result)) {
+                    predicatePassed.TrySetResult(c.Result);
+                    cts.Cancel();
+                }
+
+                return c.Result;
+            }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion)));
+
+            await Task.WhenAny(predicatePassed.Task, allChildrenDone).ConfigureAwait(false);
+
+            return predicatePassed.Task is { Status: TaskStatus.RanToCompletion, Result: var result } ? result : null;
+        }
+
     }
 
-    // public static Task<bool> Any(Task childTask1, Task childTask2, Predicate<Task> predicate, CancellationToken? ct = default) {
-    //     return Any([childTask1, childTask2], predicate, ct);
-    // }
-    //
-    // public static Task<bool> Any(Predicate<Task> predicate, CancellationToken? ct = default, params Task[] childTasks) {
-    //     return Any(childTasks, predicate, ct);
-    // }
+    /// <param name="task">A task that return a result of type <typeparamref name="T"/> or throws an exception</param>
+    extension<T>(Task<T> task) where T: class? {
 
-    /// <summary>
-    /// <para>Resolve a <see cref="Task{T}"/> when any of a sequence of tasks resolve and their result value passes a predicate.</para>
-    /// <para>This method returns the result value of the first inner task to pass the predicate, or <c>null</c> if none of them passed the predicate after all of them finished.</para>
-    /// </summary>
-    /// <typeparam name="T">The result type of the tasks.</typeparam>
-    /// <param name="innerTasks">Tasks to wait for.</param>
-    /// <param name="predicate">Test for each inner task's result value. It should return <c>true</c> to make this method return the inner task's result value.</param>
-    /// <param name="cts">If you want to stop waiting early. It's a <see cref="CancellationTokenSource"/> instead of a <see cref="CancellationToken"/> because this method will cancel it when it finishes so other <paramref name="innerTasks"/> can short-circuit.</param>
-    /// <returns>The result value of the first <paramref name="innerTasks"/> to finish successfully and have its return value pass <paramref name="predicate"/>, or <c>null</c> if all of the <paramref name="innerTasks"/> finished either unsuccessfully or with result values that failed <paramref name="predicate"/>.</returns>
-    [Pure]
-    public static async Task<T?> FirstOrDefault<T>(IEnumerable<Task<T>> innerTasks, Predicate<T> predicate, CancellationTokenSource? cts = null) where T: class {
-        TaskCompletionSource<T> predicatePassed = new();
-        cts ??= new CancellationTokenSource();
-
-        Task<T[]> allInnerTasksDone = Task.WhenAll(innerTasks.Select(innerTask => innerTask.ContinueWith(c => {
-            if (!cts.IsCancellationRequested && predicate(c.Result)) {
-                predicatePassed.TrySetResult(c.Result);
-                cts.Cancel();
+        /// <summary>
+        /// Asynchronously get the result of a task or, if it threw an exception, <c>null</c>, rather than rethrowing the inner exception. This allows fluent null-coalescing fallback chaining instead of a bunch of multi-line, temporary variable declaring try/catch blocks which aren't expression-valued.
+        /// </summary>
+        /// <typeparam name="T">Type of result</typeparam>
+        /// <returns><paramref name="task"/>'s awaited return value, or <c>null</c> if <paramref name="task"/> threw an exception. This method doesn't throw exceptions (except <see cref="OutOfMemoryException"/>).</returns>
+        [Pure]
+        public async Task<T?> ExceptionsToNull() {
+            try {
+                return await task.ConfigureAwait(false);
+            } catch (Exception e) when (e is not OutOfMemoryException) {
+                return null;
             }
+        }
 
-            return c.Result;
-        }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion)));
-
-        await Task.WhenAny(predicatePassed.Task, allInnerTasksDone).ConfigureAwait(false);
-
-        return predicatePassed.Task is { Status: TaskStatus.RanToCompletion, Result: var result } ? result : null;
     }
 
-    /// <inheritdoc cref="FirstOrDefault{T}" />
-    [Pure]
-    public static async Task<T?> FirstOrDefaultStruct<T>(IEnumerable<Task<T>> childTasks, Predicate<T> predicate, CancellationTokenSource? cts = null) where T: struct {
-        TaskCompletionSource<T> predicatePassed = new();
-        cts ??= new CancellationTokenSource();
+    /// <param name="task">A task that return a result of type <typeparamref name="T"/> or throws an exception</param>
+    extension<T>(Task<T> task) where T: struct {
 
-        Task<T[]> allChildrenDone = Task.WhenAll(childTasks.Select(childTask => childTask.ContinueWith(c => {
-            if (!cts.IsCancellationRequested && predicate(c.Result)) {
-                predicatePassed.TrySetResult(c.Result);
-                cts.Cancel();
+        /// <inheritdoc cref="Tasks.ExceptionsToNull{T}" />
+        [Pure]
+        public async Task<T?> ExceptionsToNullStruct() {
+            try {
+                return await task.ConfigureAwait(false);
+            } catch (Exception e) when (e is not OutOfMemoryException) {
+                return null;
             }
+        }
 
-            return c.Result;
-        }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion)));
+    }
 
-        await Task.WhenAny(predicatePassed.Task, allChildrenDone).ConfigureAwait(false);
+    /// <param name="task">A task that return a result of type <typeparamref name="T"/> or throws an exception</param>
+    extension<T>(Task<T?> task) where T: struct {
 
-        return predicatePassed.Task is { Status: TaskStatus.RanToCompletion, Result: var result } ? result : null;
+        /// <inheritdoc cref="Tasks.ExceptionsToNull{T}" />
+        [Pure]
+        public async Task<T?> ExceptionsToNullStruct() {
+            try {
+                return await task.ConfigureAwait(false);
+            } catch (Exception e) when (e is not OutOfMemoryException) {
+                return null;
+            }
+        }
+
     }
 
     /// <summary>
@@ -171,67 +224,32 @@ public static class Tasks {
     }
 
     /// <summary>
-    /// Asynchronously get the result of a task or, if it threw an exception, <c>null</c>, rather than rethrowing the inner exception. This allows fluent null-coalescing fallback chaining instead of a bunch of multi-line, temporary variable declaring try/catch blocks which aren't expression-valued.
-    /// </summary>
-    /// <typeparam name="T">Type of result</typeparam>
-    /// <param name="task">A task that return a result of type <typeparamref name="T"/> or throws an exception</param>
-    /// <returns><paramref name="task"/>'s awaited return value, or <c>null</c> if <paramref name="task"/> threw an exception. This method doesn't throw exceptions (except <see cref="OutOfMemoryException"/>).</returns>
-    [Pure]
-    public static async Task<T?> ResultOrNullForException<T>(this Task<T> task) where T: class? {
-        try {
-            return await task.ConfigureAwait(false);
-        } catch (Exception e) when (e is not OutOfMemoryException) {
-            return null;
-        }
-    }
-
-    /// <inheritdoc cref="ResultOrNullForException{T}" />
-    [Pure]
-    public static async Task<T?> ResultOrNullStructForException<T>(this Task<T> task) where T: struct {
-        try {
-            return await task.ConfigureAwait(false);
-        } catch (Exception e) when (e is not OutOfMemoryException) {
-            return null;
-        }
-    }
-
-    /// <inheritdoc cref="ResultOrNullForException{T}" />
-    [Pure]
-    public static async Task<T?> ResultOrNullStructForException<T>(this Task<T?> task) where T: struct {
-        try {
-            return await task.ConfigureAwait(false);
-        } catch (Exception e) when (e is not OutOfMemoryException) {
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Get the original <paramref name="task"/>, or <see cref="Task.CompletedTask"/> if it was <c>null</c>.
+    /// Get the original <see cref="Task"/>, or <see cref="Task.CompletedTask"/> if <paramref name="task"/> was <c>null</c>.
     /// </summary>
     /// <param name="task">A <see cref="Task"/> that can be <c>null</c>.</param>
     /// <returns>A <see cref="Task"/> that is never <c>null</c>.</returns>
     [Pure]
-    public static Task CompleteIfNull(this Task? task) =>
+    public static Task OrComplete(this Task? task) =>
         task ?? Task.CompletedTask;
 
     /// <summary>
-    /// Get the original <paramref name="task"/>, or a completed <see cref="Task"/> with the value <paramref name="valueIfNull"/> if it was <c>null</c>.
+    /// Get the original <see cref="Task"/>, or a completed <see cref="Task"/> with the value <paramref name="valueIfNull"/> if <paramref name="task"/> was <c>null</c>.
     /// </summary>
     /// <param name="task">A <see cref="Task"/> that can be <c>null</c>.</param>
     /// <param name="valueIfNull">The value that the returned <see cref="Task"/> should be completed with if <paramref name="task"/> is <c>null</c>.</param>
     /// <returns>A <see cref="Task"/> that is never <c>null</c>.</returns>
     [Pure]
-    public static Task<T?> CompleteIfNull<T>(this Task<T?>? task, T? valueIfNull = null) where T: class =>
+    public static Task<T?> OrComplete<T>(this Task<T?>? task, T? valueIfNull = null) where T: class =>
         task ?? Task.FromResult(valueIfNull);
 
-    /// <inheritdoc cref="CompleteIfNull{T}(Task{T},T)" />
+    /// <inheritdoc cref="OrComplete{T}" />
     [Pure]
-    public static Task<T> CompleteIfNullStruct<T>(this Task<T>? task, T valueIfNull = default) where T: struct =>
+    public static Task<T> OrCompleteStruct<T>(this Task<T>? task, T valueIfNull = default) where T: struct =>
         task ?? Task.FromResult(valueIfNull);
 
-    /// <inheritdoc cref="CompleteIfNull{T}(Task{T},T)" />
+    /// <inheritdoc cref="OrComplete{T}" />
     [Pure]
-    public static Task<T?> CompleteIfNullStruct<T>(this Task<T?>? task, T? valueIfNull = null) where T: struct =>
+    public static Task<T?> OrCompleteStruct<T>(this Task<T?>? task, T? valueIfNull = null) where T: struct =>
         task ?? Task.FromResult(valueIfNull);
 
     /// <inheritdoc cref="Task.ContinueWith(Action{Task},CancellationToken,TaskContinuationOptions,TaskScheduler)" path="//*[not(self::param[@name='scheduler'])]" />

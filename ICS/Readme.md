@@ -17,7 +17,7 @@
 
 ## Installation
 ```sh
-dotnet add package Unfucked.ICS
+dotnet package add Unfucked.ICS
 ```
 ```cs
 using Unfucked;

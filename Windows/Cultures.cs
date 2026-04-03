@@ -12,11 +12,15 @@ public static class Cultures {
 
     private static readonly Lazy<CultureInfo> MACHINE_CULTURE = new(GetMachineCulture, LazyThreadSafetyMode.PublicationOnly);
 
-    /// <summary>
-    /// <para>Get the locale of the computer, which affects the welcome screen and system accounts such as <c>NT AUTHORITY\NETWORK SERVICE</c>. This is like <see cref="CultureInfo.CurrentCulture"/>, but for the entire operating system instead of the current user.</para>
-    /// <para>This value is controlled by <c>intl.cpl</c> › Administrative › Copy settings… › Welcome screen › Display language.</para>
-    /// </summary>
-    public static CultureInfo CurrentMachineCulture => MACHINE_CULTURE.Value;
+    extension(CultureInfo) {
+
+        /// <summary>
+        /// <para>Get the locale of the computer, which affects the welcome screen and system accounts such as <c>NT AUTHORITY\NETWORK SERVICE</c>. This is like <see cref="CultureInfo.CurrentCulture"/>, but for the entire operating system instead of the current user.</para>
+        /// <para>This value is controlled by <c>intl.cpl</c> › Administrative › Copy settings… › Welcome screen › Display language.</para>
+        /// </summary>
+        public static CultureInfo CurrentMachineCulture => MACHINE_CULTURE.Value;
+
+    }
 
     private static unsafe CultureInfo GetMachineCulture() {
         int bufferSize = 0;

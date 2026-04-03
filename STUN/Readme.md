@@ -17,7 +17,7 @@
 
 ## Installation
 ```sh
-dotnet add package Unfucked.STUN
+dotnet package add Unfucked.STUN
 ```
 ```cs
 using Unfucked.STUN;

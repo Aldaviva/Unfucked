@@ -17,7 +17,7 @@
 
 ## Installation
 ```sh
-dotnet add package Unfucked.Twitch
+dotnet package add Unfucked.Twitch
 ```
 ```cs
 using Unfucked;

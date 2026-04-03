@@ -10,14 +10,14 @@ public class NodaTimeExtensionsTest {
     [Theory]
     [MemberData(nameof(DurationAbsoluteValueData))]
     public void DurationAbsoluteValue(Duration input, Duration expected) {
-        input.Abs().Should().Be(expected);
+        input.Abs.Should().Be(expected);
     }
 
     [Theory]
     [MemberData(nameof(DurationAbsoluteValueData))]
     public void OptionalDurationAbsoluteValue(Duration input, Duration expected) {
-        ((Duration?) input).Abs().Should().Be(expected);
-        ((Duration?) null).Abs().Should().BeNull();
+        ((Duration?) input).Abs.Should().Be(expected);
+        ((Duration?) null).Abs.Should().BeNull();
     }
 
     public static TheoryData<Duration, Duration> DurationAbsoluteValueData => new() {
@@ -29,7 +29,7 @@ public class NodaTimeExtensionsTest {
     [Theory]
     [MemberData(nameof(AtStartOfDayData))]
     public void AtStartOfDay(ZonedDateTime input, ZonedDateTime expected) {
-        input.AtStartOfDay().Should().Be(expected);
+        input.StartOfDay.Should().Be(expected);
     }
 
     public static TheoryData<ZonedDateTime, ZonedDateTime> AtStartOfDayData => new() {
@@ -40,8 +40,8 @@ public class NodaTimeExtensionsTest {
     [Theory]
     [MemberData(nameof(ToPeriodAndDurationSinceStartOfDayData))]
     public void ToPeriodAndDurationSinceStartOfDay(LocalTime input, Period expectedPeriod, Duration expectedDuration) {
-        input.ToPeriodSinceStartOfDay().Should().Be(expectedPeriod);
-        input.ToDurationSinceStartOfDay().Should().Be(expectedDuration);
+        input.PeriodSinceStartOfDay.Should().Be(expectedPeriod);
+        input.DurationSinceStartOfDay.Should().Be(expectedDuration);
     }
 
     public static TheoryData<LocalTime, Period, Duration> ToPeriodAndDurationSinceStartOfDayData => new() {
@@ -52,7 +52,7 @@ public class NodaTimeExtensionsTest {
     [Theory]
     [MemberData(nameof(OffsetToHoursData))]
     public void OffsetToHours(Offset input, double expected) {
-        input.ToHours().Should().BeApproximately(expected, 0.001);
+        input.Hours.Should().BeApproximately(expected, 0.001);
     }
 
     public static TheoryData<Offset, double> OffsetToHoursData => new() {
@@ -69,8 +69,8 @@ public class NodaTimeExtensionsTest {
 
     public static TheoryData<OffsetDateTime, OffsetDateTime, bool, bool> OffsetDataTimeComparisonData => new() {
         { ZONED_DATE_TIME.ToOffsetDateTime(), ZONED_DATE_TIME.ToOffsetDateTime(), false, false },
-        { ZONED_DATE_TIME.AtStartOfDay().ToOffsetDateTime(), ZONED_DATE_TIME.ToOffsetDateTime(), true, false },
-        { ZONED_DATE_TIME.ToOffsetDateTime(), ZONED_DATE_TIME.AtStartOfDay().ToOffsetDateTime(), false, true }
+        { ZONED_DATE_TIME.StartOfDay.ToOffsetDateTime(), ZONED_DATE_TIME.ToOffsetDateTime(), true, false },
+        { ZONED_DATE_TIME.ToOffsetDateTime(), ZONED_DATE_TIME.StartOfDay.ToOffsetDateTime(), false, true }
     };
 
     [Theory]
@@ -82,8 +82,8 @@ public class NodaTimeExtensionsTest {
 
     public static TheoryData<ZonedDateTime, ZonedDateTime, bool, bool> ZonedDataTimeComparisonData => new() {
         { ZONED_DATE_TIME, ZONED_DATE_TIME, false, false },
-        { ZONED_DATE_TIME.AtStartOfDay(), ZONED_DATE_TIME, true, false },
-        { ZONED_DATE_TIME, ZONED_DATE_TIME.AtStartOfDay(), false, true }
+        { ZONED_DATE_TIME.StartOfDay, ZONED_DATE_TIME, true, false },
+        { ZONED_DATE_TIME, ZONED_DATE_TIME.StartOfDay, false, true }
     };
 
 }

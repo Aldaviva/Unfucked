@@ -79,9 +79,9 @@ public static class WindowsExtensions {
         /// Determine whether the given identity represents a Windows user in the <c>Administrators</c> group, and if they are currently running elevated.
         /// </summary>
         /// <returns>
-        /// <para><see cref="AdministratorElevation.ELEVATED_ADMIN"/> if the user is already elevated because they are a member of any administrators group (local, domain, or system), and has all of their admin permissions enabled because the identity's process is running elevated, UAC is off, or Admin Approval Mode is disabled)</para>
-        /// <para><see cref="AdministratorElevation.UNELEVATED_ADMIN"/> if the user is not elevated but could if they wanted to, because they are a member of any administrators group, but the process this user identity came from is not running elevated</para>
-        /// <para><see cref="AdministratorElevation.NOT_ADMIN"/> if the user is not elevated and couldn't even if they wanted to, because they are a Limited or Standard user since they are not a member of any administrators group, so they cannot elevate without a different, administrator user's credentials</para>
+        /// <para><see cref="AdministratorElevation.ElevatedAdmin"/> if the user is already elevated because they are a member of any administrators group (local, domain, or system), and has all of their admin permissions enabled because the identity's process is running elevated, UAC is off, or Admin Approval Mode is disabled)</para>
+        /// <para><see cref="AdministratorElevation.UnelevatedAdmin"/> if the user is not elevated but could if they wanted to, because they are a member of any administrators group, but the process this user identity came from is not running elevated</para>
+        /// <para><see cref="AdministratorElevation.NotAdmin"/> if the user is not elevated and couldn't even if they wanted to, because they are a Limited or Standard user since they are not a member of any administrators group, so they cannot elevate without a different, administrator user's credentials</para>
         /// </returns>
         [Pure]
         public AdministratorElevation AdministratorElevation {
@@ -92,13 +92,13 @@ public static class WindowsExtensions {
                     if (claim.Value == localAccountAndAdminMember.Value || claim.Value == builtinAdministrators.Value || (domainAdmins != null && claim.Value == domainAdmins.Value)) {
                         switch (claim.Type) {
                             case GROUP_SID:
-                                return AdministratorElevation.ELEVATED_ADMIN;
+                                return AdministratorElevation.ElevatedAdmin;
                             case DENY_ONLY_SID:
-                                return AdministratorElevation.UNELEVATED_ADMIN;
+                                return AdministratorElevation.UnelevatedAdmin;
                         }
                     }
                 }
-                return AdministratorElevation.NOT_ADMIN;
+                return AdministratorElevation.NotAdmin;
             }
         }
 

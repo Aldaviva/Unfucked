@@ -41,7 +41,7 @@ public partial class WebTarget {
 
     /// <inheritdoc />
     [Pure]
-    public IWebTarget Accept(params IEnumerable<string> mediaTypes) => Header(HttpHeaders.ACCEPT, mediaTypes);
+    public IWebTarget Accept(params IEnumerable<string> mediaTypes) => Header(HttpHeaders.Accept, mediaTypes);
 
     /// <inheritdoc />
     [Pure]
@@ -49,11 +49,11 @@ public partial class WebTarget {
 
     /// <inheritdoc />
     [Pure]
-    public IWebTarget AcceptEncoding(params IEnumerable<string> encodings) => Header(HttpHeaders.ACCEPT_ENCODING, encodings);
+    public IWebTarget AcceptEncoding(params IEnumerable<string> encodings) => Header(HttpHeaders.AcceptEncoding, encodings);
 
     /// <inheritdoc />
     [Pure]
-    public IWebTarget AcceptLanguage(params IEnumerable<string> languages) => Header(HttpHeaders.ACCEPT_LANGUAGE, languages);
+    public IWebTarget AcceptLanguage(params IEnumerable<string> languages) => Header(HttpHeaders.AcceptLanguage, languages);
 
     /// <inheritdoc />
     [Pure]
@@ -61,7 +61,7 @@ public partial class WebTarget {
 
     /// <inheritdoc />
     [Pure]
-    public IWebTarget CacheControl(string cacheControl) => Header(HttpHeaders.CACHE_CONTROL, cacheControl);
+    public IWebTarget CacheControl(string cacheControl) => Header(HttpHeaders.CacheControl, cacheControl);
 
     /// <inheritdoc />
     [Pure]
@@ -69,7 +69,7 @@ public partial class WebTarget {
 
     /// <inheritdoc />
     [Pure]
-    public IWebTarget Cookie(Cookie cookie) => Header(HttpHeaders.COOKIE, cookie.ToString());
+    public IWebTarget Cookie(Cookie cookie) => Header(HttpHeaders.Cookie, cookie.ToString());
 
     /// <inheritdoc />
     [Pure]
@@ -77,15 +77,15 @@ public partial class WebTarget {
 
     /// <inheritdoc />
     [Pure]
-    public IWebTarget UserAgent(string userAgentString) => Header(HttpHeaders.USER_AGENT, userAgentString);
+    public IWebTarget UserAgent(string userAgentString) => Header(HttpHeaders.UserAgent, userAgentString);
 
     /// <inheritdoc />
     [Pure]
-    public IWebTarget UserAgent(ProductInfoHeaderValue userAgentString) => Header(HttpHeaders.USER_AGENT, userAgentString.ToString());
+    public IWebTarget UserAgent(ProductInfoHeaderValue userAgentString) => Header(HttpHeaders.UserAgent, userAgentString.ToString());
 
     /// <inheritdoc />
     [Pure]
-    public IWebTarget Authorization(string credentials) => Header(HttpHeaders.AUTHORIZATION, credentials);
+    public IWebTarget Authorization(string credentials) => Header(HttpHeaders.Authorization, credentials);
 
     /// <inheritdoc />
     [Pure]
@@ -97,7 +97,7 @@ public partial class WebTarget {
 
     /// <inheritdoc />
     [Pure]
-    public IWebTarget Referrer(string referrer) => Header(HttpHeaders.REFERRER, referrer);
+    public IWebTarget Referrer(string referrer) => Header(HttpHeaders.Referrer, referrer);
 
     /// <inheritdoc />
     [Pure]
@@ -105,6 +105,6 @@ public partial class WebTarget {
 
     /// <inheritdoc />
     [Pure]
-    public IWebTarget RequestedWith(string requester = "XMLHttpRequest") => Header(HttpHeaders.X_REQUESTED_WITH, requester);
+    public IWebTarget RequestedWith(string requester = "XMLHttpRequest") => Header(HttpHeaders.XRequestedWith, requester);
 
 }

@@ -17,7 +17,7 @@ namespace Unfucked.HTTP.Serialization;
 /// </summary>
 public static class Entity {
 
-    internal static readonly UTF8Encoding UTF8 = new(false, true);
+    internal static readonly UTF8Encoding Utf8 = new(false, true);
 
     /// <summary>
     /// Like <see cref="JsonContent.Create{T}(T,MediaTypeHeaderValue,JsonSerializerOptions)"/>, but it respects the default <see cref="JsonSerializerOptions"/> from the <see cref="UnfuckedHttpClient"/>, which intelligently serializes enums and doesn't crash on comments.
@@ -204,7 +204,7 @@ public static class Entity {
             }
 
             XmlWriter createWriter(Encoding? encodingFallback) => XmlWriter.Create(stream, new XmlWriterSettings {
-                Encoding = this.Encoding ?? encodingFallback ?? UTF8
+                Encoding = this.Encoding ?? encodingFallback ?? Utf8
             });
         }
 
@@ -243,7 +243,7 @@ public static class Entity {
             }
 
             XmlWriter createWriter(Encoding? encodingFallback, bool isAsync) => XmlWriter.Create(stream, new XmlWriterSettings {
-                Encoding = this.Encoding ?? encodingFallback ?? UTF8,
+                Encoding = this.Encoding ?? encodingFallback ?? Utf8,
                 Async    = isAsync
             });
         }

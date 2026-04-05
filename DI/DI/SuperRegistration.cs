@@ -12,22 +12,22 @@ public enum SuperRegistration: ushort {
     /// <summary>
     /// Don't perform any extra registrations, like the regular DI Add* methods.
     /// </summary>
-    NONE = 0,
+    None = 0,
 
     /// <summary>
     /// <para>Register the concrete class as its own type.</para>
     /// <para>Useful when calling <see cref="DependencyInjectionExtensions.AddHostedService{T}(IServiceCollection,SuperRegistration)"/>, which by default only registers your service as <see cref="IHostedService"/> and not its actual class.</para>
     /// </summary>
-    CONCRETE_CLASS = 1,
+    ConcreteClass = 1,
 
     /// <summary>
     /// Register this concrete class as all of its implemented interfaces.
     /// </summary>
-    INTERFACES = 2,
+    Interfaces = 2,
 
     /// <summary>
     /// Register this concrete class as all of its extended superclasses.
     /// </summary>
-    SUPERCLASSES = 4
+    Superclasses = 4
 
 }

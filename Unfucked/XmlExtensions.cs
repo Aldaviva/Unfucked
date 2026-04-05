@@ -32,11 +32,11 @@ public static class XmlExtensions {
 #endif
 
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-        xmlReaderSettings       ??= new XmlReaderSettings();
-        xmlReaderSettings.Async =   true;
+        xmlReaderSettings ??= new XmlReaderSettings();
+        xmlReaderSettings.Async = true;
 #endif
 
-        using StreamReader streamReader = new(contentStream, encoding ?? Strings.UTF8, encoding == null);
+        using StreamReader streamReader = new(contentStream, encoding ?? Strings.Utf8, encoding == null);
         using XmlReader    xmlReader    = XmlReader.Create(streamReader, xmlReaderSettings);
 
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
@@ -65,7 +65,7 @@ public static class XmlExtensions {
 #else
             content.ReadAsStreamAsync();
 #endif
-        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.UTF8, encoding == null);
+        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.Utf8, encoding == null);
         return (T) xmlSerializer.Deserialize(textReader)!;
     }
 
@@ -85,7 +85,7 @@ public static class XmlExtensions {
 #else
             content.ReadAsStreamAsync();
 #endif
-        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.UTF8, encoding == null);
+        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.Utf8, encoding == null);
         doc.Load(textReader);
         return doc;
     }
@@ -105,7 +105,7 @@ public static class XmlExtensions {
 #else
             content.ReadAsStreamAsync();
 #endif
-        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.UTF8, encoding == null);
+        using TextReader textReader = new StreamReader(await readStreamTask.ConfigureAwait(false), encoding ?? Strings.Utf8, encoding == null);
         return new XPathDocument(textReader).CreateNavigator();
     }
 

@@ -162,7 +162,7 @@ public class InMemoryCacheTest {
 
         removedKey.Should().Be("a");
         removedValue.Should().Be(1);
-        removalCause.Should().Be(RemovalCause.EXPIRED);
+        removalCause.Should().Be(RemovalCause.Expired);
         cache.Count.Should().Be(0);
     }
 

@@ -187,7 +187,7 @@ public sealed class UrlBuilder: ICloneable {
         }
 
         if (_userInfo != null) {
-            built.Append(UrlEncoder.Encode(ReplacePlaceholders(_userInfo), UrlEncoder.Component.USER_INFO)).Append('@');
+            built.Append(UrlEncoder.Encode(ReplacePlaceholders(_userInfo), UrlEncoder.Component.UserInfo)).Append('@');
         }
 
         if (_hostname is {} hostname) {
@@ -205,7 +205,7 @@ public sealed class UrlBuilder: ICloneable {
 
         if (!_path.IsEmpty) {
             built.Append('/').AppendJoin('/',
-                _path.Select(p => UrlEncoder.Encode(ReplacePlaceholders(p.Trim('/')), UrlEncoder.Component.PATH_SEGMENT)));
+                _path.Select(p => UrlEncoder.Encode(ReplacePlaceholders(p.Trim('/')), UrlEncoder.Component.PathSegment)));
 
 #pragma warning disable IDE0056 // Use index operator - not available when targeting .NET Standard 2
             if (_trailingSlash && built[built.Length - 1] != '/') {
@@ -218,12 +218,12 @@ public sealed class UrlBuilder: ICloneable {
             ? _queryParameters.Where(pair => !_unusedTemplateQueryParameterRealNames.Contains(pair.Key)).ToList() : _queryParameters;
         if (queryParameters.Count != 0) {
             built.Append('?').AppendJoin('&', queryParameters.Select(pair => ReferenceEquals(pair.Value, VALUELESS_QUERY_PARAM)
-                ? UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QUERY_PARAMETER)
-                : $"{UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QUERY_PARAMETER)}={UrlEncoder.Encode(ReplacePlaceholders(Stringify(pair.Value) ?? string.Empty), UrlEncoder.Component.QUERY_PARAMETER)}"));
+                ? UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QueryParameter)
+                : $"{UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QueryParameter)}={UrlEncoder.Encode(ReplacePlaceholders(Stringify(pair.Value) ?? string.Empty), UrlEncoder.Component.QueryParameter)}"));
         }
 
         if (_fragment != null) {
-            built.Append('#').Append(UrlEncoder.Encode(ReplacePlaceholders(_fragment), UrlEncoder.Component.FRAGMENT));
+            built.Append('#').Append(UrlEncoder.Encode(ReplacePlaceholders(_fragment), UrlEncoder.Component.Fragment));
         }
 
         return new Uri(built.ToString(), UriKind.Absolute);
@@ -364,12 +364,12 @@ internal static class UrlEncoder {
     private static readonly ArrayPool<byte> ESCAPING_UTF_BUFFERS = ArrayPool<byte>.Create(4, 50);
 
     public static string Encode(string raw, Component component) => component switch {
-        Component.USER_INFO       => CharCategories.USER_INFO_ILLEGAL.Replace(raw, EscapeMatch),
-        Component.PATH_SEGMENT    => CharCategories.PATH_SEGMENT_ILLEGAL.Replace(raw, EscapeMatch),
-        Component.QUERY_PARAMETER => CharCategories.QUERY_PARAMETER_ILLEGAL.Replace(raw, EscapeMatch),
+        Component.UserInfo       => CharCategories.UserInfoIllegal.Replace(raw, EscapeMatch),
+        Component.PathSegment    => CharCategories.PathSegmentIllegal.Replace(raw, EscapeMatch),
+        Component.QueryParameter => CharCategories.QueryParameterIllegal.Replace(raw, EscapeMatch),
         // case UrlPart.SchemeSpecificPart:
-        Component.FRAGMENT => CharCategories.URI_ILLEGAL.Replace(raw, EscapeMatch),
-        _                  => CharCategories.URI_ILLEGAL.Replace(raw, EscapeMatch)
+        Component.Fragment => CharCategories.URIIllegal.Replace(raw, EscapeMatch),
+        _                  => CharCategories.URIIllegal.Replace(raw, EscapeMatch)
     };
 
     private static string EscapeMatch(Match match) {
@@ -377,9 +377,9 @@ internal static class UrlEncoder {
 
         int utf8BytesUsed;
 #if NET6_0_OR_GREATER
-        utf8BytesUsed = Strings.UTF8.GetBytes(match.ValueSpan, utf8Buffer);
+        utf8BytesUsed = Strings.Utf8.GetBytes(match.ValueSpan, utf8Buffer);
 #else
-        utf8BytesUsed = Strings.UTF8.GetBytes(match.Value, 0, match.Length, utf8Buffer, 0);
+        utf8BytesUsed = Strings.Utf8.GetBytes(match.Value, 0, match.Length, utf8Buffer, 0);
 #endif
 
         string escaped = string.Join(null, utf8Buffer.Take(utf8BytesUsed).Select(b => $"%{b:X2}"));
@@ -389,19 +389,19 @@ internal static class UrlEncoder {
 
     private static class CharCategories {
 
-        public static readonly Regex URI_ILLEGAL             = new(@"[^a-z0-9_\-!.~'()*,;:$&+=?/\[\]@]", RegexOptions.IgnoreCase);
-        public static readonly Regex USER_INFO_ILLEGAL       = new(@"[^a-z0-9_\-!.~'()*,;:$&+=]", RegexOptions.IgnoreCase);
-        public static readonly Regex PATH_SEGMENT_ILLEGAL    = new(@"[^a-z0-9_\-!.~'()*,;:$&+=@]", RegexOptions.IgnoreCase);
-        public static readonly Regex QUERY_PARAMETER_ILLEGAL = new(@"[^a-z0-9_\-!.~'()*,;:$+=/\[\]@]", RegexOptions.IgnoreCase);
+        public static readonly Regex URIIllegal            = new(@"[^a-z0-9_\-!.~'()*,;:$&+=?/\[\]@]", RegexOptions.IgnoreCase);
+        public static readonly Regex UserInfoIllegal       = new(@"[^a-z0-9_\-!.~'()*,;:$&+=]", RegexOptions.IgnoreCase);
+        public static readonly Regex PathSegmentIllegal    = new(@"[^a-z0-9_\-!.~'()*,;:$&+=@]", RegexOptions.IgnoreCase);
+        public static readonly Regex QueryParameterIllegal = new(@"[^a-z0-9_\-!.~'()*,;:$+=/\[\]@]", RegexOptions.IgnoreCase);
 
     }
 
     public enum Component {
 
-        USER_INFO,
-        PATH_SEGMENT,
-        QUERY_PARAMETER,
-        FRAGMENT
+        UserInfo,
+        PathSegment,
+        QueryParameter,
+        Fragment
 
     }
 

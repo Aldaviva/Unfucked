@@ -75,7 +75,7 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
             }
 
             if (oldValue is not null) {
-                Removal?.Invoke(this, key, oldValue, RemovalCause.EXPIRED);
+                Removal?.Invoke(this, key, oldValue, RemovalCause.Expired);
             }
         }
 
@@ -104,7 +104,7 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
         }
 
         if (removedValue is not null) {
-            Removal?.Invoke(this, key, removedValue, RemovalCause.REPLACED);
+            Removal?.Invoke(this, key, removedValue, RemovalCause.Replaced);
         }
     }
 
@@ -127,7 +127,7 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
                         } finally {
                             entry.ValueLock.Release();
                         }
-                        Removal?.Invoke(this, key, oldValue, RemovalCause.REPLACED);
+                        Removal?.Invoke(this, key, oldValue, RemovalCause.Replaced);
                     } catch (ObjectDisposedException) {}
                 } else {
                     entry.RefreshTimer.Elapsed -= refreshEntry;
@@ -166,7 +166,7 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
                 removed = cache.TryRemove(entry.Key, out _);
                 if (removed) {
                     entry.Value.Dispose();
-                    Removal?.Invoke(this, entry.Key, entry.Value.Value, RemovalCause.EXPIRED);
+                    Removal?.Invoke(this, entry.Key, entry.Value.Value, RemovalCause.Expired);
                 }
             }
 
@@ -189,7 +189,7 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
     public void Invalidate(params IEnumerable<K> keys) {
         foreach (K key in keys) {
             if (cache.TryRemove(key, out CacheEntry<V>? removedEntry)) {
-                Removal?.Invoke(this, key, removedEntry.Value, RemovalCause.EXPLICIT);
+                Removal?.Invoke(this, key, removedEntry.Value, RemovalCause.Explicit);
                 removedEntry.Dispose();
             }
         }
@@ -201,7 +201,7 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
         cache.Clear();
         foreach (KeyValuePair<K, CacheEntry<V>> entry in toDispose) {
             if (!isDisposed) {
-                Removal?.Invoke(this, entry.Key, entry.Value.Value, RemovalCause.EXPLICIT);
+                Removal?.Invoke(this, entry.Key, entry.Value.Value, RemovalCause.Explicit);
             }
             entry.Value.Dispose();
         }

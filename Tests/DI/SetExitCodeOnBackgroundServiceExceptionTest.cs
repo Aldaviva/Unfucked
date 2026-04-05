@@ -11,7 +11,7 @@ public class SetExitCodeOnBackgroundServiceExceptionTest {
 
         HostApplicationBuilder builder = new();
         builder.Services
-            .AddHostedService<MyBackgroundService>(SuperRegistration.CONCRETE_CLASS)
+            .AddHostedService<MyBackgroundService>(SuperRegistration.ConcreteClass)
             .SetExitCodeOnBackgroundServiceException(expectedExitCode);
 
         int originalExitCode = Environment.ExitCode;

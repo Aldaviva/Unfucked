@@ -67,6 +67,9 @@ public static class InstantExtensions {
 
     extension(Instant) {
 
+        /// <summary>
+        /// Gets the current system date and time.
+        /// </summary>
         [Pure]
         public static Instant Now => SystemClock.Instance.GetCurrentInstant();
 
@@ -78,6 +81,10 @@ public static class LocalDateTimeExtensions {
 
     extension(LocalDateTime) {
 
+        /// <summary>
+        /// Gets the current system date and time in the system's IANA time zone.
+        /// </summary>
+        /// <exception cref="NodaTime.TimeZones.DateTimeZoneNotFoundException" accessor="get"></exception>
         [Pure]
         public static LocalDateTime Now => SystemClock.Instance.InTzdbSystemDefaultZone().GetCurrentLocalDateTime();
 
@@ -90,9 +97,16 @@ public static class OffsetDateTimeExtensions {
     /// <param name="time">a time</param>
     extension(OffsetDateTime time) {
 
+        /// <summary>
+        /// Gets the current system date and time with the system's IANA time zone offset.
+        /// </summary>
+        /// <exception cref="NodaTime.TimeZones.DateTimeZoneNotFoundException" accessor="get"></exception>
         [Pure]
         public static OffsetDateTime Now => SystemClock.Instance.InTzdbSystemDefaultZone().GetCurrentOffsetDateTime();
 
+        /// <summary>
+        /// Gets the current system date and time with zero offset from UTC.
+        /// </summary>
         [Pure]
         public static OffsetDateTime NowUtc => SystemClock.Instance.InUtc().GetCurrentOffsetDateTime();
 
@@ -121,9 +135,16 @@ public static class ZonedDateTimeExtensions {
     /// <param name="time">a time</param>
     extension(ZonedDateTime time) {
 
+        /// <summary>
+        /// Gets the current system date and time in the system's IANA time zone.
+        /// </summary>
+        /// <exception cref="NodaTime.TimeZones.DateTimeZoneNotFoundException" accessor="get"></exception>
         [Pure]
         public static ZonedDateTime Now => SystemClock.Instance.InTzdbSystemDefaultZone().GetCurrentZonedDateTime();
 
+        /// <summary>
+        /// Gets the current system date and time in UTC.
+        /// </summary>
         [Pure]
         public static ZonedDateTime NowUtc => SystemClock.Instance.InUtc().GetCurrentZonedDateTime();
 

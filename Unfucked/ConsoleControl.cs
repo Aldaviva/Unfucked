@@ -19,10 +19,16 @@ public static partial class ConsoleControl {
     /// The color that the console would have used if you never changed its color. For example, this can be used to reset the text color back to its default color (like white) after changing it to blue.
     /// </summary>
     /// <seealso cref="ResetColor"/>
-    public const ConsoleColor DEFAULT_COLOR = (ConsoleColor) (-1);
+    public const ConsoleColor DefaultColor = (ConsoleColor) (-1);
 
     private static VirtualTerminalProcessing virtualTerminalProcessingState =
-        Environment.OSVersion.Platform == PlatformID.Win32NT ? VirtualTerminalProcessing.DISABLED : VirtualTerminalProcessing.ENABLED;
+        Environment.OSVersion.Platform == PlatformID.Win32NT ? VirtualTerminalProcessing.Disabled : VirtualTerminalProcessing.Enabled;
+
+    /// <inheritdoc cref="WriteClear" />
+    public const string Clear = "\e[1J\e[1;1H";
+
+    /// <inheritdoc cref="WriteClearLine" />
+    public const string ClearLine = "\r\e[2K";
 
     /// <summary>
     /// Clear screen and move to the top-left position
@@ -30,14 +36,11 @@ public static partial class ConsoleControl {
     [ExcludeFromCodeCoverage]
     public static void WriteClear() {
         if (EnableColorSupport()) {
-            Console.Write(CLEAR);
+            Console.Write(Clear);
         } else {
             Console.Clear();
         }
     }
-
-    /// <inheritdoc cref="WriteClear" />
-    public const string CLEAR = "\e[1J\e[1;1H";
 
     /// <summary>
     /// Clear the line and most to the leftmost position
@@ -45,14 +48,11 @@ public static partial class ConsoleControl {
     [ExcludeFromCodeCoverage]
     public static void WriteClearLine() {
         if (EnableColorSupport()) {
-            Console.Write(CLEAR_LINE);
+            Console.Write(ClearLine);
         } else {
             Console.WriteLine();
         }
     }
-
-    /// <inheritdoc cref="WriteClearLine" />
-    public const string CLEAR_LINE = "\r\e[2K";
 
     /// <summary>
     /// Get ANSI control characters to change the foreground and background colors.
@@ -136,7 +136,7 @@ public static partial class ConsoleControl {
     /// <summary>
     /// Write this string to reset the foreground and background text colors to their default values.
     /// </summary>
-    public static string ResetColor { get; } = Color(DEFAULT_COLOR, DEFAULT_COLOR);
+    public static readonly string ResetColor = Color(DefaultColor, DefaultColor);
 
     /// <summary>
     /// <para>On Windows, you have to call a method to explicitly turn on ANSI escape sequence processing, otherwise you will see the raw escape codes printed as text.</para>
@@ -146,16 +146,16 @@ public static partial class ConsoleControl {
     /// <returns><c>true</c> if virtual terminal processing is enabled, or <c>false</c> if it is unavailable</returns>
     [ExcludeFromCodeCoverage]
     public static bool EnableColorSupport() {
-        if (virtualTerminalProcessingState == VirtualTerminalProcessing.DISABLED) {
-            IntPtr stdout = GetStdHandle(StandardHandle.STANDARD_OUTPUT_HANDLE);
+        if (virtualTerminalProcessingState == VirtualTerminalProcessing.Disabled) {
+            IntPtr stdout = GetStdHandle(StandardHandle.StandardOutputHandle);
             virtualTerminalProcessingState = stdout == INVALID_HANDLE_VALUE
                 || !GetConsoleMode(stdout, out ConsoleMode originalStdoutMode)
-                || !SetConsoleMode(stdout, originalStdoutMode | ConsoleMode.ENABLE_VIRTUAL_TERMINAL_PROCESSING)
-                    ? VirtualTerminalProcessing.UNAVAILABLE
-                    : VirtualTerminalProcessing.ENABLED;
+                || !SetConsoleMode(stdout, originalStdoutMode | ConsoleMode.EnableVirtualTerminalProcessing)
+                    ? VirtualTerminalProcessing.Unavailable
+                    : VirtualTerminalProcessing.Enabled;
         }
 
-        return virtualTerminalProcessingState == VirtualTerminalProcessing.ENABLED;
+        return virtualTerminalProcessingState == VirtualTerminalProcessing.Enabled;
     }
 
     private static int? ToAnsiEscapeCode(this ConsoleColor? color) => color switch {
@@ -181,9 +181,9 @@ public static partial class ConsoleControl {
 
     private enum VirtualTerminalProcessing {
 
-        DISABLED,
-        ENABLED,
-        UNAVAILABLE
+        Disabled,
+        Enabled,
+        Unavailable
 
     }
 
@@ -211,12 +211,12 @@ public static partial class ConsoleControl {
         /// <summary>
         /// The standard output device. Initially, this is the active console screen buffer, <c>CONOUT$</c>.
         /// </summary>
-        STANDARD_OUTPUT_HANDLE = 4294967285,
+        StandardOutputHandle = 4294967285,
 
         /// <summary>
         /// The standard error device. Initially, this is the active console screen buffer, <c>CONOUT$</c>.
         /// </summary>
-        STANDARD_ERROR_HANDLE = 4294967284
+        StandardErrorHandle = 4294967284
 
     }
 
@@ -261,7 +261,7 @@ public static partial class ConsoleControl {
         // stdout
         /*ENABLE_PROCESSED_OUTPUT            = 1 << 0,
         ENABLE_WRAP_AT_EOL_OUTPUT          = 1 << 1,*/
-        ENABLE_VIRTUAL_TERMINAL_PROCESSING = 1 << 2,
+        EnableVirtualTerminalProcessing = 1 << 2,
         /*DISABLE_NEWLINE_AUTO_RETURN        = 1 << 3,
         ENABLE_LVB_GRID_WORLDWIDE          = 1 << 4*/
 

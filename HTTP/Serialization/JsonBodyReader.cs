@@ -18,7 +18,7 @@ public sealed class JsonBodyReader: MessageBodyReader {
         "application/json";
 #endif
 
-    internal static readonly JsonSerializerOptions DEFAULT_JSON_OPTIONS = new(JsonSerializerDefaults.Web) {
+    internal static readonly JsonSerializerOptions DefaultJsonOptions = new(JsonSerializerDefaults.Web) {
         ReadCommentHandling = JsonCommentHandling.Skip,
         Converters = {
             new JsonStringEnumConverter(new KernighanRitchieCEnumToLowerCamelCaseNamingPolicy())
@@ -44,7 +44,7 @@ public sealed class JsonBodyReader: MessageBodyReader {
      */
     /// <exception cref="JsonException"></exception>
     public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
-        JsonSerializerOptions jsonOptions = (clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DEFAULT_JSON_OPTIONS)!;
+        JsonSerializerOptions jsonOptions = (clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions)!;
 
         Task<Stream> readAsStreamAsync =
 #if NET5_0_OR_GREATER
@@ -58,6 +58,9 @@ public sealed class JsonBodyReader: MessageBodyReader {
 
 }
 
+/// <summary>
+/// Serialize enums to JSON which have C-style (UPPER_SNAKE_CASE) value names in C#, such as <c>MY_ENUM</c>, which would get serialized to <c>myEnum</c>. Also handles other cases like UpperTitleCase and lowerTitleCase. Deserialization is permissive.
+/// </summary>
 internal sealed class KernighanRitchieCEnumToLowerCamelCaseNamingPolicy: JsonNamingPolicy {
 
     public override string ConvertName(string name) {

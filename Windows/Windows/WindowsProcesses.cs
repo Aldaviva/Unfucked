@@ -123,7 +123,7 @@ public static class WindowsProcesses {
         //eagerly find child processes, because once we start killing processes, their parent PIDs won't mean anything anymore
         List<Process> descendants = GetDescendantProcesses(ancestor, allProcesses).ToList();
 
-        foreach (Process nonDescendant in allProcesses.Except(descendants, ProcessIdEqualityComparer.INSTANCE)) {
+        foreach (Process nonDescendant in allProcesses.Except(descendants, ProcessIdEqualityComparer.Instance)) {
             nonDescendant.Dispose();
         }
 
@@ -147,7 +147,7 @@ public static class WindowsProcesses {
 
     private sealed class ProcessIdEqualityComparer: IEqualityComparer<Process> {
 
-        public static readonly ProcessIdEqualityComparer INSTANCE = new();
+        public static readonly ProcessIdEqualityComparer Instance = new();
 
         public bool Equals(Process? x, Process? y) => ReferenceEquals(x, y) || (x is not null && y is not null && x.GetType() == y.GetType() && x.Id == y.Id);
 
@@ -162,9 +162,9 @@ public static class WindowsProcesses {
     /// <returns><c>true</c> if <paramref name="process"/> is suspended, or <c>false</c> if it is running normally</returns>
     [Pure]
     public static bool IsProcessSuspended(this Process process) {
-        uint returnCode = NtQueryInformationProcess(process.Handle, ProcessInfoClass.PROCESS_BASIC_INFORMATION, out ProcessExtendedBasicInformation info,
+        uint returnCode = NtQueryInformationProcess(process.Handle, ProcessInfoClass.ProcessBasicInformation, out ProcessExtendedBasicInformation info,
             Marshal.SizeOf<ProcessExtendedBasicInformation>(), out int _);
-        return returnCode == 0 && (info.Flags & ProcessExtendedBasicInformation.ProcessFlags.IS_FROZEN) != 0;
+        return returnCode == 0 && (info.Flags & ProcessExtendedBasicInformation.ProcessFlags.IsFrozen) != 0;
     }
 
     [DllImport("ntdll.dll", SetLastError = true)]
@@ -187,7 +187,7 @@ public static class WindowsProcesses {
             IS_WOW64_PROCESS        = 1 << 1,
             IS_PROCESS_DELETING     = 1 << 2,
             IS_CROSS_SESSION_CREATE = 1 << 3,*/
-            IS_FROZEN = 1 << 4,
+            IsFrozen = 1 << 4,
             /*IS_BACKGROUND           = 1 << 5,
             IS_STRONGLY_NAMED       = 1 << 6,
             IS_SECURE_PROCESS       = 1 << 7,
@@ -212,7 +212,7 @@ public static class WindowsProcesses {
 
     private enum ProcessInfoClass: uint {
 
-        PROCESS_BASIC_INFORMATION = 0x00,
+        ProcessBasicInformation = 0x00,
         /*PROCESS_QUOTA_LIMITS                               = 0x01,
         PROCESS_IO_COUNTERS                                = 0x02,
         PROCESS_VM_COUNTERS                                = 0x03,
@@ -338,7 +338,7 @@ public static class WindowsProcesses {
             FreeConsole();
         } else {
             // https://codingvision.net/c-inject-a-dll-into-a-process-w-createremotethread
-            using SafeProcessHandle safeProcessHandle = OpenProcess(ProcessSecurityAndAccessRight.PROCESS_CREATE_THREAD, false, targetPid);
+            using SafeProcessHandle safeProcessHandle = OpenProcess(ProcessSecurityAndAccessRight.ProcessCreateThread, false, targetPid);
 
             IntPtr methodAddr = GetProcAddress(GetModuleHandle("kernel32.dll"), "FreeConsole");
             CreateRemoteThread(safeProcessHandle, IntPtr.Zero, 0, methodAddr, IntPtr.Zero, 0, IntPtr.Zero);
@@ -348,7 +348,7 @@ public static class WindowsProcesses {
     [Flags]
     private enum ProcessSecurityAndAccessRight: uint {
 
-        PROCESS_CREATE_THREAD = 0x2,
+        ProcessCreateThread = 0x2,
 
         /*PROCESS_QUERY_INFORMATION = 0x400,
         PROCESS_VM_OPERATION      = 0x8,

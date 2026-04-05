@@ -116,7 +116,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
             MaxResponseContentBufferSize = toClone.MaxResponseContentBufferSize,
 #if NETCOREAPP3_0_OR_GREATER
             DefaultRequestVersion = toClone.DefaultRequestVersion,
-            DefaultVersionPolicy  = toClone.DefaultVersionPolicy
+            DefaultVersionPolicy = toClone.DefaultVersionPolicy
 #endif
         };
 
@@ -130,7 +130,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
     /// <inheritdoc />
     public virtual Task<HttpResponseMessage> SendAsync(HttpRequest request, CancellationToken cancellationToken = default) {
 #if NET8_0_OR_GREATER
-        WireLogFilter.ASYNC_STATE.Value = new WireLogFilter.WireAsyncState();
+        WireLogFilter.AsyncState.Value = new WireLogFilter.WireAsyncState();
 #endif
 
         UnfuckedHttpRequestMessage req = new(request.Verb, request.Uri) {
@@ -139,7 +139,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
         };
 
         if (req.Content is Entity.JsonHttpContent json) {
-            json.ClientOptions ??= JsonBodyReader.DEFAULT_JSON_OPTIONS;
+            json.ClientOptions ??= JsonBodyReader.DefaultJsonOptions;
         }
 
         try {

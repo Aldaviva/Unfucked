@@ -16,8 +16,8 @@ public class SuperRegistrationTest: IDisposable {
     public async Task SuperRegistrations() {
         HostApplicationBuilder builder = new();
         builder.Services
-            .AddSingleton<MyClass>(SuperRegistration.INTERFACES | SuperRegistration.SUPERCLASSES)
-            .AddHostedService<MyBackgroundService>(SuperRegistration.INTERFACES | SuperRegistration.CONCRETE_CLASS);
+            .AddSingleton<MyClass>(SuperRegistration.Interfaces | SuperRegistration.Superclasses)
+            .AddHostedService<MyBackgroundService>(SuperRegistration.Interfaces | SuperRegistration.ConcreteClass);
 
         app = builder.Build();
         await app.StartAsync();
@@ -41,7 +41,7 @@ public class SuperRegistrationTest: IDisposable {
     public async Task CyclicalResolution() {
         HostApplicationBuilder builder = new();
         builder.Services
-            .AddHostedService<MyBackgroundService>(SuperRegistration.INTERFACES)
+            .AddHostedService<MyBackgroundService>(SuperRegistration.Interfaces)
             .AddHostedService<MyOtherHostedService>();
 
         app = builder.Build();
@@ -68,7 +68,7 @@ public class SuperRegistrationTest: IDisposable {
         const string serviceKey = "key";
 
         HostApplicationBuilder builder = new();
-        builder.Services.AddKeyedTransient<MyClass>(serviceKey, SuperRegistration.INTERFACES | SuperRegistration.SUPERCLASSES);
+        builder.Services.AddKeyedTransient<MyClass>(serviceKey, SuperRegistration.Interfaces | SuperRegistration.Superclasses);
 
         app = builder.Build();
         await app.StartAsync();

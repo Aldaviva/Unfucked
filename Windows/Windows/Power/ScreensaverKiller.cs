@@ -33,7 +33,7 @@ public sealed class ScreensaverKiller: IScreensaverKiller {
     /// screen would be turned off again immediately.
     /// </summary>
     private static void TurnOnScreenAndResetDisplayIdleTimer() {
-        SendInputNativeMethods.Input input = new() { type = SendInputNativeMethods.SendInputEventType.INPUT_MOUSE };
+        SendInputNativeMethods.Input input = new() { type = SendInputNativeMethods.SendInputEventType.InputMouse };
         try {
             SendInputNativeMethods.SendInput(input);
         } catch (Win32Exception exception) {
@@ -141,7 +141,7 @@ public sealed class ScreensaverKiller: IScreensaverKiller {
 
         public enum SendInputEventType {
 
-            INPUT_MOUSE,
+            InputMouse,
             /*INPUT_KEYBOARD,
             INPUT_HARDWARE*/
 

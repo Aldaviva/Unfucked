@@ -69,7 +69,7 @@ public sealed class WindowOpenedEventEmitter: IWindowOpenedEventEmitter {
     }
 
     private void OnWindowOpened(object? sender, ShellEventArgs args) {
-        if (args.Event == ShellEventArgs.ShellEvent.WINDOW_CREATED && AddWindow(args.WindowHandle)) {
+        if (args.Event == ShellEventArgs.ShellEvent.WindowCreated && AddWindow(args.WindowHandle)) {
             WindowHandleOpened?.Invoke(this, args.WindowHandle);
             SystemWindowOpened?.Invoke(this, new SystemWindow(args.WindowHandle));
             if (AutomationElement.FromHandle(args.WindowHandle) is {} automationElement) {

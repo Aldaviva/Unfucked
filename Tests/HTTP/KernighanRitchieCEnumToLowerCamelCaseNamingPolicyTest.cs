@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Unfucked.HTTP.Serialization;
@@ -52,6 +53,7 @@ public class KernighanRitchieCEnumToLowerCamelCaseNamingPolicyTest {
 
     private sealed record MyRecord(MyEnum IsYes);
 
+    [SuppressMessage("ReSharper", "InconsistentNaming")] // this exact spelling is the point of this class and its test
     private enum MyEnum {
 
         NO,

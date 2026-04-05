@@ -69,7 +69,7 @@ public static class Extensions {
     #region Configuration
 
     /// <inheritdoc cref="Register(IHttpClient,ClientRequestFilter,int)" />
-    public static H Register<H>(this H httpClient, ClientRequestFilter filter, int position = ClientConfig.LAST_FILTER_POSITION) where H: HttpClient {
+    public static H Register<H>(this H httpClient, ClientRequestFilter filter, int position = ClientConfig.LastFilterPosition) where H: HttpClient {
         _ = UnfuckedHttpHandler.FindHandler(httpClient)?.Register(filter, position) ?? throw WebTarget.ConfigUnavailable;
         return httpClient;
     }
@@ -77,13 +77,13 @@ public static class Extensions {
     /// <summary>Register a client request filter to run before requests are sent for this client</summary>
     /// <returns>This mutated instance</returns>
     /// <exception cref="InvalidOperationException">the <paramref name="httpClient"/> does not have a usable configuration because of how it was constructed</exception>
-    public static IHttpClient Register(this IHttpClient httpClient, ClientRequestFilter filter, int position = ClientConfig.LAST_FILTER_POSITION) {
+    public static IHttpClient Register(this IHttpClient httpClient, ClientRequestFilter filter, int position = ClientConfig.LastFilterPosition) {
         _ = httpClient.Handler?.Register(filter, position) ?? throw WebTarget.ConfigUnavailable;
         return httpClient;
     }
 
     /// <inheritdoc cref="Register(IHttpClient,ClientResponseFilter,int)" />
-    public static H Register<H>(this H httpClient, ClientResponseFilter filter, int position = ClientConfig.LAST_FILTER_POSITION) where H: HttpClient {
+    public static H Register<H>(this H httpClient, ClientResponseFilter filter, int position = ClientConfig.LastFilterPosition) where H: HttpClient {
         _ = UnfuckedHttpHandler.FindHandler(httpClient)?.Register(filter, position) ?? throw WebTarget.ConfigUnavailable;
         return httpClient;
     }
@@ -91,7 +91,7 @@ public static class Extensions {
     /// <summary>Register a client response filter to run after requests are received for this client</summary>
     /// <returns>This mutated instance</returns>
     /// <exception cref="InvalidOperationException">the <paramref name="httpClient"/> does not have a usable configuration because of how it was constructed</exception>
-    public static IHttpClient Register(this IHttpClient httpClient, ClientResponseFilter filter, int position = ClientConfig.LAST_FILTER_POSITION) {
+    public static IHttpClient Register(this IHttpClient httpClient, ClientResponseFilter filter, int position = ClientConfig.LastFilterPosition) {
         _ = httpClient.Handler?.Register(filter, position) ?? throw WebTarget.ConfigUnavailable;
         return httpClient;
     }

@@ -69,9 +69,9 @@ public sealed class WireLogFilter(WireLogFilter.WireConfig config): ClientReques
     }
 
 #if NET8_0_OR_GREATER
-    private static readonly  PropertyKey<bool>          ACTIVATED       = new($"{typeof(WireLogFilter).Namespace!}.{nameof(WireLogFilter)}.{nameof(ACTIVATED)}");
+    private static readonly  PropertyKey<bool>          ACTIVATED = new($"{typeof(WireLogFilter).Namespace!}.{nameof(WireLogFilter)}.{nameof(ACTIVATED)}");
     private static readonly  object                     ACTIVATION_LOCK = new();
-    internal static readonly AsyncLocal<WireAsyncState> ASYNC_STATE     = new();
+    internal static readonly AsyncLocal<WireAsyncState> AsyncState = new();
 
     private static readonly Lazy<FieldInfo?> SOCKETS_HTTP_HANDLER_FIELD = new(() => typeof(HttpClientHandler).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
         .FirstOrDefault(field => field.FieldType == typeof(SocketsHttpHandler)), LazyThreadSafetyMode.PublicationOnly);
@@ -110,7 +110,7 @@ public sealed class WireLogFilter(WireLogFilter.WireConfig config): ClientReques
 
     internal sealed class WireLoggingStream: Stream {
 
-        private static readonly Encoding MESSAGE_ENCODING  = new UTF8Encoding(false, false); // MaxMessageSize might truncate trailing bytes of a multi-byte character
+        private static readonly Encoding MESSAGE_ENCODING = new UTF8Encoding(false, false); // MaxMessageSize might truncate trailing bytes of a multi-byte character
         private static readonly byte[]   LINE_ENDINGS_UTF8 = "\r\n"u8.ToArray();
 
         private static ulong mostRecentRequestId;
@@ -121,19 +121,19 @@ public sealed class WireLogFilter(WireLogFilter.WireConfig config): ClientReques
         private readonly Stream     responseBuffer;
 
         private ulong requestId;
-        private bool  isNewRequest                = true;
+        private bool  isNewRequest = true;
         private bool  isFinalResponseChunkWritten = true;
         private bool  warnedAboutClientClass;
 
         public WireLoggingStream(Stream httpStream, WireConfig config) {
             this.httpStream = httpStream;
-            this.config     = config;
+            this.config = config;
 
-            requestBuffer  = config.ReassembleChunks ? new MemoryStream() : Null;
+            requestBuffer = config.ReassembleChunks ? new MemoryStream() : Null;
             responseBuffer = config.ReassembleChunks ? new MemoryStream() : Null;
 
-            if (config.ReassembleChunks && ASYNC_STATE.Value != null) {
-                ASYNC_STATE.Value.WireStream = this;
+            if (config.ReassembleChunks && AsyncState.Value != null) {
+                AsyncState.Value.WireStream = this;
             }
         }
 
@@ -143,12 +143,12 @@ public sealed class WireLogFilter(WireLogFilter.WireConfig config): ClientReques
         /// <exception cref="OperationCanceledException"></exception>
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) {
             if (config.ReassembleChunks) {
-                if (ASYNC_STATE.Value != null) {
-                    ASYNC_STATE.Value.WireStream = this;
+                if (AsyncState.Value != null) {
+                    AsyncState.Value.WireStream = this;
                 }
 
                 if (isNewRequest) {
-                    isNewRequest                = false;
+                    isNewRequest = false;
                     isFinalResponseChunkWritten = true;
 
                     if (responseBuffer.Length != 0) { // log previously buffered response from a different request
@@ -185,8 +185,8 @@ public sealed class WireLogFilter(WireLogFilter.WireConfig config): ClientReques
             int bytesRead = await httpStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
 
             if (config.ReassembleChunks) {
-                if (ASYNC_STATE.Value != null) {
-                    ASYNC_STATE.Value.WireStream = this;
+                if (AsyncState.Value != null) {
+                    AsyncState.Value.WireStream = this;
                 } else if (!warnedAboutClientClass) {
                     warnedAboutClientClass = true;
                     config.LogResponseReceived(
@@ -307,7 +307,7 @@ public sealed class WireLogFilter(WireLogFilter.WireConfig config): ClientReques
     internal sealed class WireLoggingMeterFactory: IMeterFactory {
 
         private const string INSTRUMENT_NAME = "http.client.open_connections";
-        private const string TAG_NAME        = "http.connection.state";
+        private const string TAG_NAME = "http.connection.state";
 
         private readonly MeterListener meterListener = new();
 
@@ -335,7 +335,7 @@ public sealed class WireLogFilter(WireLogFilter.WireConfig config): ClientReques
                 }
 
                 if (isIdleConnection) {
-                    ASYNC_STATE.Value?.WireStream?.OnResponseFinished();
+                    AsyncState.Value?.WireStream?.OnResponseFinished();
                 }
             }
         }

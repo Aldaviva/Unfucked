@@ -4,17 +4,17 @@ public delegate void RemovalNotification<in K, in V>(object sender, K key, V val
 
 public enum RemovalCause {
 
-    EXPLICIT,
-    REPLACED,
+    Explicit,
+    Replaced,
 
     // Collected,
-    EXPIRED,
+    Expired,
     // Size
 
 }
 
 public static class Extensions {
 
-    public static bool WasEvicted(this RemovalCause cause) => cause is /*RemovalCause.Collected or*/ RemovalCause.EXPIRED /*or RemovalCause.Size*/;
+    public static bool WasEvicted(this RemovalCause cause) => cause is /*RemovalCause.Collected or*/ RemovalCause.Expired /*or RemovalCause.Size*/;
 
 }

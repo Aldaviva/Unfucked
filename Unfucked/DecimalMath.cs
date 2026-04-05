@@ -10,37 +10,37 @@ namespace Unfucked;
 public static class DecimalMath {
 
     /// <summary>
-    /// represents PI
+    /// represents pi
     /// </summary>
-    public const decimal PI = 3.14159265358979323846264338327950288419716939937510M;
+    public const decimal Pi = 3.14159265358979323846264338327950288419716939937510M;
 
     /// <summary>
     /// represents a very small number
     /// </summary>
-    public const decimal EPSILON = 0.0000000000000000001M;
+    public const decimal Epsilon = 0.0000000000000000001M;
 
     /// <summary>
-    /// represents 2*PI
+    /// represents 2*pi
     /// </summary>
     private const decimal P_IX2 = 6.28318530717958647692528676655900576839433879875021M;
 
     /// <summary>
-    /// represents E
+    /// represents e
     /// </summary>
     public const decimal E = 2.7182818284590452353602874713526624977572470936999595749M;
 
     /// <summary>
-    /// represents PI/2
+    /// represents pi/2
     /// </summary>
     private const decimal P_IDIV2 = 1.570796326794896619231321691639751442098584699687552910487M;
 
     /// <summary>
-    /// represents PI/4
+    /// represents pi/4
     /// </summary>
     private const decimal P_IDIV4 = 0.785398163397448309615660845819875721049292349843776455243M;
 
     /// <summary>
-    /// represents 1.0/E
+    /// represents 1.0/e
     /// </summary>
     private const decimal EINV = 0.3678794411714423215955237701614608674458111310317678M;
 
@@ -52,12 +52,12 @@ public static class DecimalMath {
     /// <summary>
     /// Zero
     /// </summary>
-    public const decimal ZERO = 0.0M;
+    public const decimal Zero = 0.0M;
 
     /// <summary>
     /// One
     /// </summary>
-    public const decimal ONE = 1.0M;
+    public const decimal One = 1.0M;
 
     /// <summary>
     /// Represents 0.5M
@@ -77,19 +77,19 @@ public static class DecimalMath {
     public static decimal Exp(decimal x) {
         int count = 0;
 
-        if (x > ONE) {
+        if (x > One) {
             count =  decimal.ToInt32(decimal.Truncate(x));
             x     -= decimal.Truncate(x);
         }
 
-        if (x < ZERO) {
+        if (x < Zero) {
             count = decimal.ToInt32(decimal.Truncate(x) - 1);
-            x     = ONE + (x - decimal.Truncate(x));
+            x     = One + (x - decimal.Truncate(x));
         }
 
         int     iteration = 1;
-        decimal result    = ONE;
-        decimal factorial = ONE;
+        decimal result    = One;
+        decimal factorial = One;
         decimal cachedResult;
         do {
             cachedResult =  result;
@@ -114,35 +114,35 @@ public static class DecimalMath {
     /// <returns></returns>
     public static decimal Power(decimal value, decimal pow) {
         switch (pow) {
-            case ZERO:
-                return ONE;
-            case ONE:
+            case Zero:
+                return One;
+            case One:
                 return value;
         }
 
-        if (value == ONE) return ONE;
+        if (value == One) return One;
 
-        if (value == ZERO) {
-            if (pow > ZERO) {
-                return ZERO;
+        if (value == Zero) {
+            if (pow > Zero) {
+                return Zero;
             }
 
             throw new ArgumentOutOfRangeException(nameof(pow), pow, "zero base and negative power");
         }
 
-        if (pow == -ONE) return ONE / value;
+        if (pow == -One) return One / value;
 
         bool isPowerInteger = IsInteger(pow);
-        if (value < ZERO && !isPowerInteger) {
+        if (value < Zero && !isPowerInteger) {
             throw new ArgumentOutOfRangeException(nameof(value), value, "negative base and non-integer power");
         }
 
         switch (isPowerInteger) {
-            case true when value > ZERO: {
+            case true when value > Zero: {
                 int powerInt = (int) pow;
                 return PowerN(value, powerInt);
             }
-            case true when value < ZERO: {
+            case true when value < Zero: {
                 int powerInt = (int) pow;
                 if (powerInt % 2 == 0) {
                     return Exp(pow * Log(-value));
@@ -158,7 +158,7 @@ public static class DecimalMath {
 
     private static bool IsInteger(decimal value) {
         long longValue = (long) value;
-        return Math.Abs(value - longValue) <= EPSILON;
+        return Math.Abs(value - longValue) <= Epsilon;
     }
 
     /// <summary>
@@ -169,15 +169,15 @@ public static class DecimalMath {
     /// <returns></returns>
     public static decimal PowerN(decimal value, int power) {
         while (true) {
-            if (power == ZERO) return ONE;
-            if (power < ZERO) {
-                value = ONE / value;
+            if (power == Zero) return One;
+            if (power < Zero) {
+                value = One / value;
                 power = -power;
                 continue;
             }
 
             int     q       = power;
-            decimal prod    = ONE;
+            decimal prod    = One;
             decimal current = value;
             while (q > 0) {
                 if (q % 2 == 1) {
@@ -212,12 +212,12 @@ public static class DecimalMath {
     /// <exception cref="ArgumentOutOfRangeException">if <paramref name="x"/> is not positive</exception>
     /// <returns></returns>
     public static decimal Log(decimal x) {
-        if (x <= ZERO) {
+        if (x <= Zero) {
             throw new ArgumentOutOfRangeException(nameof(x), x, "x must be greater than zero");
         }
 
         int count = 0;
-        while (x >= ONE) {
+        while (x >= One) {
             x *= EINV;
             count++;
         }
@@ -228,11 +228,11 @@ public static class DecimalMath {
         }
 
         x--;
-        if (x == ZERO) return count;
-        decimal result      = ZERO;
+        if (x == Zero) return count;
+        decimal result      = Zero;
         int     iteration   = 0;
-        decimal y           = ONE;
-        decimal cacheResult = result - ONE;
+        decimal y           = One;
+        decimal cacheResult = result - One;
         while (cacheResult != result && iteration < MAX_ITERATION) {
             iteration++;
             cacheResult =  result;
@@ -255,17 +255,17 @@ public static class DecimalMath {
 
         // now x in (-2pi,2pi)
         switch (x) {
-            case >= PI and <= P_IX2:
-                return -Cos(x - PI);
-            case >= -P_IX2 and <= -PI:
-                return -Cos(x + PI);
+            case >= Pi and <= P_IX2:
+                return -Cos(x - Pi);
+            case >= -P_IX2 and <= -Pi:
+                return -Cos(x + Pi);
         }
 
         x *= x;
         //y=1-x/2!+x^2/4!-x^3/6!...
         decimal xx      = -x * HALF;
-        decimal y       = ONE + xx;
-        decimal cachedY = y - ONE; //init cache  with different value
+        decimal y       = One + xx;
+        decimal cachedY = y - One; //init cache  with different value
         for (int i = 1; cachedY != y && i < MAX_ITERATION; i++) {
             cachedY = y;
             decimal factor = i * ((i << 1) + 3) + 1; //2i^2+2i+i+1=2i^2+3i+1
@@ -286,7 +286,7 @@ public static class DecimalMath {
     /// <returns></returns>
     public static decimal Tan(decimal x) {
         decimal cos = Cos(x);
-        if (cos == ZERO) throw new ArgumentOutOfRangeException(nameof(x), x, "Tan(Pi/2) is undefined");
+        if (cos == Zero) throw new ArgumentOutOfRangeException(nameof(x), x, "Tan(Pi/2) is undefined");
         //calculate sin using cos
         decimal sin = CalculateSinFromCos(x, cos);
         return sin / cos;
@@ -299,7 +299,7 @@ public static class DecimalMath {
     /// <param name="cos"></param>
     /// <returns></returns>
     private static decimal CalculateSinFromCos(decimal x, decimal cos) {
-        decimal moduleOfSin    = Sqrt(ONE - cos * cos);
+        decimal moduleOfSin    = Sqrt(One - cos * cos);
         bool    sineIsPositive = IsSignOfSinePositive(x);
         if (sineIsPositive) return moduleOfSin;
         return -moduleOfSin;
@@ -338,10 +338,10 @@ public static class DecimalMath {
 
         //now x in [-2*PI;2*PI]
         return x switch {
-            >= -P_IX2 and <= -PI => true,
-            >= -PI and <= ZERO   => false,
-            >= ZERO and <= PI    => true,
-            >= PI and <= P_IX2   => false,
+            >= -P_IX2 and <= -Pi => true,
+            >= -Pi and <= Zero   => false,
+            >= Zero and <= Pi    => true,
+            >= Pi and <= P_IX2   => false,
             //will not be reached
             _ => true
         };
@@ -355,13 +355,13 @@ public static class DecimalMath {
     /// <param name="epsilon">lasts iteration while error less than this epsilon</param>
     /// <exception cref="ArgumentOutOfRangeException">if <paramref name="x"/> is negative</exception>
     /// <returns></returns>
-    public static decimal Sqrt(decimal x, decimal epsilon = ZERO) {
-        if (x < ZERO) throw new ArgumentOutOfRangeException(nameof(x), x, "Cannot calculate square root from a negative number");
+    public static decimal Sqrt(decimal x, decimal epsilon = Zero) {
+        if (x < Zero) throw new ArgumentOutOfRangeException(nameof(x), x, "Cannot calculate square root from a negative number");
         //initial approximation
         decimal current = (decimal) Math.Sqrt((double) x), previous;
         do {
             previous = current;
-            if (previous == ZERO) return ZERO;
+            if (previous == Zero) return Zero;
             current = (previous + x / previous) * HALF;
         } while (Math.Abs(previous - current) > epsilon);
 
@@ -376,7 +376,7 @@ public static class DecimalMath {
     /// <returns></returns>
     public static decimal Sinh(decimal x) {
         decimal y  = Exp(x);
-        decimal yy = ONE / y;
+        decimal yy = One / y;
         return (y - yy) * HALF;
     }
 
@@ -388,7 +388,7 @@ public static class DecimalMath {
     /// <returns></returns>
     public static decimal Cosh(decimal x) {
         decimal y  = Exp(x);
-        decimal yy = ONE / y;
+        decimal yy = One / y;
         return (y + yy) * HALF;
     }
 
@@ -412,7 +412,7 @@ public static class DecimalMath {
     /// <returns></returns>
     public static decimal Tanh(decimal x) {
         decimal y  = Exp(x);
-        decimal yy = ONE / y;
+        decimal yy = One / y;
         return (y - yy) / (y + yy);
     }
 
@@ -441,16 +441,16 @@ public static class DecimalMath {
     /// <returns></returns>
     public static decimal Asin(decimal x) {
         switch (x) {
-            case > ONE:
-            case < -ONE:
+            case > One:
+            case < -One:
                 throw new ArgumentOutOfRangeException(nameof(x), x, "x must be in [-1,1]");
             //known values
-            case ZERO:
-                return ZERO;
-            case ONE:
+            case Zero:
+                return Zero;
+            case One:
                 return P_IDIV2;
             //asin function is odd function
-            case < ZERO:
+            case < Zero:
                 return -Asin(-x);
         }
 
@@ -460,7 +460,7 @@ public static class DecimalMath {
         // asin(x)=0.5*(pi/2-asin(1-2*x*x)) 
         // if x>=0 is true
 
-        decimal newX = ONE - 2 * x * x;
+        decimal newX = One - 2 * x * x;
 
         //for calculating new value near to zero than current
         //because we gain more speed with values near to zero
@@ -469,7 +469,7 @@ public static class DecimalMath {
             return HALF * (P_IDIV2 - t);
         }
 
-        decimal y      = ZERO;
+        decimal y      = Zero;
         decimal result = x;
         decimal cachedResult;
         int     i = 1;
@@ -477,7 +477,7 @@ public static class DecimalMath {
         decimal xx = x * x;
         do {
             cachedResult =  result;
-            result       *= xx * (ONE - HALF / i);
+            result       *= xx * (One - HALF / i);
             y            += result / ((i << 1) + 1);
             i++;
         } while (cachedResult != result);
@@ -493,9 +493,9 @@ public static class DecimalMath {
     /// <returns></returns>
     public static decimal ATan(decimal x) {
         return x switch {
-            ZERO => ZERO,
-            ONE  => P_IDIV4,
-            _    => Asin(x / Sqrt(ONE + x * x))
+            Zero => Zero,
+            One  => P_IDIV4,
+            _    => Asin(x / Sqrt(One + x * x))
         };
     }
 
@@ -507,9 +507,9 @@ public static class DecimalMath {
     /// <returns></returns>
     public static decimal Acos(decimal x) {
         return x switch {
-            ZERO   => P_IDIV2,
-            ONE    => ZERO,
-            < ZERO => PI - Acos(-x),
+            Zero   => P_IDIV2,
+            One    => Zero,
+            < Zero => Pi - Acos(-x),
             _      => P_IDIV2 - Asin(x)
         };
     }
@@ -526,11 +526,11 @@ public static class DecimalMath {
     /// <returns></returns>
     public static decimal Atan2(decimal y, decimal x) {
         return x switch {
-            ZERO when y > ZERO    => P_IDIV2,
-            ZERO when y < ZERO    => -P_IDIV2,
-            > ZERO                => ATan(y / x),
-            < ZERO when y >= ZERO => ATan(y / x) + PI,
-            < ZERO when y < ZERO  => ATan(y / x) - PI,
+            Zero when y > Zero    => P_IDIV2,
+            Zero when y < Zero    => -P_IDIV2,
+            > Zero                => ATan(y / x),
+            < Zero when y >= Zero => ATan(y / x) + Pi,
+            < Zero when y < Zero  => ATan(y / x) - Pi,
             _                     => throw new ArgumentException("invalid atan2 arguments")
         };
 

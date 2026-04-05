@@ -24,7 +24,7 @@ public static partial class DependencyInjectionExtensions {
     /// </summary>
     /// <typeparam name="TImpl">Type of the class to register</typeparam>
     /// <param name="services"><see cref="IHostApplicationBuilder.Services"/> or similar</param>
-    /// <param name="alsoRegister">Also register the class as its own concrete class, all of its extended superclasses, or all of its implemented interfaces, or <see cref="SuperRegistration.NONE"/> to only register it as its own type (default <c>Microsoft.Extensions.DependencyInjection</c> behavior). A union of multiple values can be passed with logical OR (<see cref="SuperRegistration.SUPERCLASSES"/><c> | </c><see cref="SuperRegistration.INTERFACES"/>).</param>
+    /// <param name="alsoRegister">Also register the class as its own concrete class, all of its extended superclasses, or all of its implemented interfaces, or <see cref="SuperRegistration.None"/> to only register it as its own type (default <c>Microsoft.Extensions.DependencyInjection</c> behavior). A union of multiple values can be passed with logical OR (<see cref="SuperRegistration.Superclasses"/><c> | </c><see cref="SuperRegistration.Interfaces"/>).</param>
     /// <returns>The same collection of service registrations, for chained calls</returns>
     public static IServiceCollection AddSingleton<TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class =>
         Add<TImpl>(services, ServiceLifetime.Singleton, alsoRegister);
@@ -63,8 +63,8 @@ public static partial class DependencyInjectionExtensions {
 
     /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
     public static IServiceCollection AddHostedService<TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class, IHostedService {
-        if ((alsoRegister & SuperRegistration.CONCRETE_CLASS) != 0) {
-            return Add<TImpl>(services, alsoRegister & ~SuperRegistration.CONCRETE_CLASS, () => [
+        if ((alsoRegister & SuperRegistration.ConcreteClass) != 0) {
+            return Add<TImpl>(services, alsoRegister & ~SuperRegistration.ConcreteClass, () => [
                 new ServiceDescriptor(typeof(TImpl), typeof(TImpl), ServiceLifetime.Singleton),
                 new ServiceDescriptor(typeof(IHostedService), ServiceProvider<TImpl>, ServiceLifetime.Singleton)
             ], extra => new ServiceDescriptor(extra, ServiceProvider<TImpl>, ServiceLifetime.Singleton));
@@ -81,8 +81,8 @@ public static partial class DependencyInjectionExtensions {
     /// <param name="factory">Function that creates instances of <typeparamref name="TImpl"/></param>
     public static IServiceCollection AddHostedService<TImpl>(this IServiceCollection services, Func<IServiceProvider, TImpl> factory, SuperRegistration alsoRegister)
         where TImpl: class, IHostedService {
-        if ((alsoRegister & SuperRegistration.CONCRETE_CLASS) != 0) {
-            return Add<TImpl>(services, alsoRegister & ~SuperRegistration.CONCRETE_CLASS, () => [
+        if ((alsoRegister & SuperRegistration.ConcreteClass) != 0) {
+            return Add<TImpl>(services, alsoRegister & ~SuperRegistration.ConcreteClass, () => [
                 new ServiceDescriptor(typeof(TImpl), factory, ServiceLifetime.Singleton),
                 new ServiceDescriptor(typeof(IHostedService), ServiceProvider<TImpl>, ServiceLifetime.Singleton)
             ], extra => new ServiceDescriptor(extra, ServiceProvider<TImpl>, ServiceLifetime.Singleton));
@@ -163,15 +163,15 @@ public static partial class DependencyInjectionExtensions {
         List<ServiceDescriptor> registrations = [..defaultRegistrations()];
 
         try {
-            if ((alsoRegister & SuperRegistration.CONCRETE_CLASS) != 0) {
+            if ((alsoRegister & SuperRegistration.ConcreteClass) != 0) {
                 registrations.Add(extraRegistration(typeof(TImpl)));
             }
 
-            if ((alsoRegister & SuperRegistration.INTERFACES) != 0) {
+            if ((alsoRegister & SuperRegistration.Interfaces) != 0) {
                 registrations.AddRange(typeof(TImpl).GetInterfaces().Except(INTERFACE_REGISTRATION_BLACKLIST).Select(extraRegistration));
             }
 
-            if ((alsoRegister & SuperRegistration.SUPERCLASSES) != 0) {
+            if ((alsoRegister & SuperRegistration.Superclasses) != 0) {
                 Type @class = typeof(TImpl);
                 while (@class.BaseType is {} superclass && superclass != typeof(object) && superclass != typeof(ValueType)) {
                     registrations.Add(extraRegistration(superclass));

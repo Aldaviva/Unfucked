@@ -9,8 +9,8 @@ public interface IClientConfig: Configurable<IClientConfig>, ICloneable;
 
 public sealed class ClientConfig: IClientConfig {
 
-    public const int FIRST_FILTER_POSITION = 0;
-    public const int LAST_FILTER_POSITION  = int.MaxValue;
+    public const int FirstFilterPosition = 0;
+    public const int LastFilterPosition  = int.MaxValue;
 
     private ImmutableList<ClientRequestFilter> ReqFilters { get; init; }
     private ImmutableList<ClientResponseFilter> ResFilters { get; init; }
@@ -50,8 +50,8 @@ public sealed class ClientConfig: IClientConfig {
     [Pure]
     public IClientConfig Register(Registrable registrable) => registrable switch {
         MessageBodyReader m    => new ClientConfig(this) { Readers = Readers.Add(m) },
-        ClientRequestFilter r  => Register(r, LAST_FILTER_POSITION),
-        ClientResponseFilter r => Register(r, LAST_FILTER_POSITION),
+        ClientRequestFilter r  => Register(r, LastFilterPosition),
+        ClientResponseFilter r => Register(r, LastFilterPosition),
         _                      => throw new ArgumentException($"This {nameof(ClientConfig)} class does not have a way to register a {registrable.GetType()}", nameof(registrable))
     };
 
@@ -67,7 +67,7 @@ public sealed class ClientConfig: IClientConfig {
         int  oldCount  = list.Count;
         bool isRemoval = newItem is null;
         position = position switch {
-            < FIRST_FILTER_POSITION                  => 0,
+            < FirstFilterPosition                    => 0,
             _ when position >= oldCount && isRemoval => oldCount - 1,
             _ when position > oldCount               => oldCount,
             _                                        => position

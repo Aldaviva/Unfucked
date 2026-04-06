@@ -19,7 +19,7 @@ public static partial class Enumerables {
     /// <returns>Input enumerable with <c>null</c> values removed.</returns>
     /// <remarks>Inspired by Underscore.js' <c>_.compact()</c>: <see href="https://underscorejs.org/#compact"/></remarks>
     [System.Diagnostics.Contracts.Pure]
-    public static IEnumerable<T> Compact<T>(this IEnumerable<T?> source) where T: class => source.Where(item => item != null)!;
+    public static IEnumerable<T> Compact<T>(this IEnumerable<T?> source) where T: class => source.Where(static item => item != null)!;
 
     // Not using <inheritdoc> for any Compact() overloads because it seems to cause ServiceHub.RoslynCodeAnalysisService.exe to crash repeatedly
     // <inheritdoc cref="Compact{T}(IEnumerable{T?})" />
@@ -27,20 +27,21 @@ public static partial class Enumerables {
     /// <param name="source">Enumerable that may contain <c>null</c> values</param>
     /// <returns>Input enumerable with <c>null</c> values removed.</returns>
     [System.Diagnostics.Contracts.Pure]
-    public static IEnumerable<T> Compact<T>(this IEnumerable<T?> source) where T: struct => source.Where(item => item != null).Cast<T>();
+    public static IEnumerable<T> Compact<T>(this IEnumerable<T?> source) where T: struct => source.Where(static item => item != null).Cast<T>();
 
     /// <summary>Remove <c>null</c> values.</summary>
     /// <param name="source">Array that may contain <c>null</c> values</param>
     /// <returns>Copy of input array with <c>null</c> values removed.</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     [System.Diagnostics.Contracts.Pure]
-    public static T[] Compact<T>(this T?[] source) where T: class => source.Where(item => item != null).ToArray()!;
+    public static T[] Compact<T>(this T?[] source) where T: class => source.Where(static item => item != null).ToArray()!;
 
     // <inheritdoc cref="Compact{T}(T?[])" />
     /// <summary>Remove <c>null</c> values.</summary>
     /// <param name="source">Array that may contain <c>null</c> values</param>
     /// <returns>Copy of input array with <c>null</c> values removed.</returns>
     [System.Diagnostics.Contracts.Pure]
-    public static T[] Compact<T>(this T?[] source) where T: struct => source.Where(item => item != null).Cast<T>().ToArray();
+    public static T[] Compact<T>(this T?[] source) where T: struct => source.Where(static item => item != null).Cast<T>().ToArray();
 
     /// <summary>
     /// Remove <c>null</c> values from a dictionary.
@@ -51,7 +52,7 @@ public static partial class Enumerables {
     /// <returns>A copy of <paramref name="source"/> where all the <c>null</c> values have been removed.</returns>
     [System.Diagnostics.Contracts.Pure]
     public static IDictionary<TKey, TValue> Compact<TKey, TValue>(this IDictionary<TKey, TValue?> source) where TKey: notnull where TValue: class =>
-        source.Where(entry => entry.Value != null).ToDictionary(entry => entry.Key, entry => entry.Value!);
+        source.Where(static entry => entry.Value != null).ToDictionary(static entry => entry.Key, static entry => entry.Value!);
 
     // <inheritdoc cref="Compact{TKey,TValue}(IDictionary{TKey, TValue?})" />
     /// <summary>
@@ -63,7 +64,7 @@ public static partial class Enumerables {
     /// <returns>A copy of <paramref name="source"/> where all the <c>null</c> values have been removed.</returns>
     [System.Diagnostics.Contracts.Pure]
     public static IDictionary<TKey, TValue> Compact<TKey, TValue>(this IDictionary<TKey, TValue?> source) where TKey: notnull where TValue: struct =>
-        source.Where(entry => entry.Value != null).ToDictionary(entry => entry.Key, pair => pair.Value!.Value);
+        source.Where(static entry => entry.Value != null).ToDictionary(static entry => entry.Key, static pair => pair.Value!.Value);
 
     /// <summary>
     /// Remove <c>null</c> values from a dictionary.
@@ -200,43 +201,6 @@ public static partial class Enumerables {
         }
     }
 
-    /*/// <summary>
-    /// Set difference
-    /// </summary>
-    /// <typeparam name="T">type of items</typeparam>
-    /// <param name="a">set from which you want to subtract <paramref name="b"/></param>
-    /// <param name="b">set or other enumerable which you want to subtract from <paramref name="a"/></param>
-    /// <returns>a new set containing the result of <c>a−b</c></returns>
-    [Pure]
-    public static ISet<T> Minus<T>(this HashSet<T> a, IEnumerable<T> b) => Minus((ICollection<T>) a, b);
-
-    [Pure]
-    public static ISet<T> Minus<T>(this ISet<T> a, IEnumerable<T> b) => Minus((ICollection<T>) a, b);
-
-#if NET5_0_OR_GREATER
-    [Pure]
-    public static ISet<T> Minus<T>(this IReadOnlySet<T> a, IEnumerable<T> b) => Minus(new ReadOnlySetWrapper<T>(a), b);
-#endif
-
-    private static ISet<T> Minus<T>(this ICollection<T> a, IEnumerable<T> b) {
-        var difference = new HashSet<T>(
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
-            a.Count
-#endif
-        );
-
-        ISet<T> bSet = b switch {
-            ISet<T> s => s,
-#if NET5_0_OR_GREATER
-            IReadOnlySet<T> r => new ReadOnlySetWrapper<T>(r),
-#endif
-            _ => ImmutableHashSet.CreateRange(b)
-        };
-
-        difference.AddAll(a.Where(aItem => !bSet.Contains(aItem)));
-        return difference;
-    }*/
-
     /// <summary>
     /// <para>Set difference.</para>
     /// <para>Unlike <see cref="ISet{T}.ExceptWith"/>, this does not mutate <paramref name="source"/>. Unlike <see cref="Enumerable.Except{T}(IEnumerable{T},IEnumerable{T})"/>, </para>
@@ -251,15 +215,6 @@ public static partial class Enumerables {
         difference.ExceptWith(toSubtract);
         return difference;
 
-        /*HashSet<T> difference =
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
-            source is ICollection<T> { Count: var sourceCount } ? new HashSet<T>(sourceCount) : [];
-#else
-            [];
-#endif
-
-        difference.AddAll(source.Where(aItem => !toSubtract.Contains(aItem)));
-        return difference;*/
         static IEqualityComparer<T>? getComparer([NoEnumeration] IEnumerable<T> enumerable) => enumerable switch {
             HashSet<T> s          => s.Comparer,
             ImmutableHashSet<T> s => s.KeyComparer,
@@ -269,45 +224,6 @@ public static partial class Enumerables {
             _ => null
         };
     }
-
-/*#if NET5_0_OR_GREATER
-    /// <inheritdoc cref="Minus{T}(System.Collections.Generic.IEnumerable{T},System.Collections.Generic.ISet{T})" />
-#if NET9_0_OR_GREATER
-    [OverloadResolutionPriority(-1)]
-#endif
-    [Pure]
-    public static ISet<T> Minus<T>(this IEnumerable<T> source, IReadOnlySet<T> toSubtract) => Minus(source, toSubtract as ISet<T> ?? new ReadOnlySetWrapper<T>(toSubtract));
-
-#pragma warning disable Ex0100
-    private class ReadOnlySetWrapper<T>(IReadOnlySet<T> wrapped): ISet<T> {
-
-        public bool Contains(T item) => wrapped.Contains(item);
-        public int Count => wrapped.Count;
-        public bool IsReadOnly => true;
-        public bool IsProperSubsetOf(IEnumerable<T> other) => wrapped.IsProperSubsetOf(other);
-        public bool IsProperSupersetOf(IEnumerable<T> other) => wrapped.IsProperSupersetOf(other);
-        public bool IsSubsetOf(IEnumerable<T> other) => wrapped.IsSubsetOf(other);
-        public bool IsSupersetOf(IEnumerable<T> other) => wrapped.IsSupersetOf(other);
-        public bool Overlaps(IEnumerable<T> other) => wrapped.Overlaps(other);
-        public bool SetEquals(IEnumerable<T> other) => wrapped.SetEquals(other);
-        public IEnumerator<T> GetEnumerator() => wrapped.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable) wrapped).GetEnumerator();
-
-        public bool Add(T item) => throw NotImplemented();
-        public void Clear() => throw NotImplemented();
-        public void CopyTo(T[] array, int arrayIndex) => throw NotImplemented();
-        public bool Remove(T item) => throw NotImplemented();
-        public void ExceptWith(IEnumerable<T> other) => throw NotImplemented();
-        public void IntersectWith(IEnumerable<T> other) => throw NotImplemented();
-        public void SymmetricExceptWith(IEnumerable<T> other) => throw NotImplemented();
-        public void UnionWith(IEnumerable<T> other) => throw NotImplemented();
-        void ICollection<T>.Add(T item) => throw NotImplemented();
-
-        private static NotImplementedException NotImplemented() => new("This set is read-only");
-
-    }
-#pragma warning restore Ex0100
-#endif*/
 
     /// <summary>
     /// <para>Return a copy of an enumerable with all runs of consecutive duplicate items replaced with only one instance of that item.</para>
@@ -555,7 +471,7 @@ public static partial class Enumerables {
     /// <returns>a tuple of items that were <c>created</c> (in <paramref name="newList"/> but not in <paramref name="oldList"/>), <c>updated</c> (in both <paramref name="newList"/> and <paramref name="oldList"/> but not equal because at least one property changed), <c>deleted</c> (in <paramref name="oldList"/> but not in <paramref name="newList"/>), and <c>unmodified</c> (in both <paramref name="newList"/> and <paramref name="oldList"/>, and equal because no properties changed). Sorting of input items is preserved in outputs, except <c>deleted</c>, which is in an undefined order.</returns>
     [System.Diagnostics.Contracts.Pure]
     public static (IEnumerable<T> created, IEnumerable<T> updated, IEnumerable<T> deleted, IEnumerable<T> unmodified) DeltaWith<T>(
-        this IEnumerable<T> oldList, IEnumerable<T> newList, IEqualityComparer<T>? isEqual = null) where T: notnull => oldList.DeltaWith(newList, item => item, isEqual);
+        this IEnumerable<T> oldList, IEnumerable<T> newList, IEqualityComparer<T>? isEqual = null) where T: notnull => oldList.DeltaWith(newList, static item => item, isEqual);
 
     /// <summary>
     /// <para>Diff two lists, producing a delta of their contents.</para>
@@ -591,12 +507,12 @@ public static partial class Enumerables {
         this IEnumerable<TOld> oldList, IEnumerable<TNew> newList, Func<TOld, TId> oldIdSelector, Func<TNew, TId> newIdSelector, Func<TOld, TNew, bool>? isEqual = null)
         where TOld: notnull where TNew: notnull where TId: notnull {
 
-        isEqual ??= (a, b) => Equals(a, b);
-        List<TNew>             created      = [];
-        List<TNew>             updated      = [];
-        var                    deleted      = new HashSet<TOld>(oldList);
-        List<TOld>             unmodified   = [];
-        IDictionary<TId, TOld> oldItemsById = deleted.ToDictionary(oldIdSelector);
+        isEqual ??= static (a, b) => Equals(a, b);
+        List<TNew>            created      = [];
+        List<TNew>            updated      = [];
+        var                   deleted      = new HashSet<TOld>(oldList);
+        List<TOld>            unmodified   = [];
+        Dictionary<TId, TOld> oldItemsById = deleted.ToDictionary(oldIdSelector);
 
         foreach (TNew newItem in newList) {
             TId id = newIdSelector(newItem);
@@ -615,6 +531,10 @@ public static partial class Enumerables {
         return (created, updated, deleted, unmodified);
     }
 
+    /// <summary>Returns a read-only <see cref="ReadOnlyCollection{T}" /> wrapper for the specified list.</summary>
+    /// <param name="writableList">The list to wrap.</param>
+    /// <typeparam name="T">The type of elements in the collection.</typeparam>
+    /// <returns>An object that acts as a read-only wrapper around the current <see cref="IList{T}" />.</returns>
     [System.Diagnostics.Contracts.Pure]
     public static IReadOnlyList<T> AsReadOnly<T>(this IList<T> writableList) =>
 #if NET8_0_OR_GREATER
@@ -622,7 +542,11 @@ public static partial class Enumerables {
 #else
         new ReadOnlyCollection<T>(writableList);
 #endif
-
+    /// <summary>Returns a read-only <see cref="ReadOnlyDictionary{TKey,TValue}" /> wrapper for the current dictionary.</summary>
+    /// <param name="writableDict">The dictionary to wrap.</param>
+    /// <typeparam name="TKey">The type of keys in the dictionary.</typeparam>
+    /// <typeparam name="TValue">The type of values in the dictionary.</typeparam>
+    /// <returns>An object that acts as a read-only wrapper around the current <see cref="IDictionary{TKey,TValue}" />.</returns>
     [System.Diagnostics.Contracts.Pure]
     public static IReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> writableDict) where TKey: notnull =>
 #if NET8_0_OR_GREATER

@@ -1,7 +1,18 @@
 namespace Unfucked;
 
+/// <summary>
+/// Methods that make it easier to work with comparable values.
+/// </summary>
 public static class Comparables {
 
+    /// <summary>
+    /// Clip/clamp/bound/saturate a value, restricting the range of the value to a given minimum and maximum.
+    /// </summary>
+    /// <typeparam name="T">The type of the value.</typeparam>
+    /// <param name="input">The value to clip.</param>
+    /// <param name="min">The minimum value to return, inclusive.</param>
+    /// <param name="max">The maximum value to return, inclusive.</param>
+    /// <returns>A value in the range [<paramref name="min"/>, <paramref name="max"/>]. If <paramref name="input"/> is inside that range, it will be returned unchanged; otherwise, if it is outside one of the limits, the limit will be returned.</returns>
     public static T Clip<T>(this T input, T min, T max) where T: IComparable<T> {
         if (min.CompareTo(max) > 0) {
             (min, max) = (max, min);

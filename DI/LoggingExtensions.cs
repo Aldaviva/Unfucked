@@ -17,7 +17,7 @@ public static class LoggingExtensions {
     /// <param name="logging">Application builder's <see cref="HostApplicationBuilder.Logging"/>.</param>
     /// <param name="options">Options to pass to the formatter to disable colored output, show fully-qualified class names, change the column separator, or change the datetime format.</param>
     public static ILoggingBuilder AddUnfuckedConsole(this ILoggingBuilder logging, Action<UnfuckedConsoleFormatterOptions>? options = null) {
-        logging.AddConsole(opts => opts.FormatterName = UnfuckedConsoleFormatter.Id);
+        logging.AddConsole(static opts => opts.FormatterName = UnfuckedConsoleFormatter.Id);
         if (options != null) {
             logging.AddConsoleFormatter<UnfuckedConsoleFormatter, UnfuckedConsoleFormatterOptions>(options);
         } else {
@@ -45,7 +45,7 @@ public static class LoggingExtensions {
     /// <para>This will change the log messages from <c>Microsoft.AspNetCore.SignalR.Internal.DefaultHubDispatcher</c> which have any of the specified event IDs from their default debug level to warning. Other messages from that category with different event IDs will be logged at their original levels.</para>
     /// </summary>
     public static ILoggingBuilder AmplifyMessageLevels(this ILoggingBuilder loggingBuilder, Action<AmplifiedLogOptions> options) {
-        IDictionary<string, IDictionary<int, LogLevel>> categoryAndEventIdToAmplifiedLevels = new Dictionary<string, IDictionary<int, LogLevel>>();
+        Dictionary<string, Dictionary<int, LogLevel>> categoryAndEventIdToAmplifiedLevels = new();
         options(new AmplifiedLogOptions(categoryAndEventIdToAmplifiedLevels));
 
         loggingBuilder.Services.AddSingleton<ILoggerProvider>(provider => new AmplifyingLoggerProvider(provider, categoryAndEventIdToAmplifiedLevels));

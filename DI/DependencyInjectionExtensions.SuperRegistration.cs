@@ -64,10 +64,10 @@ public static partial class DependencyInjectionExtensions {
     /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
     public static IServiceCollection AddHostedService<TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class, IHostedService {
         if ((alsoRegister & SuperRegistration.ConcreteClass) != 0) {
-            return Add<TImpl>(services, alsoRegister & ~SuperRegistration.ConcreteClass, () => [
+            return Add<TImpl>(services, alsoRegister & ~SuperRegistration.ConcreteClass, static () => [
                 new ServiceDescriptor(typeof(TImpl), typeof(TImpl), ServiceLifetime.Singleton),
                 new ServiceDescriptor(typeof(IHostedService), ServiceProvider<TImpl>, ServiceLifetime.Singleton)
-            ], extra => new ServiceDescriptor(extra, ServiceProvider<TImpl>, ServiceLifetime.Singleton));
+            ], static extra => new ServiceDescriptor(extra, ServiceProvider<TImpl>, ServiceLifetime.Singleton));
         } else {
             Guid concreteClassKey = Guid.NewGuid();
             return Add<TImpl>(services, alsoRegister, () => [
@@ -85,7 +85,7 @@ public static partial class DependencyInjectionExtensions {
             return Add<TImpl>(services, alsoRegister & ~SuperRegistration.ConcreteClass, () => [
                 new ServiceDescriptor(typeof(TImpl), factory, ServiceLifetime.Singleton),
                 new ServiceDescriptor(typeof(IHostedService), ServiceProvider<TImpl>, ServiceLifetime.Singleton)
-            ], extra => new ServiceDescriptor(extra, ServiceProvider<TImpl>, ServiceLifetime.Singleton));
+            ], static extra => new ServiceDescriptor(extra, ServiceProvider<TImpl>, ServiceLifetime.Singleton));
         } else {
             Guid concreteClassKey = Guid.NewGuid();
             return Add<TImpl>(services, alsoRegister, () => [

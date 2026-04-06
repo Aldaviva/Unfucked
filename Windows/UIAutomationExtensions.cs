@@ -30,9 +30,8 @@ public static class UIAutomationExtensions {
     /// <param name="element">UI Automation element.</param>
     /// <returns>mwinapi <see cref="SystemWindow"/> that wraps the same window as <paramref name="element"/>, or <c>null</c> if the window for <paramref name="element"/> was destroyed in parallel.</returns>
     [Pure]
-    public static SystemWindow? ToSystemWindow(this AutomationElement element) {
-        return element.ToHwnd() is { } hwnd ? new SystemWindow(hwnd) : null;
-    }
+    public static SystemWindow? ToSystemWindow(this AutomationElement element) =>
+        element.ToHwnd() is {} hwnd ? new SystemWindow(hwnd) : null;
 
     /// <summary>
     /// Convert an mwinapi (Managed Windows API, <see href="https://mwinapi.sourceforge.net"/>) <see cref="SystemWindow"/> to a UI Automation element.
@@ -40,9 +39,8 @@ public static class UIAutomationExtensions {
     /// <param name="window">mwinapi <see cref="SystemWindow"/></param>
     /// <returns>UI Automation element that wraps the same window as <paramref name="window"/>, or <c>null</c> if the <paramref name="window"/> was destroyed in parallel.</returns>
     [Pure]
-    public static AutomationElement? ToAutomationElement(this SystemWindow window) {
-        return window.HWnd == IntPtr.Zero ? null : AutomationElement.FromHandle(window.HWnd);
-    }
+    public static AutomationElement? ToAutomationElement(this SystemWindow window) =>
+        window.HWnd == IntPtr.Zero ? null : AutomationElement.FromHandle(window.HWnd);
 
     /// <summary>
     /// List all children of an UI Automation element (1 level, non-recursive, no grandchildren).
@@ -50,9 +48,8 @@ public static class UIAutomationExtensions {
     /// <param name="parent">The element whose children you want to list.</param>
     /// <returns>Collection of UI Automation elements whose parent element is <paramref name="parent"/>.</returns>
     [Pure]
-    public static IEnumerable<AutomationElement> Children(this AutomationElement parent) {
-        return parent.FindAll(TreeScope.Children, Condition.TrueCondition).Cast<AutomationElement>();
-    }
+    public static IEnumerable<AutomationElement> Children(this AutomationElement parent) =>
+        parent.FindAll(TreeScope.Children, Condition.TrueCondition).Cast<AutomationElement>();
 
     /// <summary>
     /// <para>Create an <see cref="AndCondition"/> or <see cref="OrCondition"/> for a <paramref name="property"/> from a series of <paramref name="values"/>, which have fewer than 2 items in it.</para>
@@ -72,11 +69,11 @@ public static class UIAutomationExtensions {
         };
     }
 
-    private static readonly Exception ElementNotFound = new ApplicationException("element not found");
+    private static Exception ElementNotFound() => new ApplicationException("element not found");
 
     private static readonly RetryOptions WaitForFirstOptions = new() {
         Delay          = Delays.Power(TimeSpan.FromMilliseconds(8), max: TimeSpan.FromMilliseconds(500)),
-        IsRetryAllowed = (exception, _) => exception is not ArgumentException
+        IsRetryAllowed = static (exception, _) => exception is not ArgumentException
     };
 
     private static RetryOptions GetWaitForFirstOptions(TimeSpan maxWait, CancellationToken cancellationToken) => WaitForFirstOptions with {
@@ -99,7 +96,7 @@ public static class UIAutomationExtensions {
     [Pure]
     public static AutomationElement? WaitForFirst(this AutomationElement parent, TreeScope scope, Condition condition, TimeSpan maxWait = default, CancellationToken cancellationToken = default) {
         try {
-            return Retrier.Attempt(_ => parent.FindFirst(scope, condition) ?? throw ElementNotFound, GetWaitForFirstOptions(maxWait, cancellationToken));
+            return Retrier.Attempt(_ => parent.FindFirst(scope, condition) ?? throw ElementNotFound(), GetWaitForFirstOptions(maxWait, cancellationToken));
         } catch (Exception e) when (e is not OutOfMemoryException) {
             return null;
         }
@@ -113,7 +110,7 @@ public static class UIAutomationExtensions {
     public static TResult? WaitForFirst<TResult>(this AutomationElement parent, TreeScope scope, Condition condition, Func<AutomationElement, TResult> resultTransformer, TimeSpan maxWait = default,
                                                  CancellationToken cancellationToken = default) where TResult: class {
         try {
-            return Retrier.Attempt(_ => parent.FindFirst(scope, condition) is { } el ? resultTransformer(el) : throw ElementNotFound, GetWaitForFirstOptions(maxWait, cancellationToken));
+            return Retrier.Attempt(_ => parent.FindFirst(scope, condition) is {} el ? resultTransformer(el) : throw ElementNotFound(), GetWaitForFirstOptions(maxWait, cancellationToken));
         } catch (Exception e) when (e is not OutOfMemoryException) {
             return null;
         }
@@ -125,7 +122,7 @@ public static class UIAutomationExtensions {
     public static async Task<AutomationElement?> WaitForFirstAsync(this AutomationElement parent, TreeScope scope, Condition condition, TimeSpan maxWait = default,
                                                                    CancellationToken cancellationToken = default) {
         try {
-            return await Retrier.Attempt(_ => parent.FindFirst(scope, condition) is { } el ? Task.FromResult(el) : Task.FromException<AutomationElement>(ElementNotFound),
+            return await Retrier.Attempt(_ => parent.FindFirst(scope, condition) is {} el ? Task.FromResult(el) : Task.FromException<AutomationElement>(ElementNotFound()),
                 GetWaitForFirstOptions(maxWait, cancellationToken)).ConfigureAwait(false);
         } catch (Exception e) when (e is not OutOfMemoryException) {
             return null;
@@ -138,7 +135,7 @@ public static class UIAutomationExtensions {
     public static async Task<TResult?> WaitForFirstAsync<TResult>(this AutomationElement parent, TreeScope scope, Condition condition, Func<AutomationElement, Task<TResult>> resultTransformer,
                                                                   TimeSpan maxWait = default, CancellationToken cancellationToken = default) where TResult: class {
         try {
-            return await Retrier.Attempt(async _ => parent.FindFirst(scope, condition) is { } el ? await resultTransformer(el).ConfigureAwait(false) : throw ElementNotFound,
+            return await Retrier.Attempt(async _ => parent.FindFirst(scope, condition) is {} el ? await resultTransformer(el).ConfigureAwait(false) : throw ElementNotFound(),
                 GetWaitForFirstOptions(maxWait, cancellationToken)).ConfigureAwait(false);
         } catch (Exception e) when (e is not OutOfMemoryException) {
             return null;

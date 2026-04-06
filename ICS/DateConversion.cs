@@ -50,13 +50,13 @@ public static class DateConversion {
 
     [Pure]
     public static ZonedDateTime ToZonedDateTime(this CalDateTime icalDateTime) =>
-        icalDateTime.ToInstant().InZone(icalDateTime.TzId is { } tzid ? DateTimeZoneProviders.Tzdb[tzid] : DateTimeZoneProviders.Tzdb.GetSystemDefault());
+        icalDateTime.ToInstant().InZone(icalDateTime.TzId is {} tzid ? DateTimeZoneProviders.Tzdb[tzid] : DateTimeZoneProviders.Tzdb.GetSystemDefault());
 
     [Pure]
     public static Duration ToDuration(this Ical.Net.DataTypes.Duration icalDuration) => icalDuration.ToTimeSpanUnspecified().ToDuration();
 
     [Pure]
-    public static Ical.Net.DataTypes.Duration ToIcalDuration(this Duration duration) => ToIcalDuration(duration.ToTimeSpan());
+    public static Ical.Net.DataTypes.Duration ToIcalDuration(this Duration duration) => duration.ToTimeSpan().ToIcalDuration();
 
     [Pure]
     public static Ical.Net.DataTypes.Duration ToIcalDuration(this TimeSpan timeSpan) => Ical.Net.DataTypes.Duration.FromTimeSpanExact(timeSpan);

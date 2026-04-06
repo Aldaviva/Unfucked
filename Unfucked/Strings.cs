@@ -115,7 +115,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first         = true;
+        bool          first = true;
         StringBuilder stringBuilder = new();
         foreach (string? s in strings) {
             if (!first) {
@@ -135,7 +135,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first         = true;
+        bool          first = true;
         StringBuilder stringBuilder = new();
         foreach (string? s in strings) {
             if (!first) {
@@ -155,7 +155,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first         = true;
+        bool          first = true;
         StringBuilder stringBuilder = new();
         foreach (object? s in strings) {
             if (!first) {
@@ -175,7 +175,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first         = true;
+        bool          first = true;
         StringBuilder stringBuilder = new();
         foreach (object? s in strings) {
             if (!first) {
@@ -240,11 +240,12 @@ public static class Strings {
 
     /// <inheritdoc cref="TrimStart(ReadOnlySpan{char},int,string[])" />
     [Pure]
-    public static string TrimStart(this string str, int limit = -1, params char[] prefixesToTrim) => str.AsSpan().TrimStart(limit, prefixesToTrim.Select(c => c.ToString()).ToArray());
+    public static string TrimStart(this string str, int limit = -1, params char[] prefixesToTrim) => str.AsSpan().TrimStart(limit, prefixesToTrim.Select(static c => c.ToString()).ToArray());
 
     /// <inheritdoc cref="TrimStart(ReadOnlySpan{char},int,string[])" />
     [Pure]
-    public static string TrimStart(this string str, int limit = -1, params IEnumerable<char> prefixesToTrim) => str.AsSpan().TrimStart(limit, prefixesToTrim.Select(c => c.ToString()).ToArray());
+    public static string TrimStart(this string str, int limit = -1, params IEnumerable<char> prefixesToTrim) =>
+        str.AsSpan().TrimStart(limit, prefixesToTrim.Select(static c => c.ToString()).ToArray());
 
     /// <inheritdoc cref="TrimStart(string,IEnumerable{string})" />
     [Pure]
@@ -304,11 +305,11 @@ public static class Strings {
 
     /// <inheritdoc cref="TrimEnd(string,string[])" />
     [Pure]
-    public static string TrimEnd(this string str, params char[] suffixesToTrim) => str.AsSpan().TrimEnd(-1, suffixesToTrim.Select(c => c.ToString()));
+    public static string TrimEnd(this string str, params char[] suffixesToTrim) => str.AsSpan().TrimEnd(-1, suffixesToTrim.Select(static c => c.ToString()));
 
     /// <inheritdoc cref="TrimEnd(string,string[])" />
     [Pure]
-    public static string TrimEnd(this string str, params IEnumerable<char> suffixesToTrim) => str.AsSpan().TrimEnd(-1, suffixesToTrim.Select(c => c.ToString()).ToArray());
+    public static string TrimEnd(this string str, params IEnumerable<char> suffixesToTrim) => str.AsSpan().TrimEnd(-1, suffixesToTrim.Select(static c => c.ToString()).ToArray());
 
     /// <inheritdoc cref="TrimEnd(string,int,string[])" />
     [Pure]
@@ -488,6 +489,10 @@ public static class Strings {
         }
     }
 
+    /// <summary>Concatenates and appends the members of a collection, using the specified char separator between each member.</summary>
+    /// <param name="separator">The character to use as a separator. <paramref name="separator" /> is included in the concatenated and appended strings only if <paramref name="values" /> has more than one element.</param>
+    /// <param name="values">A collection that contains the objects to concatenate and append to the current instance of the string builder.</param>
+    /// <returns>A reference to this instance after the append operation has completed.</returns>
     public static StringBuilder AppendJoin(this StringBuilder builder, char separator, params IEnumerable<object> values) {
 #if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         return builder.AppendJoin(separator, values);
@@ -505,6 +510,10 @@ public static class Strings {
 #endif
     }
 
+    /// <summary>Concatenates and appends the members of a collection, using the specified separator between each member.</summary>
+    /// <param name="separator">The string to use as a separator. <paramref name="separator" /> is included in the concatenated and appended strings only if <paramref name="values" /> has more than one element.</param>
+    /// <param name="values">A collection that contains the objects to concatenate and append to the current instance of the string builder.</param>
+    /// <returns>A reference to this instance after the append operation has completed.</returns>
     public static StringBuilder AppendJoin(this StringBuilder builder, string separator, params IEnumerable<object> values) {
 #if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         return builder.AppendJoin(separator, values);
@@ -522,6 +531,7 @@ public static class Strings {
 #endif
     }
 
+    /// <inheritdoc cref="string.StartsWith(string)" />
     public static bool StartsWith(this string str, char prefix) =>
 #if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         str.StartsWith(prefix);
@@ -529,6 +539,7 @@ public static class Strings {
         str.StartsWith(prefix.ToString());
 #endif
 
+    /// <inheritdoc cref="string.EndsWith(string)" />
     public static bool EndsWith(this string str, char suffix) =>
 #if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         str.EndsWith(suffix);
@@ -536,6 +547,11 @@ public static class Strings {
         str.EndsWith(suffix.ToString());
 #endif
 
+    /// <summary>Returns a value indicating whether a specified string occurs within this string, using the specified comparison rules.</summary>
+    /// <param name="value">The string to seek.</param>
+    /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
+    /// <returns>
+    /// <c>true</c> if the <paramref name="value" /> parameter occurs within this string, or if <paramref name="value" /> is the empty string (""); otherwise, <c>false</c>.</returns>
     public static bool Contains(this string str, string value, StringComparison comparisonType) =>
 #if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         str.Contains(value, comparisonType);

@@ -16,13 +16,13 @@ public static class DnsExtensions {
     /// <returns>First IP address that the domain name points to, or <c>null</c> if resolution failed.</returns>
     public static async Task<IPEndPoint?> Resolve(this DnsEndPoint host, CancellationToken cancellationToken = default) {
         try {
-            IEnumerable<IPAddress> response;
+            IPAddress[] response =
 #if NET6_0_OR_GREATER
-            response = await Dns.GetHostAddressesAsync(host.Host, host.AddressFamily, cancellationToken).ConfigureAwait(false);
+                await Dns.GetHostAddressesAsync(host.Host, host.AddressFamily, cancellationToken).ConfigureAwait(false);
 #else
-            response = await Dns.GetHostAddressesAsync(host.Host).ConfigureAwait(false);
+                await Dns.GetHostAddressesAsync(host.Host).ConfigureAwait(false);
 #endif
-            return response.FirstOrDefault(addr => host.AddressFamily == AddressFamily.Unspecified || host.AddressFamily == addr.AddressFamily) is { } address
+            return response.FirstOrDefault(addr => host.AddressFamily == AddressFamily.Unspecified || host.AddressFamily == addr.AddressFamily) is {} address
                 ? new IPEndPoint(address, host.Port) : null;
         } catch (SocketException) {
             return null;

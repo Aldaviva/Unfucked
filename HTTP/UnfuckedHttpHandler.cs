@@ -39,8 +39,8 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 
     private static readonly ConcurrentDictionary<int, WeakReference<IUnfuckedHttpHandler>?> HTTP_CLIENT_HANDLER_CACHE = new();
 
-    private static readonly Lazy<FieldInfo> HTTP_CLIENT_HANDLER_FIELD = new(() => typeof(HttpMessageInvoker).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
-        .First(field => field.FieldType == typeof(HttpMessageHandler)), LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<FieldInfo> HTTP_CLIENT_HANDLER_FIELD = new(static () => typeof(HttpMessageInvoker).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
+        .First(static field => field.FieldType == typeof(HttpMessageHandler)), LazyThreadSafetyMode.PublicationOnly);
 
     private readonly FilterContext baseFilterContext;
     private readonly bool          disposeInnerHandler;
@@ -78,8 +78,8 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 #if NETCOREAPP2_1_OR_GREATER
         new SocketsHttpHandler {
             PooledConnectionLifetime = TimeSpan.FromHours(1),
-            ConnectTimeout = TimeSpan.FromSeconds(10),
-            AutomaticDecompression = DecompressionMethods.All,
+            ConnectTimeout           = TimeSpan.FromSeconds(10),
+            AutomaticDecompression   = DecompressionMethods.All,
             // MaxConnectionsPerServer defaults to MAX_INT, so we don't need to increase it here
 #if NET8_0_OR_GREATER
             MeterFactory = new WireLogFilter.WireLoggingMeterFactory()
@@ -222,6 +222,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 /// </summary>
 internal sealed class IUnfuckedHttpHandlerWrapper(IUnfuckedHttpHandler realHandler): HttpMessageHandler {
 
+    /// <exception cref="ProcessingException"></exception>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => realHandler.FilterAndSendAsync(request, cancellationToken);
 
 }

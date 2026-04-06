@@ -2,6 +2,9 @@ using System.Text;
 
 namespace Unfucked;
 
+/// <summary>
+/// Methods that make it easier to work with exceptions.
+/// </summary>
 public static class ExceptionExtensions {
 
     /// <summary>
@@ -33,7 +36,7 @@ public static class ExceptionExtensions {
     /// <param name="exception">Starting exception. It will not be included in the output, so if you want it in the chain too, call <see cref="Enumerable.Prepend"/>.</param>
     /// <returns>Sequence of the <see cref="Exception.InnerException"/>s of the exceptions recursively, starting with the cause of <paramref name="exception"/>.</returns>
     public static IEnumerable<Exception> CauseChain(this Exception exception) {
-        while (exception.InnerException is { } cause && !ReferenceEquals(exception, cause)) {
+        while (exception.InnerException is {} cause && !ReferenceEquals(exception, cause)) {
             exception = cause;
             yield return cause;
         }

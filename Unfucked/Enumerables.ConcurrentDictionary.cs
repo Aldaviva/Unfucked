@@ -36,7 +36,7 @@ public static partial class Enumerables {
 #endif
         return initialElements != null
             ? new ConcurrentDictionary<TKey, ValueHolder<TValue>>(concurrency,
-                initialElements.Select(pair => new KeyValuePair<TKey, ValueHolder<TValue>>(pair.Key, new ValueHolder<TValue>(pair.Value))), keyComparer)
+                initialElements.Select(static pair => new KeyValuePair<TKey, ValueHolder<TValue>>(pair.Key, new ValueHolder<TValue>(pair.Value))), keyComparer)
             : new ConcurrentDictionary<TKey, ValueHolder<TValue>>(concurrency, capacity ?? DEFAULT_CONCURRENT_DICTIONARY_CAPACITY, keyComparer);
     }
 
@@ -66,7 +66,7 @@ public static partial class Enumerables {
 #endif
         return initialElements != null
             ? new ConcurrentDictionary<TKey, BooleanValueHolder>(concurrency,
-                initialElements.Select(pair => new KeyValuePair<TKey, BooleanValueHolder>(pair.Key, new BooleanValueHolder(pair.Value))), keyComparer)
+                initialElements.Select(static pair => new KeyValuePair<TKey, BooleanValueHolder>(pair.Key, new BooleanValueHolder(pair.Value))), keyComparer)
             : new ConcurrentDictionary<TKey, BooleanValueHolder>(concurrency, capacity ?? DEFAULT_CONCURRENT_DICTIONARY_CAPACITY, keyComparer);
     }
 
@@ -82,9 +82,8 @@ public static partial class Enumerables {
     /// <returns>A <see cref="ConcurrentDictionary{TKey,TValue}"/> whose values can be mutated atomically using <see cref="AtomicSwap{TKey,TValue}"/>.</returns>
     [Pure]
     public static ConcurrentDictionary<TKey, BooleanValueHolder> CreateConcurrentBooleanDictionary<TKey>(IEnumerable<KeyValuePair<TKey, bool>>? initialElements = null, int concurrency = -1,
-                                                                                                         int? capacity = null, IEqualityComparer<TKey>? keyComparer = null) where TKey: notnull {
-        return CreateConcurrentDictionary<TKey, bool>(initialElements, concurrency, capacity, keyComparer);
-    }
+                                                                                                         int? capacity = null, IEqualityComparer<TKey>? keyComparer = null) where TKey: notnull =>
+        CreateConcurrentDictionary<TKey, bool>(initialElements, concurrency, capacity, keyComparer);
 
     // Enum values
     /// <summary>
@@ -101,11 +100,9 @@ public static partial class Enumerables {
     /// <exception cref="InvalidCastException"><typeparamref name="TIntegralValue"/> does not match the underlying type of <typeparamref name="TEnumValue"/>.</exception>
     [Pure]
     public static ConcurrentDictionary<TKey, EnumValueHolder<TEnumValue, TIntegralValue>> CreateConcurrentEnumDictionary<TKey, TEnumValue, TIntegralValue>(
-        IEnumerable<KeyValuePair<TKey, TEnumValue>>? initialElements = null,
-        int concurrency = -1,
-        int? capacity = null,
-        IEqualityComparer<TKey>? keyComparer = null)
+        IEnumerable<KeyValuePair<TKey, TEnumValue>>? initialElements = null, int concurrency = -1, int? capacity = null, IEqualityComparer<TKey>? keyComparer = null)
         where TKey: notnull where TIntegralValue: struct where TEnumValue: struct, Enum {
+
         if (Enum.GetUnderlyingType(typeof(TEnumValue)) is var expectedUnderlyingType && typeof(TIntegralValue) is var actualUnderlyingType && expectedUnderlyingType != actualUnderlyingType) {
             throw new InvalidCastException(
                 $"The {nameof(TIntegralValue)} generic type parameter must be {expectedUnderlyingType.Name} based on the underlying type of {typeof(TEnumValue).Name}, but was {actualUnderlyingType.Name}");
@@ -120,8 +117,40 @@ public static partial class Enumerables {
 #endif
         return initialElements != null
             ? new ConcurrentDictionary<TKey, EnumValueHolder<TEnumValue, TIntegralValue>>(concurrency,
-                initialElements.Select(pair => new KeyValuePair<TKey, EnumValueHolder<TEnumValue, TIntegralValue>>(pair.Key, new EnumValueHolder<TEnumValue, TIntegralValue>(pair.Value))), keyComparer)
+                initialElements.Select(static pair => new KeyValuePair<TKey, EnumValueHolder<TEnumValue, TIntegralValue>>(pair.Key, new EnumValueHolder<TEnumValue, TIntegralValue>(pair.Value))),
+                keyComparer)
             : new ConcurrentDictionary<TKey, EnumValueHolder<TEnumValue, TIntegralValue>>(concurrency, capacity ?? DEFAULT_CONCURRENT_DICTIONARY_CAPACITY, keyComparer);
+    }
+
+    extension<TKey, TValue>(ConcurrentDictionary<TKey, TValue>) where TKey: notnull {
+
+        /// <inheritdoc cref="Enumerables.CreateConcurrentDictionary{TKey,TValue}(System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{TKey,TValue}}?,int,int?,System.Collections.Generic.IEqualityComparer{TKey}?)" />
+        [Pure]
+        public static ConcurrentDictionary<TKey, ValueHolder<TValue>> CreateWithMutableAtomicValues(IEnumerable<KeyValuePair<TKey, TValue>>? initialElements = null, int concurrency = -1,
+                                                                                                    int? capacity = null, IEqualityComparer<TKey>? keyComparer = null) =>
+            CreateConcurrentDictionary(initialElements, concurrency, capacity, keyComparer);
+
+    }
+
+    extension<TKey>(ConcurrentDictionary<TKey, bool>) where TKey: notnull {
+
+        /// <inheritdoc cref="Enumerables.CreateConcurrentBooleanDictionary{TKey}" />
+        [Pure]
+        public static ConcurrentDictionary<TKey, BooleanValueHolder> CreateWithMutableAtomicValues(IEnumerable<KeyValuePair<TKey, bool>>? initialElements = null, int concurrency = -1,
+                                                                                                   int? capacity = null, IEqualityComparer<TKey>? keyComparer = null) =>
+            CreateConcurrentBooleanDictionary(initialElements, concurrency, capacity, keyComparer);
+
+    }
+
+    extension<TKey, TEnumValue>(ConcurrentDictionary<TKey, TEnumValue>) where TKey: notnull where TEnumValue: struct, Enum {
+
+        /// <inheritdoc cref="Enumerables.CreateConcurrentEnumDictionary{TKey,TEnumValue,TIntegralValue}" />
+        [Pure]
+        public static ConcurrentDictionary<TKey, EnumValueHolder<TEnumValue, TIntegralValue>> CreateWithMutableAtomicValues<TIntegralValue>(
+            IEnumerable<KeyValuePair<TKey, TEnumValue>>? initialElements = null, int concurrency = -1, int? capacity = null, IEqualityComparer<TKey>? keyComparer = null)
+            where TIntegralValue: struct =>
+            CreateConcurrentEnumDictionary<TKey, TEnumValue, TIntegralValue>(initialElements, concurrency, capacity, keyComparer);
+
     }
 
     #endregion
@@ -566,15 +595,46 @@ public static partial class Enumerables {
     public static TValue GetOrAddWithDisposal<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> valueFactory, out bool added)
         where TKey: notnull where TValue: IDisposable {
 
-        TValue? toAdd = default;
+        TValue? createdValue = default;
 
-        TValue result = dictionary.GetOrAdd(key, k => {
-            toAdd = valueFactory(k);
-            return toAdd;
-        }, out bool innerAdded);
+        // We need to exfiltrate state from the valueFactory about what value was created, so we need either a closure or an object argument to pass to a static callback. The object arg uses the same amount of memory and an extra 0.6ns (26%) of time compared to the closure, so use a closure because it's faster and no more allocations.
+        TValue result = dictionary.GetOrAdd(key, k => createdValue = valueFactory(k), out bool innerAdded);
 
         if (!innerAdded) {
-            toAdd?.Dispose();
+            createdValue?.Dispose();
+        }
+
+        added = innerAdded;
+        return result;
+    }
+
+    /// <summary>
+    /// <para>Adds a key/value pair to the <see cref="T:System.Collections.Concurrent.ConcurrentDictionary`2" /> by using the specified function if the key does not already exist. Returns the new value, or the existing value if the key exists.</para>
+    /// <para>This extension method will also dispose of the value created by <paramref name="valueFactory"/> if it was unused. To avoid deadlocks, <see cref="ConcurrentDictionary{TKey,TValue}"/> does not atomically create the value and add it to the dictionary, because <paramref name="valueFactory"/> is untrusted code and could deadlock. Instead, the <see cref="ConcurrentDictionary{TKey,TValue}"/> takes a three phased approach: check if the key already exists, create the value, and add the value. This means that the key could be concurrently added after the first check, which would lead to the value being created in the second step but not added in the third step. In this case, the created value is unused and will never be disposed.</para>
+    /// <para>If you want values created by <paramref name="valueFactory"/> that are never added to the dictionary to be disposed, call this method.</para>
+    /// </summary>
+    /// <typeparam name="TKey">Type of keys in the dictionary.</typeparam>
+    /// <typeparam name="TValue">Type of values in the dictionary.</typeparam>
+    /// <typeparam name="TFactoryArg">Type of state argument to pass to factory, to avoid constructing a closure class.</typeparam>
+    /// <param name="dictionary">The <see cref="ConcurrentDictionary{TKey,TValue}"/> to get or add a value to.</param>
+    /// <param name="key">The key of the element to add.</param>
+    /// <param name="valueFactory">The function used to generate a value for the key.</param>
+    /// <param name="added">Will be <c>true</c> if the new value from <paramref name="valueFactory"/> was inserted into the <paramref name="dictionary"/>, or <c>false</c> if <paramref name="dictionary"/> already contained a value with the key <paramref name="key"/> which was not replaced.</param>
+    /// <param name="factoryArg">Value to pass to <paramref name="valueFactory"/> to avoid constructing a closure.</param>
+    /// <exception cref="T:System.ArgumentNullException"><paramref name="key" /> or <paramref name="valueFactory" /> is <c>null</c>.</exception>
+    /// <exception cref="T:System.OverflowException">The dictionary contains too many elements.</exception>
+    /// <returns>The value for the key. This will be either the existing value for the key if the key is already in the dictionary, or the new value if the key was not in the dictionary.</returns>
+    public static TValue GetOrAddWithDisposal<TKey, TValue, TFactoryArg>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TFactoryArg?, TValue> valueFactory, out bool added,
+                                                                         TFactoryArg? factoryArg = default)
+        where TKey: notnull where TValue: IDisposable {
+
+        TValue? createdValue = default;
+
+        // We need to exfiltrate state from the valueFactory about what value was created, so we need either a closure or an object argument to pass to a static callback. The object arg uses the same amount of memory and an extra 0.6ns (26%) of time compared to the closure, so use a closure because it's faster and no more allocations.
+        TValue result = dictionary.GetOrAdd(key, (k, a) => createdValue = valueFactory(k, a), out bool innerAdded, factoryArg);
+
+        if (!innerAdded) {
+            createdValue?.Dispose();
         }
 
         added = innerAdded;
@@ -597,15 +657,42 @@ public static partial class Enumerables {
     public static async Task<(TValue actualValue, bool added)> GetOrAddWithAsyncDisposal<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> valueFactory)
         where TKey: notnull where TValue: IAsyncDisposable {
 
-        TValue? toAdd = default;
+        TValue? createdValue = default;
 
-        TValue result = dictionary.GetOrAdd(key, k => {
-            toAdd = valueFactory(k);
-            return toAdd;
-        }, out bool innerAdded);
+        TValue result = dictionary.GetOrAdd(key, k => createdValue = valueFactory(k), out bool innerAdded);
 
-        if (!innerAdded && toAdd is not null) {
-            await toAdd.DisposeAsync().ConfigureAwait(false);
+        if (!innerAdded && createdValue is not null) {
+            await createdValue.DisposeAsync().ConfigureAwait(false);
+        }
+
+        return (result, innerAdded);
+    }
+
+    /// <summary>
+    /// <para>Adds a key/value pair to the <see cref="T:System.Collections.Concurrent.ConcurrentDictionary`2" /> by using the specified function if the key does not already exist. Returns the new value, or the existing value if the key exists.</para>
+    /// <para>This extension method will also dispose of the value created by <paramref name="valueFactory"/> if it was unused. To avoid deadlocks, <see cref="ConcurrentDictionary{TKey,TValue}"/> does not atomically create the value and add it to the dictionary, because <paramref name="valueFactory"/> is untrusted code and could deadlock. Instead, the <see cref="ConcurrentDictionary{TKey,TValue}"/> takes a three phased approach: check if the key already exists, create the value, and add the value. This means that the key could be concurrently added after the first check, which would lead to the value being created in the second step but not added in the third step. In this case, the created value is unused and will never be disposed.</para>
+    /// <para>If you want values created by <paramref name="valueFactory"/> that are never added to the dictionary to be disposed, call this method.</para>
+    /// </summary>
+    /// <typeparam name="TKey">Type of keys in the dictionary.</typeparam>
+    /// <typeparam name="TValue">Type of values in the dictionary.</typeparam>
+    /// <typeparam name="TFactoryArg">Type of state argument to pass to factory, to avoid constructing a closure class.</typeparam>
+    /// <param name="dictionary">The <see cref="ConcurrentDictionary{TKey,TValue}"/> to get or add a value to.</param>
+    /// <param name="key">The key of the element to add.</param>
+    /// <param name="valueFactory">The function used to generate a value for the key.</param>
+    /// <param name="factoryArg">Value to pass to <paramref name="valueFactory"/> to avoid constructing a closure.</param>
+    /// <exception cref="T:System.ArgumentNullException"><paramref name="key" /> or <paramref name="valueFactory" /> is <c>null</c>.</exception>
+    /// <exception cref="T:System.OverflowException">The dictionary contains too many elements.</exception>
+    /// <returns>A tuple containing the eventual value for the key, as well as whether the eventual value was generated by <paramref name="valueFactory"/> and inserted. The eventual value will be either the existing value for the key if the key is already in the dictionary, or the new value if the key was not in the dictionary.</returns>
+    public static async Task<(TValue actualValue, bool added)> GetOrAddWithAsyncDisposal<TKey, TValue, TFactoryArg>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key,
+                                                                                                                    Func<TKey, TFactoryArg?, TValue> valueFactory, TFactoryArg? factoryArg = default)
+        where TKey: notnull where TValue: IAsyncDisposable {
+
+        TValue? createdValue = default;
+
+        TValue result = dictionary.GetOrAdd(key, (k, s) => createdValue = valueFactory(k, s), out bool innerAdded, factoryArg);
+
+        if (!innerAdded && createdValue is not null) {
+            await createdValue.DisposeAsync().ConfigureAwait(false);
         }
 
         return (result, innerAdded);
@@ -624,23 +711,63 @@ public static partial class Enumerables {
     /// <param name="key">The key of the element to add.</param>
     /// <param name="newValue">The new value that you want to insert into the dictionary.</param>
     /// <param name="added">Will be <c>true</c> if <paramref name="newValue"/> was inserted into the <paramref name="dictionary"/>, or <c>false</c> if <paramref name="dictionary"/> already contained a value with the key <paramref name="key"/> which was not replaced.</param>
-    /// <returns></returns>
+    /// <returns>The inserted value of the key, or the existing value if the key already existed in the dictionary.</returns>
     public static TValue GetOrAdd<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, TValue newValue, out bool added) where TKey: notnull {
         TValue actual = dictionary.GetOrAdd(key, newValue);
         added = IsAdded(newValue, actual);
         return actual;
     }
 
+    /// <summary>
+    /// Atomically read or insert value into <see cref="ConcurrentDictionary{TKey,TValue}"/>, returning the eventual value (regardless of whether it was inserted or already existed), and a flag indicating whether it was either inserted or already existed.
+    /// </summary>
+    /// <typeparam name="TKey">Type of keys in the dictionary.</typeparam>
+    /// <typeparam name="TValue">Type of values in the dictionary.</typeparam>
+    /// <param name="dictionary">The <see cref="ConcurrentDictionary{TKey,TValue}"/> to get or add a value to.</param>
+    /// <param name="key">The key of the element to add.</param>
+    /// <param name="valueFactory">A function that will return the new value that you want to insert into the dictionary.</param>
+    /// <param name="added">Will be <c>true</c> if a new value generated by <paramref name="valueFactory"/> was inserted into the <paramref name="dictionary"/>, or <c>false</c> if <paramref name="dictionary"/> already contained a value with the key <paramref name="key"/> which was not replaced.</param>
+    /// <returns>The inserted value of the key, or the existing value if the key already existed in the dictionary.</returns>
     public static TValue GetOrAdd<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> valueFactory, out bool added) where TKey: notnull {
-        TValue? toAdd   = default;
-        bool    created = false;
-        TValue actual = dictionary.GetOrAdd(key, k => {
-            toAdd   = valueFactory(k);
-            created = true;
-            return toAdd;
-        });
 
-        added = created && IsAdded(toAdd, actual);
+        TValue? createdValue = default;
+
+        TValue actual =
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER || NET472_OR_GREATER
+            dictionary.GetOrAdd(key, k => createdValue = valueFactory(k));
+#else
+            dictionary.GetOrAdd(key, k => createdValue = valueFactory(k));
+#endif
+
+        added = createdValue is not null && IsAdded(createdValue, actual);
+        return actual;
+    }
+
+    /// <summary>
+    /// Atomically read or insert value into <see cref="ConcurrentDictionary{TKey,TValue}"/>, returning the eventual value (regardless of whether it was inserted or already existed), and a flag indicating whether it was either inserted or already existed.
+    /// </summary>
+    /// <typeparam name="TKey">Type of keys in the dictionary.</typeparam>
+    /// <typeparam name="TValue">Type of values in the dictionary.</typeparam>
+    /// <typeparam name="TFactoryArg">Type of state argument to pass to factory, to avoid constructing a closure class.</typeparam>
+    /// <param name="dictionary">The <see cref="ConcurrentDictionary{TKey,TValue}"/> to get or add a value to.</param>
+    /// <param name="key">The key of the element to add.</param>
+    /// <param name="valueFactory">A function that will return the new value that you want to insert into the dictionary.</param>
+    /// <param name="added">Will be <c>true</c> if a new value generated by <paramref name="valueFactory"/> was inserted into the <paramref name="dictionary"/>, or <c>false</c> if <paramref name="dictionary"/> already contained a value with the key <paramref name="key"/> which was not replaced.</param>
+    /// <param name="factoryArg">Value to pass to <paramref name="valueFactory"/> to avoid constructing a closure.</param>
+    /// <returns>The inserted value of the key, or the existing value if the key already existed in the dictionary.</returns>
+    public static TValue GetOrAdd<TKey, TValue, TFactoryArg>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TFactoryArg?, TValue> valueFactory, out bool added,
+                                                             TFactoryArg? factoryArg = default) where TKey: notnull {
+
+        TValue? createdValue = default;
+
+        TValue actual =
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER || NET472_OR_GREATER
+            dictionary.GetOrAdd(key, (k, s) => createdValue = valueFactory(k, s), factoryArg);
+#else
+            dictionary.GetOrAdd(key, k => createdValue = valueFactory(k, factoryArg));
+#endif
+
+        added = createdValue is not null && IsAdded(createdValue, actual);
         return actual;
     }
 
@@ -669,25 +796,12 @@ public static partial class Enumerables {
 /// </summary>
 /// <typeparam name="T">Type of the dictionary value.</typeparam>
 /// <param name="value">Initial value for the dictionary key-value pair.</param>
-public class ValueHolder<T>(T value): IEquatable<ValueHolder<T>> {
+public class ValueHolder<T>(T value) {
 
     /// <summary>
     /// Actual value of the dictionary key-value pair. Can be atomically updated and the old value returned using <see cref="Enumerables.AtomicSwap{TKey,TValue}"/>.
     /// </summary>
     public T Value = value;
-
-    /// <inheritdoc />
-    public bool Equals(ValueHolder<T>? other) => other is not null && (ReferenceEquals(this, other) || EqualityComparer<T>.Default.Equals(Value, other.Value));
-
-    /// <inheritdoc />
-    public override bool Equals(object? obj) => obj is not null && (ReferenceEquals(this, obj) || (obj.GetType() == typeof(ValueHolder<T>) && Equals((ValueHolder<T>) obj)));
-
-    /// <inheritdoc />
-    public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode(Value!);
-
-    public static bool operator ==(ValueHolder<T>? left, ValueHolder<T>? right) => Equals(left, right);
-
-    public static bool operator !=(ValueHolder<T>? left, ValueHolder<T>? right) => !Equals(left, right);
 
 }
 

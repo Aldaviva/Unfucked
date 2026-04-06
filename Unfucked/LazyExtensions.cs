@@ -1,5 +1,8 @@
 namespace Unfucked;
 
+/// <summary>
+/// Methods that make it easier to work with lazy values.
+/// </summary>
 public static class LazyExtensions {
 
     /// <summary>
@@ -14,7 +17,7 @@ public static class LazyExtensions {
                 d.Dispose();
                 return true;
             }
-        } catch (MemberAccessException) { }
+        } catch (MemberAccessException) {}
         return false;
     }
 
@@ -25,7 +28,7 @@ public static class LazyExtensions {
                 await ad.DisposeAsync().ConfigureAwait(false);
                 return true;
             }
-        } catch (MemberAccessException) { }
+        } catch (MemberAccessException) {}
         return false;
     }
 

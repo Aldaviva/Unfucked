@@ -22,10 +22,10 @@ public sealed class AlwaysOnlineStunServerList: StunServerList {
     private static readonly Uri                      STUN_SERVER_LIST_URL     = new("https://raw.githubusercontent.com/pradt2/always-online-stun/master/valid_hosts.txt");
     private static readonly IEnumerable<DnsEndPoint> FALLBACK_SERVERS;
 
-    internal readonly Cache<string, IEnumerable<DnsEndPoint>> ServersCache;
-    private readonly  IReadOnlySet<string>                    blacklistedServers;
-    private readonly  HttpClient                              http;
-    private readonly  bool                                    ownsHttpClient;
+    internal readonly InMemoryCache<string, IEnumerable<DnsEndPoint>> ServersCache;
+    private readonly  FrozenSet<string>                               blacklistedServers;
+    private readonly  HttpClient                                      http;
+    private readonly  bool                                            ownsHttpClient;
 
     static AlwaysOnlineStunServerList() {
         Span<DnsEndPoint> fallbackServers = [
@@ -46,7 +46,7 @@ public sealed class AlwaysOnlineStunServerList: StunServerList {
     public AlwaysOnlineStunServerList(HttpClient? http, IEnumerable<string>? serverBlacklist = null) {
         this.http          = http ?? new HttpClient();
         ownsHttpClient     = http is null;
-        blacklistedServers = (serverBlacklist?.Select(s => s.ToLowerInvariant()) ?? new HashSet<string>(0)).ToFrozenSet();
+        blacklistedServers = (serverBlacklist?.Select(static s => s.ToLowerInvariant()) ?? new HashSet<string>(0)).ToFrozenSet();
 
         ServersCache = new InMemoryCache<string, IEnumerable<DnsEndPoint>>(new CacheOptions { ExpireAfterWrite = STUN_LIST_CACHE_DURATION, InitialCapacity = 1 },
             async _ => await FetchStunServers().ConfigureAwait(false));
@@ -59,7 +59,7 @@ public sealed class AlwaysOnlineStunServerList: StunServerList {
         ReadOnlyCollection<DnsEndPoint> servers = (await http.GetStringAsync(STUN_SERVER_LIST_URL).ConfigureAwait(false))
             .TrimEnd()
             .Split('\n')
-            .Select(line => {
+            .Select(static line => {
                 string[] columns = line.Split(':', 2);
                 try {
                     return new DnsEndPoint(columns[0], columns.ElementAtOrDefault(1) is {} port ? ushort.Parse(port) : 3478, AddressFamily.InterNetwork);
@@ -68,7 +68,7 @@ public sealed class AlwaysOnlineStunServerList: StunServerList {
                 }
             })
             .Compact()
-            .ExceptBy(blacklistedServers, host => host.Host)
+            .ExceptBy(blacklistedServers, static host => host.Host)
             .ToList()
             .AsReadOnly();
 

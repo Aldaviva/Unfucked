@@ -30,13 +30,13 @@ public partial class WebTarget {
     public IWebTarget Header(IEnumerable<KeyValuePair<string, object?>>? headers) => new WebTarget(client, urlBuilder, clientHandler, clientConfig) {
         Headers = headers is null
             ? ImmutableList<KeyValuePair<string, string>>.Empty
-            : Headers.AddRange(headers.Where(pair => pair.Value is not null).Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value!.ToString() ?? string.Empty)))
+            : Headers.AddRange(headers.Where(static pair => pair.Value is not null).Select(static pair => new KeyValuePair<string, string>(pair.Key, pair.Value!.ToString() ?? string.Empty)))
     };
 
     /// <inheritdoc />
     [Pure]
     public IWebTarget Header(IEnumerable<KeyValuePair<string, string>> headers) => new WebTarget(client, urlBuilder, clientHandler, clientConfig) {
-        Headers = Headers.AddRange(headers.Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value)))
+        Headers = Headers.AddRange(headers.Select(static pair => new KeyValuePair<string, string>(pair.Key, pair.Value)))
     };
 
     /// <inheritdoc />
@@ -45,7 +45,7 @@ public partial class WebTarget {
 
     /// <inheritdoc />
     [Pure]
-    public IWebTarget Accept(params IEnumerable<MediaTypeHeaderValue> mediaTypes) => Accept(mediaTypes.Select(mediaType => mediaType.ToString()));
+    public IWebTarget Accept(params IEnumerable<MediaTypeHeaderValue> mediaTypes) => Accept(mediaTypes.Select(static mediaType => mediaType.ToString()));
 
     /// <inheritdoc />
     [Pure]
@@ -57,7 +57,7 @@ public partial class WebTarget {
 
     /// <inheritdoc />
     [Pure]
-    public IWebTarget AcceptLanguage(params IEnumerable<CultureInfo> languages) => AcceptLanguage(languages.Select(culture => culture.IetfLanguageTag));
+    public IWebTarget AcceptLanguage(params IEnumerable<CultureInfo> languages) => AcceptLanguage(languages.Select(static culture => culture.IetfLanguageTag));
 
     /// <inheritdoc />
     [Pure]

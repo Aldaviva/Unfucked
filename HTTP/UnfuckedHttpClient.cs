@@ -41,7 +41,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
 
     private static readonly TimeSpan DEFAULT_TIMEOUT = new(0, 0, 30);
 
-    private static readonly Lazy<(string name, Version version)?> USER_AGENT = new(() => Assembly.GetEntryAssembly()?.GetName() is { Name: {} programName, Version: {} programVersion }
+    private static readonly Lazy<(string name, Version version)?> USER_AGENT = new(static () => Assembly.GetEntryAssembly()?.GetName() is { Name: {} programName, Version: {} programVersion }
         ? (programName, programVersion) : null, LazyThreadSafetyMode.PublicationOnly);
 
     /// <inheritdoc />
@@ -191,7 +191,7 @@ internal sealed class HttpClientWrapper: IHttpClient {
         using UnfuckedHttpRequestMessage req = new(request);
 
         try {
-            foreach (IGrouping<string, string> header in request.Headers.GroupBy(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase)) {
+            foreach (IGrouping<string, string> header in request.Headers.GroupBy(static pair => pair.Key, static pair => pair.Value, StringComparer.OrdinalIgnoreCase)) {
                 req.Headers.Add(header.Key, header);
             }
         } catch (FormatException e) {

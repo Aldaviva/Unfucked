@@ -23,14 +23,16 @@
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <PackageIcon>icon.png</PackageIcon>
         <PackageReadmeFile>Readme.md</PackageReadmeFile>
-        <NoWarn>$(NoWarn);VSTHRD200;NU1507;1591</NoWarn>
+        <NoWarn>$(NoWarn);VSTHRD200;NU1507</NoWarn>
+        <!-- <NoWarn>$(NoWarn);1591</NoWarn> -->
+        <WarningsAsErrors>CA1859</WarningsAsErrors>
         <RestoreEnablePackagePruning>true</RestoreEnablePackagePruning>
     </PropertyGroup>
 
     <!-- Self version numbers -->
     <PropertyGroup>
         <UnfuckedVersion>0.0.1-beta.38</UnfuckedVersion>
-        <UnfuckedCachingVersion>0.0.1-beta.3</UnfuckedCachingVersion>
+        <UnfuckedCachingVersion>0.0.1-beta.4</UnfuckedCachingVersion>
     </PropertyGroup>
 
     <ItemGroup>

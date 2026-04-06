@@ -28,11 +28,11 @@ public static partial class DependencyInjectionExtensions {
     public static IConfigurationBuilder AlsoSearchForJsonFilesInExecutableDirectory(this IConfigurationBuilder builder) {
         string? installationDir;
         try {
-            string? processPath;
+            string? processPath =
 #if NET6_0_OR_GREATER
-            processPath = Environment.ProcessPath;
+                Environment.ProcessPath;
 #else
-            processPath = Assembly.GetEntryAssembly()?.Location;
+                Assembly.GetEntryAssembly()?.Location;
             if (processPath == null) {
                 using Process currentProcess = Process.GetCurrentProcess();
                 processPath = currentProcess.MainModule!.FileName;
@@ -121,10 +121,11 @@ public static partial class DependencyInjectionExtensions {
     internal sealed class BackgroundServiceExceptionListener(IServiceProvider services, Func<Exception, int> exitCodeGenerator): BackgroundService {
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken) {
-            IEnumerable<BackgroundService> backgroundServices = services.GetServices<IHostedService>().OfType<BackgroundService>().Where(service => service is not BackgroundServiceExceptionListener);
+            IEnumerable<BackgroundService> backgroundServices =
+                services.GetServices<IHostedService>().OfType<BackgroundService>().Where(static service => service is not BackgroundServiceExceptionListener);
 
             services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopped.Register(() => {
-                if (backgroundServices.Select(service => service.ExecuteTask?.Exception?.InnerException).FirstOrDefault() is {} exception) {
+                if (backgroundServices.Select(static service => service.ExecuteTask?.Exception?.InnerException).FirstOrDefault() is {} exception) {
                     Environment.ExitCode = exitCodeGenerator(exception);
                 }
             });

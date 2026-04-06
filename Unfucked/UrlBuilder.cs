@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.Net;
@@ -12,7 +11,10 @@ using System.Text.RegularExpressions;
 
 namespace Unfucked;
 
-public sealed class UrlBuilder: ICloneable {
+/// <summary>
+/// Programmatically construct and manipulate a URL. Like <see cref="UriBuilder"/> except it understands path segments, query parameters, and templates.
+/// </summary>
+public sealed class UrlBuilder {
 
     private static readonly Regex  PLACEHOLDER_PATTERN              = new(@"\{(?<key>\w+?)\}");
     private static readonly object VALUELESS_QUERY_PARAM            = new();
@@ -36,24 +38,38 @@ public sealed class UrlBuilder: ICloneable {
 
     #region Construction
 
+    /// <summary>
+    /// Construct a new <see cref="UrlBuilder"/> with a given scheme, hostname, and optional port number.
+    /// </summary>
+    /// <param name="scheme">URL scheme/protocol</param>
+    /// <param name="hostname">URL hostname/domain name/host/server name/FQDN</param>
+    /// <param name="port">URL port number, or <c>null</c> to leave it blank</param>
     public UrlBuilder(string scheme, string hostname, ushort? port = null) {
         _scheme   = scheme.TrimEnd(':');
         _hostname = hostname.TrimStart("//");
         _port     = port;
     }
 
+    /// <summary>
+    /// Construct a <see cref="UrlBuilder"/> based on an existing <see cref="Uri"/>.
+    /// </summary>
+    /// <param name="uri">URI to populate builder with.</param>
     public UrlBuilder(Uri uri) {
         NameValueCollection originalQuery = uri.QueryParams;
         _scheme          = uri.Scheme.EmptyToNull;
         _userInfo        = uri.UserInfo.EmptyToNull;
         _hostname        = uri.Host.EmptyToNull;
         _port            = uri.Port == -1 ? null : (ushort?) uri.Port;
-        _path            = uri.Segments.SkipWhile(s => s == "/").Select(s => s.TrimEnd('/')).ToImmutableList();
+        _path            = uri.Segments.SkipWhile(static s => s == "/").Select(static s => s.TrimEnd('/')).ToImmutableList();
         _trailingSlash   = uri.Segments.LastOrDefault()?.EndsWith('/') ?? false;
         _queryParameters = originalQuery.Keys.Cast<string>().Select(k => new KeyValuePair<string, object>(k, originalQuery[k] ?? VALUELESS_QUERY_PARAM)).ToImmutableList();
         _fragment        = uri.Fragment.TrimStart(1, '#').EmptyToNull;
     }
 
+    /// <summary>
+    /// Construct a <see cref="UrlBuilder"/> based on an existing <see cref="UriBuilder"/>.
+    /// </summary>
+    /// <param name="uriBuilder"><see cref="UriBuilder"/> to populate builder with.</param>
     public UrlBuilder(UriBuilder uriBuilder) {
         _scheme        = uriBuilder.Scheme.EmptyToNull;
         _userInfo      = uriBuilder.UserName.HasLength || uriBuilder.Password.HasLength ? $"{uriBuilder.UserName}:{uriBuilder.Password}" : null;
@@ -61,7 +77,7 @@ public sealed class UrlBuilder: ICloneable {
         _port          = uriBuilder.Port == -1 ? null : (ushort?) uriBuilder.Port;
         _path          = uriBuilder.Path.TrimStart('/').Split(PATH_SEPARATORS, StringSplitOptions.RemoveEmptyEntries).ToImmutableList();
         _trailingSlash = uriBuilder.Path.EndsWith('/');
-        _queryParameters = uriBuilder.Query.TrimStart('?').Split(QUERY_PARAM_SEPARATORS, StringSplitOptions.RemoveEmptyEntries).Select(p => {
+        _queryParameters = uriBuilder.Query.TrimStart('?').Split(QUERY_PARAM_SEPARATORS, StringSplitOptions.RemoveEmptyEntries).Select(static p => {
             string[] split = p.Split(QUERY_PARAM_KEY_VALUE_SEPARATORS, 2);
             return new KeyValuePair<string, object>(split[0], split.ElementAtOrDefault(1) ?? VALUELESS_QUERY_PARAM);
         }).ToImmutableList();
@@ -85,8 +101,10 @@ public sealed class UrlBuilder: ICloneable {
     /// <exception cref="UriFormatException"></exception>
     public UrlBuilder(string uri): this(new Uri(uri, UriKind.Absolute)) {}
 
+    /// <inheritdoc cref="UrlBuilder(Uri)" />
     public static implicit operator UrlBuilder(Uri uri) => new(uri);
 
+    /// <inheritdoc cref="UrlBuilder(UriBuilder)" />
     public static implicit operator UrlBuilder(UriBuilder uri) => new(uri);
 
     /// <exception cref="UriFormatException"></exception>
@@ -166,13 +184,14 @@ public sealed class UrlBuilder: ICloneable {
         }
     }
 
-    [Pure]
-    public object Clone() => new UrlBuilder(this);
-
     #endregion
 
     #region Serialization
 
+    /// <summary>
+    /// Build a URL from this builder's state.
+    /// </summary>
+    /// <returns>The URL representation of this builder instance.</returns>
     // ExceptionAdjustment: M:System.Uri.#ctor(System.String,System.UriKind) -T:System.UriFormatException
     [Pure]
     public Uri ToUrl() {
@@ -229,15 +248,18 @@ public sealed class UrlBuilder: ICloneable {
         return new Uri(built.ToString(), UriKind.Absolute);
     }
 
-    /// <summary>
-    /// Converts the URL to a string
-    /// </summary>
+    /// <inheritdoc cref="ToUrl" />
     [Pure]
     public override string ToString() => ToUrl().AbsoluteUri;
 
+    /// <summary>
+    /// Implicitly cast a <see cref="UrlBuilder"/> to a <see cref="Uri"/> by building its URL.
+    /// </summary>
+    /// <param name="builder">A URL builder</param>
     [Pure]
     public static implicit operator Uri(UrlBuilder builder) => builder.ToUrl();
 
+    /// <inheritdoc cref="op_Implicit(Unfucked.UrlBuilder)"/>
     [Pure]
     public static explicit operator string(UrlBuilder builder) => builder.ToString();
 
@@ -252,12 +274,28 @@ public sealed class UrlBuilder: ICloneable {
 
     #region Building
 
+    /// <summary>
+    /// Set whether template <c>{placeholders}</c> are allowed in this URL builder. By default, this is enabled. You may want to disable this if you want literal curly brace <c>{}</c> characters to appear in your URLs, and don't want to use templates.
+    /// </summary>
+    /// <param name="enableTemplates"><c>true</c> to enable replacing templates in the builder with values when building, or <c>false</c> to leave them as the literal <c>{placeholders}</c>.</param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder EnableTemplates(bool enableTemplates) => new(this) { _enableTemplates = enableTemplates };
 
+    /// <summary>
+    /// Set the user info (such as <c>username:password</c>) in the URL authority.
+    /// </summary>
+    /// <param name="userInfo">User authentication, or <c>null</c> to clear an existing value.</param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder UserInfo(string? userInfo) => new(this) { _userInfo = userInfo };
 
+    /// <summary>
+    /// Add URL path segments, also called pathname, script info, path info, filePath, or directory/fileName.
+    /// </summary>
+    /// <param name="segments">New path suffix to append to this request's URL path. To replace instead of append, make this start with <c>/</c>. To remove, pass <c>null</c>.</param>
+    /// <param name="autoSplit">If <c>true</c> (default), <paramref name="segments"/> will be split by <c>/</c> into multiple path segments, all of them will be appended, and the <c>/</c> separators won't be URL-encoded into <c>%2F</c>. Otherwise, if <c>false</c>, <paramref name="segments"/> will be appended as one big path segment, and any <c>/</c> separators inside it will be URL-encoded as <c>%2F</c>. You should set this to <c>false</c> if <paramref name="segments"/> is user-supplied.</param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder Path(string? segments, bool autoSplit = true) {
         ImmutableList<string> newPath = _path;
@@ -277,24 +315,59 @@ public sealed class UrlBuilder: ICloneable {
         return new UrlBuilder(this) { _path = newPath, _trailingSlash = segments.EndsWith('/') };
     }
 
+    /// <summary>
+    /// Add URL path segments, also called pathname, script info, path info, filePath, or directory/fileName.
+    /// </summary>
+    /// <param name="segments">New path suffix to append to this request's URL path. To replace instead of append, make this start with <c>/</c>.</param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder Path(object segments) => Path(Stringify(segments), false);
 
+    /// <inheritdoc cref="Path(IEnumerable{string})" />
     [Pure]
     public UrlBuilder Path(params string[] segments) => Path((IEnumerable<string>) segments);
 
+    /// <summary>
+    /// Add URL path segments, also called pathname, script info, path info, filePath, or directory/fileName.
+    /// </summary>
+    /// <param name="segments"><para>New path suffixes to append to this request's URL path.</para>
+    /// <para>To replace instead of append, make the first segment start with <c>/</c>.</para>
+    /// <para>Each segment is also split on <c>/</c> into multiple segments; to disable this (including when one of <paramref name="segments"/> is untrusted), call <see cref="Path(string?,bool)"/> instead.</para></param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
-    public UrlBuilder Path(params IEnumerable<string> segments) => segments.Aggregate(this, (builder, segment) => builder.Path(segment));
+    public UrlBuilder Path(params IEnumerable<string> segments) => segments.Aggregate(this, static (builder, segment) => builder.Path(segment));
 
+    /// <summary>
+    /// Set the URL host port.
+    /// </summary>
+    /// <param name="port">IP port number, or <c>null</c> to remove and use the default for the scheme.</param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder Port(ushort? port) => new(this) { _port = port };
 
+    /// <summary>
+    /// Set the URL hostname (sometimes incorrectly called the host which can include a port number).
+    /// </summary>
+    /// <param name="hostname">Domain name or IP address. Must not include a port number; to set that, call <see cref="Port"/> instead. For an IPv6 address, enclose it in square brackets (like <c>[::1]</c>).</param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder Hostname(string hostname) => new(this) { _hostname = hostname };
 
+    /// <summary>
+    /// Set the URL scheme (sometimes incorrectly called the protocol).
+    /// </summary>
+    /// <param name="scheme">URL scheme, such as <c>https</c> or <c>http</c></param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder Scheme(string scheme) => new(this) { _scheme = scheme };
 
+    /// <summary>
+    /// <para>Add a query parameter to the URL (sometimes incorrectly called a GET parameter, search, or parameter to the exclusion of other types of parameters like path parameters).</para>
+    /// <para>If a parameter with the same <paramref name="key"/> already exists in this URL, the new <paramref name="value"/> will be added such that the URL will have multiple occurrences of the <paramref name="key"/>, for example <c>?a=b&amp;a=c</c>.</para>
+    /// </summary>
+    /// <param name="key">Name of the parameter.</param>
+    /// <param name="value">Value of the parameter, or <c>null</c> to remove all query parameters which have their name set to <paramref name="key"/> from this URL.</param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder QueryParam(string key, object? value) => new(this) {
         _queryParameters = value != null
@@ -302,31 +375,57 @@ public sealed class UrlBuilder: ICloneable {
             : _queryParameters.RemoveAll(pair => pair.Key == key)
     };
 
+    /// <summary>
+    /// <para>Add query parameters to the URL (sometimes incorrectly called GET parameters, search, or just parameters to the exclusion of other types of parameters like path parameters).</para>
+    /// <para>If a parameter with the same <paramref name="key"/> already exists in this URL, the new <paramref name="values"/> will be added such that the URL will have multiple occurrences of the <paramref name="key"/>, for example <c>?a=b&amp;a=c&amp;a=d</c>.</para>
+    /// </summary>
+    /// <param name="key">Name of the parameter.</param>
+    /// <param name="values">Multiple values to add, all with the same <paramref name="key"/>. Any <c>null</c> values will be ignored.</param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder QueryParam(string key, IEnumerable<object?> values) =>
         new(this) { _queryParameters = _queryParameters.AddRange(values.Compact().Select(v => new KeyValuePair<string, object>(key, Stringify(v) ?? string.Empty))) };
 
+    /// <summary>
+    /// <para>Add query parameters to the URL (sometimes incorrectly called GET parameters, search, or just parameters to the exclusion of other types of parameters like path parameters).</para>
+    /// <para>If parameters with the same key already exist in this URL, the new parameters will be added such that the URL will have multiple occurrences of the key, for example <c>?a=b&amp;a=c&amp;a=d</c>.</para>
+    /// </summary>
+    /// <param name="parameters">Multiple key-value pairs to add. Parameters with <c>null</c> values will be ignored. If this entire argument is <c>null</c>, then all query parameters will be removed from this URL.</param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
-    public UrlBuilder QueryParam(IEnumerable<KeyValuePair<string, string>> parameters) => new(this) {
-        _queryParameters = _queryParameters.AddRange(parameters.Select(p => new KeyValuePair<string, object>(p.Key, p.Value)))
+    public UrlBuilder QueryParam(IEnumerable<KeyValuePair<string, string>>? parameters) => new(this) {
+        _queryParameters = parameters is null
+            ? ImmutableList<KeyValuePair<string, object>>.Empty
+            : _queryParameters.AddRange(parameters.Select(static p => new KeyValuePair<string, object>(p.Key, p.Value)))
     };
 
+    /// <inheritdoc cref="QueryParam(IEnumerable{KeyValuePair{string,string}})" />
     [Pure]
     public UrlBuilder QueryParam(IEnumerable<KeyValuePair<string, object?>>? parameters) => new(this) {
         _queryParameters = parameters is null
             ? ImmutableList<KeyValuePair<string, object>>.Empty
-            : _queryParameters.AddRange(parameters.Compact().Select(pair => new KeyValuePair<string, object>(pair.Key, Stringify(pair.Value) ?? string.Empty)))
+            : _queryParameters.AddRange(parameters.Compact().Select(static pair => new KeyValuePair<string, object>(pair.Key, Stringify(pair.Value) ?? string.Empty)))
     };
 
+    /// <summary>
+    /// Set the URL fragment, also called the hash, fragment id, or ref.
+    /// </summary>
+    /// <param name="fragment">The new fragment, without the leading <c>#</c> (if you include it, it will be URL-encoded after the read <c>#</c>). Any existing fragment will be replaced. To remove a fragment from the URL, pass <c>null</c>.</param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder Fragment(string? fragment) => new(this) { _fragment = fragment };
-
-    // [Pure] public URIBuilder RemoveQueryParam(string? key) => new(this) { _queryParameters = _queryParameters.Where(pair => key == null || pair.Key != key).ToImmutableList() };
 
     #endregion
 
     #region Templates
 
+    /// <summary>
+    /// <para>Fill in placeholder values in the URL, which are keys surrounded by single curly braces, like <c>{key}</c>.</para>
+    /// <para>Also useful for parameters whose values include curly braces, such as query parameters whose value is a JSON object. To avoid the JSON object's braces being treated as a placeholder, pass the JSON object using a template: <c>client.Target(url).QueryParam("value", "{jsonValue}").ResolveTemplate("jsonValue", JsonSerializer.Serialize(obj))</c>.</para>
+    /// </summary>
+    /// <param name="key">Placeholder name, without the surrounding curly braces.</param>
+    /// <param name="value">The value to replace all occurrences of <c>{key}</c> with in the URL. Missing or <c>null</c> values will be replaced by the empty string.</param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder ResolveTemplate(string key, object? value) => new(this) {
         _templateValues = _templateValues.SetItem(key, value),
@@ -334,6 +433,11 @@ public sealed class UrlBuilder: ICloneable {
             _unusedTemplateQueryParameterRealNames != null && value != null ? _unusedTemplateQueryParameterRealNames.Remove(key) : _unusedTemplateQueryParameterRealNames
     };
 
+    /// <summary>
+    /// <para>Fill in placeholder values in the URL, which are keys surrounded by single curly braces, like <c>{key}</c>.</para>
+    /// </summary>
+    /// <param name="values">Key-value pairs of placeholder names and replacement values. Missing or <c>null</c> values will be replaced by the empty string.</param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder ResolveTemplate(IEnumerable<KeyValuePair<string, object?>> values) {
         values = values.ToList();
@@ -344,6 +448,12 @@ public sealed class UrlBuilder: ICloneable {
         };
     }
 
+    /// <summary>
+    /// <para>Fill in placeholder values in the URL, which are keys surrounded by single curly braces, like <c>{key}</c>.</para>
+    /// <para>Example: <c>client.Target(url).Path("{a}").QueryParam("b", "{b}").ResolveTemplate(new { a = 1, b = 2 }).Get&lt;string&gt;()</c></para>
+    /// </summary>
+    /// <param name="anonymousType">An anonymous object which contains properties that will be used to resolve template placeholders. Each property name represents the placeholder key, and the placeholder will be replaced with the property's value.</param>
+    /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder ResolveTemplate(object anonymousType) =>
         ResolveTemplate(anonymousType.GetType().GetProperties().Select(property => new KeyValuePair<string, object?>(property.Name, property.GetValue(anonymousType))));
@@ -361,30 +471,24 @@ public sealed class UrlBuilder: ICloneable {
 
 internal static class UrlEncoder {
 
-    private static readonly ArrayPool<byte> ESCAPING_UTF_BUFFERS = ArrayPool<byte>.Create(4, 50);
-
     public static string Encode(string raw, Component component) => component switch {
         Component.UserInfo       => CharCategories.UserInfoIllegal.Replace(raw, EscapeMatch),
         Component.PathSegment    => CharCategories.PathSegmentIllegal.Replace(raw, EscapeMatch),
         Component.QueryParameter => CharCategories.QueryParameterIllegal.Replace(raw, EscapeMatch),
-        // case UrlPart.SchemeSpecificPart:
-        Component.Fragment => CharCategories.URIIllegal.Replace(raw, EscapeMatch),
-        _                  => CharCategories.URIIllegal.Replace(raw, EscapeMatch)
+        _                        => CharCategories.URIIllegal.Replace(raw, EscapeMatch)
     };
 
     private static string EscapeMatch(Match match) {
-        byte[] utf8Buffer = ESCAPING_UTF_BUFFERS.Rent(4);
+        byte[] utf8Buffer = new byte[4];
 
-        int utf8BytesUsed;
+        int utf8BytesUsed =
 #if NET6_0_OR_GREATER
-        utf8BytesUsed = Strings.Utf8.GetBytes(match.ValueSpan, utf8Buffer);
+            Strings.Utf8.GetBytes(match.ValueSpan, utf8Buffer);
 #else
-        utf8BytesUsed = Strings.Utf8.GetBytes(match.Value, 0, match.Length, utf8Buffer, 0);
+            Strings.Utf8.GetBytes(match.Value, 0, match.Length, utf8Buffer, 0);
 #endif
 
-        string escaped = string.Join(null, utf8Buffer.Take(utf8BytesUsed).Select(b => $"%{b:X2}"));
-        ESCAPING_UTF_BUFFERS.Return(utf8Buffer);
-        return escaped;
+        return string.Join(null, utf8Buffer.Take(utf8BytesUsed).Select(static b => $"%{b:X2}"));
     }
 
     private static class CharCategories {

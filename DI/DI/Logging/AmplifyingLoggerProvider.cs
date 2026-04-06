@@ -25,11 +25,11 @@ namespace Unfucked.DI.Logging;
 [ProviderAlias("amplify")] // case-sensitive, strangely
 public sealed class AmplifyingLoggerProvider: ILoggerProvider {
 
-    private readonly IServiceProvider                                context;
-    private readonly IDictionary<string, IDictionary<int, LogLevel>> categoryAndEventIdToAmplifiedLevels;
-    private readonly ThreadLocal<SemaphoreSlim>                      loggerCreationLock = new(() => new SemaphoreSlim(1), true);
+    private readonly IServiceProvider                              context;
+    private readonly Dictionary<string, Dictionary<int, LogLevel>> categoryAndEventIdToAmplifiedLevels;
+    private readonly ThreadLocal<SemaphoreSlim>                    loggerCreationLock = new(static () => new SemaphoreSlim(1), true);
 
-    internal AmplifyingLoggerProvider(IServiceProvider context, IDictionary<string, IDictionary<int, LogLevel>> categoryAndEventIdToAmplifiedLevels) {
+    internal AmplifyingLoggerProvider(IServiceProvider context, Dictionary<string, Dictionary<int, LogLevel>> categoryAndEventIdToAmplifiedLevels) {
         this.context                             = context;
         this.categoryAndEventIdToAmplifiedLevels = categoryAndEventIdToAmplifiedLevels;
     }
@@ -38,7 +38,7 @@ public sealed class AmplifyingLoggerProvider: ILoggerProvider {
     // ExceptionAdjustment: P:System.Threading.ThreadLocal`1.Value get -T:System.MissingMemberException
     // ExceptionAdjustment: M:System.Threading.SemaphoreSlim.Release -T:System.Threading.SemaphoreFullException
     public ILogger CreateLogger(string categoryName) {
-        if (categoryAndEventIdToAmplifiedLevels.TryGetValue(categoryName, out IDictionary<int, LogLevel>? eventIdsToAmplify) && loggerCreationLock.Value!.Wait(0)) {
+        if (categoryAndEventIdToAmplifiedLevels.TryGetValue(categoryName, out Dictionary<int, LogLevel>? eventIdsToAmplify) && loggerCreationLock.Value!.Wait(0)) {
             try {
                 return new EventIdAmplifyingLogger(eventIdsToAmplify, context.GetRequiredService<ILoggerFactory>().CreateLogger(categoryName));
             } finally {
@@ -49,12 +49,17 @@ public sealed class AmplifyingLoggerProvider: ILoggerProvider {
         return NullLogger.Instance;
     }
 
-    private sealed class EventIdAmplifyingLogger(IDictionary<int, LogLevel> eventIdsToAmplify, ILogger actualLogger): ILogger {
+    private sealed class EventIdAmplifyingLogger(Dictionary<int, LogLevel> eventIdsToAmplify, ILogger actualLogger): ILogger {
 
         public bool IsEnabled(LogLevel logLevel) => false;
 
         public void Log<State>(LogLevel originalLogLevel, EventId eventId, State state, Exception? exception, Func<State, Exception?, string> formatter) {
-            LogLevel amplifiedLogLevel = eventIdsToAmplify.TryGetValue(eventId.Id, out LogLevel amplifiedValue) ? amplifiedValue : originalLogLevel;
+            LogLevel amplifiedLogLevel =
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+                eventIdsToAmplify.GetValueOrDefault(eventId.Id, originalLogLevel);
+#else
+                eventIdsToAmplify.TryGetValue(eventId.Id, out LogLevel amplifiedValue) ? amplifiedValue : originalLogLevel;
+#endif
             if (actualLogger.IsEnabled(amplifiedLogLevel) && !actualLogger.IsEnabled(originalLogLevel)) {
                 actualLogger.Log(amplifiedLogLevel, eventId, state, exception, formatter);
             }
@@ -77,9 +82,9 @@ public sealed class AmplifyingLoggerProvider: ILoggerProvider {
 
 public sealed class AmplifiedLogOptions {
 
-    private readonly IDictionary<string, IDictionary<int, LogLevel>> categoryAndEventIdToAmplifiedLevels;
+    private readonly Dictionary<string, Dictionary<int, LogLevel>> categoryAndEventIdToAmplifiedLevels;
 
-    internal AmplifiedLogOptions(IDictionary<string, IDictionary<int, LogLevel>> categoryAndEventIdToAmplifiedLevels) {
+    internal AmplifiedLogOptions(Dictionary<string, Dictionary<int, LogLevel>> categoryAndEventIdToAmplifiedLevels) {
         this.categoryAndEventIdToAmplifiedLevels = categoryAndEventIdToAmplifiedLevels;
     }
 
@@ -90,7 +95,7 @@ public sealed class AmplifiedLogOptions {
     /// <param name="amplifiedLevel">The new log level to re-emit the log messages at, such as <see cref="LogLevel.Warning"/>, should be higher than the original level.</param>
     /// <param name="eventIdsToAmplify">One or more event IDs of log messages to re-emit at a higher level, such as <c>[19, 22]</c>.</param>
     public AmplifiedLogOptions Amplify(string category, LogLevel amplifiedLevel, params IEnumerable<int> eventIdsToAmplify) {
-        IDictionary<int, LogLevel> eventIdToLevels = categoryAndEventIdToAmplifiedLevels.GetOrAdd(category, () => new Dictionary<int, LogLevel>(), out bool _);
+        Dictionary<int, LogLevel> eventIdToLevels = categoryAndEventIdToAmplifiedLevels.GetOrAdd(category, static () => new Dictionary<int, LogLevel>(), out bool _);
         foreach (int eventId in eventIdsToAmplify) {
             eventIdToLevels[eventId] = amplifiedLevel;
         }

@@ -43,6 +43,11 @@ public static class Singletons {
     /// <returns>An enumerable with the one specified key-value pair</returns>
     public static IEnumerable<KeyValuePair<K, V>> KeyValues<K, V>(this (K, V) keyValuePair) => [new(keyValuePair.Item1, keyValuePair.Item2)];
 
+    /// <summary>
+    /// A set that contains exactly one value and cannot be modified.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    // ReSharper disable once PossibleInterfaceMemberAmbiguity
     public interface IReadOnlySingletonSet<T>:
 #if NET5_0_OR_GREATER
         IReadOnlySet<T>,
@@ -138,7 +143,7 @@ public static class Singletons {
         IEnumerable<K> IReadOnlyDictionary<K, V>.Keys => Keys;
         IEnumerable<V> IReadOnlyDictionary<K, V>.Values => Values;
 
-        public bool Contains(KeyValuePair<K, V> item) => ContainsKey(item.Key) && singletonValue is {} value ? value.Equals(item.Value) : item.Value is null;
+        public bool Contains(KeyValuePair<K, V> item) => ContainsKey(item.Key) && singletonValue is not null ? singletonValue.Equals(item.Value) : item.Value is null;
         public bool ContainsKey(K key) => keyComparer.Equals(singletonKey, key);
         public void CopyTo(KeyValuePair<K, V>[] array, int arrayIndex) => array[arrayIndex] = pair;
 

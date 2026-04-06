@@ -108,7 +108,7 @@ public interface IWebTarget: Configurable<IWebTarget> {
     /// <param name="parameters">Multiple key-value pairs to add. Parameters with <c>null</c> values will be ignored. If this entire argument is <c>null</c>, then all query parameters will be removed from this URL.</param>
     /// <returns>New immutable target instance with the changed value.</returns>
     [Pure]
-    IWebTarget QueryParam(IEnumerable<KeyValuePair<string, string>> parameters);
+    IWebTarget QueryParam(IEnumerable<KeyValuePair<string, string>>? parameters);
 
     /// <inheritdoc cref="QueryParam(IEnumerable{KeyValuePair{string,string?}}?)" />
     [Pure]

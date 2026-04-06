@@ -5,7 +5,7 @@ namespace Unfucked.HTTP;
 public readonly record struct HttpRequest(HttpMethod Verb, Uri Uri, IEnumerable<KeyValuePair<string, string>> Headers, HttpContent? Body, IClientConfig? ClientConfig) {
 
     public static async Task<HttpRequest> Copy(HttpRequestMessage original) {
-        IEnumerable<KeyValuePair<string, string>> replayedHeaders = original.Headers.SelectMany(header => header.Value.Select(val => new KeyValuePair<string, string>(header.Key, val)));
+        IEnumerable<KeyValuePair<string, string>> replayedHeaders = original.Headers.SelectMany(static header => header.Value.Select(val => new KeyValuePair<string, string>(header.Key, val)));
 
         HttpContent? replayedRequestBody = null;
         if (original.Content is {} originalBody) {
@@ -46,7 +46,7 @@ public readonly record struct HttpRequest(HttpMethod Verb, Uri Uri, IEnumerable<
     public override string ToString() =>
         $"""
         {Verb} {Uri}
-        {Headers.Select(pair => $"{pair.Key}: {pair.Value}").Join('\n')}
+        {Headers.Select(static pair => $"{pair.Key}: {pair.Value}").Join('\n')}
 
         {SerializeBodySync()}
         """;
@@ -57,13 +57,9 @@ public readonly record struct HttpRequest(HttpMethod Verb, Uri Uri, IEnumerable<
 
         public static readonly HeaderNameEqualityComparer Instance = new();
 
-        public bool Equals(KeyValuePair<string, string> x, KeyValuePair<string, string> y) {
-            return string.Equals(x.Key, y.Key, StringComparison.InvariantCultureIgnoreCase);
-        }
+        public bool Equals(KeyValuePair<string, string> x, KeyValuePair<string, string> y) => string.Equals(x.Key, y.Key, StringComparison.InvariantCultureIgnoreCase);
 
-        public int GetHashCode(KeyValuePair<string, string> obj) {
-            return StringComparer.InvariantCultureIgnoreCase.GetHashCode((object) obj.Key);
-        }
+        public int GetHashCode(KeyValuePair<string, string> obj) => StringComparer.InvariantCultureIgnoreCase.GetHashCode((object) obj.Key);
 
     }
 

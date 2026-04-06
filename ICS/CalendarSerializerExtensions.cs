@@ -9,9 +9,9 @@ namespace Unfucked;
 /// </summary>
 public static class CalendarSerializerExtensions {
 
-    private const int BufferSize = 1024;
-
     // ExceptionAdjustment: M:System.Reflection.Assembly.GetType(System.String) -T:System.BadImageFormatException
+    // ExceptionAdjustment: M:System.Reflection.Assembly.GetType(System.String) -T:System.IO.FileNotFoundException
+    // ExceptionAdjustment: M:System.Reflection.Assembly.GetType(System.String) -T:System.IO.FileLoadException
     private static readonly Type EncodingStackType = typeof(SerializerBase).Assembly.GetType("Ical.Net.Serialization.EncodingStack")!;
 
     // ExceptionAdjustment: M:System.Type.GetMethod(System.String,System.Type[]) -T:System.Reflection.AmbiguousMatchException
@@ -39,7 +39,7 @@ public static class CalendarSerializerExtensions {
         string serializedCalendar = serializer.SerializeToString(dataToSerialize) ?? string.Empty;
 
 #if NETSTANDARD2_1_OR_GREATER
-        await using StreamWriter streamWriter = new(destinationStream, streamEncoding, BufferSize, true);
+        await using StreamWriter streamWriter = new(destinationStream, streamEncoding, -1, true);
         await streamWriter.WriteAsync(serializedCalendar).ConfigureAwait(false);
 #else
         byte[] encodedCalendar = streamEncoding.GetBytes(serializedCalendar);

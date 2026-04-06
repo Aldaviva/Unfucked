@@ -8,6 +8,7 @@
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
         <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
         <NoWarn>$(NoWarn);CA1816</NoWarn>
+        <WarningsNotAsErrors>CA1859</WarningsNotAsErrors>
 
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>

@@ -296,7 +296,7 @@ public sealed class TarHeader(IArchiveEncoding archiveEncoding) {
         eightSpaces.CopyTo(buf, 148);
 
         // Calculate checksum
-        return buf.Aggregate(0, (current, b) => current + b);
+        return buf.Aggregate(0, static (current, b) => current + b);
     }
 
     internal static int RecalculateAltChecksum(byte[] buf) {

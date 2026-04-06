@@ -2,13 +2,16 @@
 
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
-        <Version>0.0.1-beta.28</Version>
+        <Version>0.0.1-beta.29</Version>
         <Description>Fix egregiously broken or missing functionality in System.Net.Http.HttpClient.</Description>
         <PackageTags>http HttpClient web request $(PackageTags)</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="System.Net.Http.Json" PrivateAssets="all" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+        <PackageReference Include="System.Net.Http.Json" PrivateAssets="all" /> <!-- Used if available, or reimplemented otherwise -->
         <PackageReference Include="System.Text.Json" />
     </ItemGroup>
     

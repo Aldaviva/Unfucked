@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Unfucked.DI;
 
@@ -20,6 +21,8 @@ public class SetExitCodeOnBackgroundServiceExceptionTest {
         using IHost app = builder.Build();
         await app.StartAsync();
 
+        await app.Services.GetRequiredService<MyBackgroundService>().ExecuteTask!.ContinueWith(_ => Task.CompletedTask);
+
         try {
             await app.StopAsync();
             Environment.ExitCode.Should().Be(expectedExitCode);
@@ -31,7 +34,7 @@ public class SetExitCodeOnBackgroundServiceExceptionTest {
     private class MyBackgroundService: BackgroundService {
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-            await Task.Yield();
+            await Task.Delay(50, stoppingToken).ConfigureAwait(false);
             throw new ApplicationException("test");
         }
 

@@ -69,7 +69,7 @@ public static class UIAutomationExtensions {
         };
     }
 
-    private static Exception ElementNotFound() => new ApplicationException("element not found");
+    private static ApplicationException ElementNotFound() => new("element not found");
 
     private static readonly RetryOptions WaitForFirstOptions = new() {
         Delay          = Delays.Power(TimeSpan.FromMilliseconds(8), max: TimeSpan.FromMilliseconds(500)),

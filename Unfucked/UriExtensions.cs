@@ -52,6 +52,9 @@ public static class UriExtensions {
     [Pure]
     public static bool UriBelongsToDomain(this HttpRequestMessage request, Uri ancestorOrSelfUri) => request.UriBelongsToDomain(ancestorOrSelfUri.Host);
 
+    /*
+     * This does not return a Uri because some return values are not isomorphic/roundtrippable with Uris, such as origins, which must not have a trailing /, but all pathless .NET Uris have a trailing slash.
+     */
     /// <summary>
     /// Get a left part of a URI.
     /// </summary>

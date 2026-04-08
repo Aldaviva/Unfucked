@@ -141,55 +141,48 @@ public static class Tasks {
 
     }
 
+    /*
+     * Putting this in an extension block causes spurious CS8634 warnings when used from other projects:
+     *     Nullability of type argument 'MyExampleClass?' must match 'class' constraint in order to use it as parameter 'T'
+     * even though T is constrained to class?, it acts as though it's constrained to class, because the [Nullability(2)] attribute is accidentally omitted from the generic type placeholder when compiled in an extension block.
+     */
+    /// <summary>
+    /// Asynchronously get the result of a task or, if it threw an exception, <c>null</c>, rather than rethrowing the inner exception. This allows fluent null-coalescing fallback chaining instead of a bunch of multi-line, temporary variable declaring try/catch blocks which aren't expression-valued.
+    /// </summary>
     /// <param name="task">A task that return a result of type <typeparamref name="T"/> or throws an exception</param>
     /// <typeparam name="T">Type of result</typeparam>
-    extension<T>(Task<T> task) where T: class? {
-
-        /// <summary>
-        /// Asynchronously get the result of a task or, if it threw an exception, <c>null</c>, rather than rethrowing the inner exception. This allows fluent null-coalescing fallback chaining instead of a bunch of multi-line, temporary variable declaring try/catch blocks which aren't expression-valued.
-        /// </summary>
-        /// <returns><paramref name="task"/>'s awaited return value, or <c>null</c> if <paramref name="task"/> threw an exception. This method doesn't throw exceptions (except <see cref="OutOfMemoryException"/>).</returns>
-        [Pure]
-        public async Task<T?> ExceptionsToNull() {
-            try {
-                return await task.ConfigureAwait(false);
-            } catch (Exception e) when (e is not OutOfMemoryException) {
-                return null;
-            }
+    /// <returns><paramref name="task"/>'s awaited return value, or <c>null</c> if <paramref name="task"/> threw an exception. This method doesn't throw exceptions (except <see cref="OutOfMemoryException"/>).</returns>
+    [Pure]
+    public static async Task<T?> ExceptionsToNull<T>(this Task<T> task) where T: class? {
+        try {
+            return await task.ConfigureAwait(false);
+        } catch (Exception e) when (e is not OutOfMemoryException) {
+            return null;
         }
-
     }
 
+    /// <inheritdoc cref="Tasks.ExceptionsToNull{T}" />
     /// <param name="task">A task that return a result of type <typeparamref name="T"/> or throws an exception</param>
     /// <typeparam name="T">Type of result</typeparam>
-    extension<T>(Task<T> task) where T: struct {
-
-        /// <inheritdoc cref="Tasks.ExceptionsToNull{T}" />
-        [Pure]
-        public async Task<T?> ExceptionsToNullStruct() {
-            try {
-                return await task.ConfigureAwait(false);
-            } catch (Exception e) when (e is not OutOfMemoryException) {
-                return null;
-            }
+    [Pure]
+    public static async Task<T?> ExceptionsToNullStruct<T>(this Task<T> task) where T: struct {
+        try {
+            return await task.ConfigureAwait(false);
+        } catch (Exception e) when (e is not OutOfMemoryException) {
+            return null;
         }
-
     }
 
+    /// <inheritdoc cref="Tasks.ExceptionsToNull{T}" />
     /// <param name="task">A task that return a result of type <typeparamref name="T"/> or throws an exception</param>
     /// <typeparam name="T">Type of result</typeparam>
-    extension<T>(Task<T?> task) where T: struct {
-
-        /// <inheritdoc cref="Tasks.ExceptionsToNull{T}" />
-        [Pure]
-        public async Task<T?> ExceptionsToNullStruct() {
-            try {
-                return await task.ConfigureAwait(false);
-            } catch (Exception e) when (e is not OutOfMemoryException) {
-                return null;
-            }
+    [Pure]
+    public static async Task<T?> ExceptionsToNullStruct<T>(this Task<T?> task) where T: struct {
+        try {
+            return await task.ConfigureAwait(false);
+        } catch (Exception e) when (e is not OutOfMemoryException) {
+            return null;
         }
-
     }
 
     /// <summary>

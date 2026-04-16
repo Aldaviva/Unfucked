@@ -41,7 +41,7 @@ public static class Singletons {
     /// <typeparam name="V">value type</typeparam>
     /// <param name="keyValuePair">single key-value tuple</param>
     /// <returns>An enumerable with the one specified key-value pair</returns>
-    public static IEnumerable<KeyValuePair<K, V>> KeyValues<K, V>(this (K, V) keyValuePair) => [new(keyValuePair.Item1, keyValuePair.Item2)];
+    public static IEnumerable<KeyValuePair<K, V>> KeyValues<K, V>(this (K key, V value) keyValuePair) => [new(keyValuePair.key, keyValuePair.value)];
 
     /// <summary>
     /// A set that contains exactly one value and cannot be modified.

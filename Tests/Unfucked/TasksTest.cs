@@ -16,20 +16,20 @@ public class TasksTest: IDisposable {
         TimeSpan duration = TimeSpan.FromDays(999999);
         Action   thrower  = () => { Task.Delay(duration, ct); };
         thrower.Should().Throw<ArgumentOutOfRangeException>();
-        _ = Task.DelayLong(duration, ct);
+        _ = Task.LongDelay(duration, ct);
     }
 
     [Fact]
     public async Task LongDelay() {
         Stopwatch stopwatch = Stopwatch.StartNew();
-        await Task.DelayLong(TimeSpan.FromMilliseconds(100), ct);
+        await Task.LongDelay(TimeSpan.FromMilliseconds(100), ct);
         stopwatch.ElapsedMilliseconds.Should().BeGreaterOrEqualTo(90);
     }
 
     [Fact]
     public async Task LongDelayWithTimeProvider() {
         Stopwatch stopwatch = Stopwatch.StartNew();
-        await Task.DelayLong(TimeSpan.FromMilliseconds(100), TimeProvider.System, ct);
+        await Task.LongDelay(TimeSpan.FromMilliseconds(100), TimeProvider.System, ct);
         stopwatch.ElapsedMilliseconds.Should().BeGreaterOrEqualTo(90);
     }
 

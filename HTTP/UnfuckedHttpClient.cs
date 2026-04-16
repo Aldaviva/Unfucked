@@ -79,7 +79,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
         Handler = unfuckedHandler;
         Timeout = DEFAULT_TIMEOUT;
         if (USER_AGENT.Value is var (programName, programVersion)) {
-            DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(programName, programVersion.ToString(4, true)));
+            DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(programName, programVersion.ToString(1, 4)));
         }
         UnfuckedHttpHandler.CacheClientHandler(this, unfuckedHandler);
     }

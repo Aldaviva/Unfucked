@@ -95,7 +95,7 @@ public sealed class AmplifiedLogOptions {
     /// <param name="amplifiedLevel">The new log level to re-emit the log messages at, such as <see cref="LogLevel.Warning"/>, should be higher than the original level.</param>
     /// <param name="eventIdsToAmplify">One or more event IDs of log messages to re-emit at a higher level, such as <c>[19, 22]</c>.</param>
     public AmplifiedLogOptions Amplify(string category, LogLevel amplifiedLevel, params IEnumerable<int> eventIdsToAmplify) {
-        Dictionary<int, LogLevel> eventIdToLevels = categoryAndEventIdToAmplifiedLevels.GetOrAdd(category, static () => new Dictionary<int, LogLevel>(), out bool _);
+        Dictionary<int, LogLevel> eventIdToLevels = categoryAndEventIdToAmplifiedLevels.GetOrAdd(category, static _ => new Dictionary<int, LogLevel>(), out bool _);
         foreach (int eventId in eventIdsToAmplify) {
             eventIdToLevels[eventId] = amplifiedLevel;
         }

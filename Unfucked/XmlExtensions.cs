@@ -32,8 +32,8 @@ public static class XmlExtensions {
 #endif
 
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-        xmlReaderSettings ??= new XmlReaderSettings();
-        xmlReaderSettings.Async = true;
+        xmlReaderSettings       ??= new XmlReaderSettings();
+        xmlReaderSettings.Async =   true;
 #endif
 
         using StreamReader streamReader = new(contentStream, encoding ?? Strings.Utf8, encoding == null);
@@ -58,7 +58,7 @@ public static class XmlExtensions {
     /// <typeparam name="T">Type of the object to map the XML document to.</typeparam>
     /// <returns>An object that was mapped from the XML document.</returns>
     public static async Task<T> ReadObjectFromXmlAsync<T>(this HttpContent content, Encoding? encoding = null, string? defaultNamespace = null, CancellationToken cancellationToken = default) {
-        XmlSerializer xmlSerializer = XML_SERIALIZER_CACHE.GetOrAdd(typeof(T), () => new XmlSerializer(typeof(T), defaultNamespace), out _);
+        XmlSerializer xmlSerializer = XML_SERIALIZER_CACHE.GetOrAdd(typeof(T), static (_, ns) => new XmlSerializer(typeof(T), ns), out _, defaultNamespace);
         Task<Stream> readStreamTask = // stream is disposed automatically by StreamReader
 #if NET6_0_OR_GREATER
             content.ReadAsStreamAsync(cancellationToken);

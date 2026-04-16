@@ -36,25 +36,25 @@ public class EnumerablesTest {
         dest.GetOrAdd(4, "d2", out added).Should().Be("d");
         added.Should().BeFalse();
 
-        var valueFactory = A.Fake<Func<string>>();
-        A.CallTo(() => valueFactory()).Returns("e");
+        var valueFactory = A.Fake<Func<int, string>>();
+        A.CallTo(() => valueFactory(An<int>._)).Returns("e");
         dest.GetOrAdd(5, valueFactory, out added).Should().Be("e");
         added.Should().BeTrue();
-        A.CallTo(() => valueFactory()).MustHaveHappenedOnceExactly();
+        A.CallTo(() => valueFactory(An<int>._)).MustHaveHappenedOnceExactly();
         dest.GetOrAdd(5, valueFactory, out added).Should().Be("e");
         added.Should().BeFalse();
-        A.CallTo(() => valueFactory()).MustHaveHappenedOnceExactly();
+        A.CallTo(() => valueFactory(An<int>._)).MustHaveHappenedOnceExactly();
 
-        var asyncValueFactory = A.Fake<Func<Task<string>>>();
-        A.CallTo(() => asyncValueFactory()).Returns("f");
+        var asyncValueFactory = A.Fake<Func<int, Task<string>>>();
+        A.CallTo(() => asyncValueFactory(An<int>._)).Returns("f");
         (string value, added) = await dest.GetOrAdd(6, asyncValueFactory);
         value.Should().Be("f");
         added.Should().BeTrue();
-        A.CallTo(() => asyncValueFactory()).MustHaveHappenedOnceExactly();
+        A.CallTo(() => asyncValueFactory(An<int>._)).MustHaveHappenedOnceExactly();
         (value, added) = await dest.GetOrAdd(6, asyncValueFactory);
         value.Should().Be("f");
         added.Should().BeFalse();
-        A.CallTo(() => asyncValueFactory()).MustHaveHappenedOnceExactly();
+        A.CallTo(() => asyncValueFactory(An<int>._)).MustHaveHappenedOnceExactly();
     }
 
     [Fact]

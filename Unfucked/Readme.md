@@ -24,6 +24,7 @@
     - [Strings](#strings)
     - [Tasks](#tasks)
     - [URIs](#uris)
+    - [Versions](#versions)
     - [XML](#xml)
 - [All Unfucked libraries](#all-unfucked-libraries)
 
@@ -60,7 +61,7 @@ using Unfucked;
     ConsoleControl.WriteClearLine(); // clear line and move to left side
     ```
 - Enable colored output on Windows 10 1511 and later.
-    - Called implicitly whenever you call the `ConsoleControl.Color`, `Write`, `WriteLine`, `Clear`, or `ClearLine` methods.
+    - Called implicitly whenever you call the `ConsoleControl.Color`, `Write`, `WriteLine`, `WriteClear`, or `WriteClearLine` methods.
     - Can be manually checked and opportunistically enabled.
         ```cs
         bool colorable = ConsoleControl.EnableColorSupport();
@@ -90,7 +91,7 @@ using Unfucked;
 ### Date and Time
 - Absolute value of `TimeSpan` with a more discoverable name that `Duration`, whose name doesn't imply absolute value at all
     ```cs
-    TimeSpan absValue = TimeSpan.FromHours(-1).Abs() == TimeSpan.FromHours(1);
+    TimeSpan absValue = TimeSpan.FromHours(-1).Abs == TimeSpan.FromHours(1);
     ```
 
 ### Decimal math
@@ -119,7 +120,12 @@ using Unfucked;
 ### Directories
 - Delete directory without throwing an exception on missing directories.
     ```cs
-    bool found = Directories.TryDelete(directory: "myDir", recursive: false);
+    bool found = Directory.TryDelete(directory: "myDir", recursive: false);
+    ```
+- Create new empty temporary subdirectory in specific parent directory
+    ```cs
+    Directory.CreateTempDir(); // example: %LOCALAPPDATA%\Temp\temp-12345678
+    Directory.CreateTempDir(Environment.ExpandEnvironmentVariables(@"%temp%\myapp")); // example: %LOCALAPPDATA%\Temp\myapp\temp-abcdefgh
     ```
 
 ### DNS
@@ -155,6 +161,7 @@ using Unfucked;
 
     string a = map.GetOrAdd(key: "a", value: "AA", out bool aAdded); // a == "AA", aAdded == false
     string b = map.GetOrAdd(key: "b", valueFactory: () => "BB", out bool bAdded); // b == "BB", bAdded == true
+    // if you have a value you want to be in scope in the valueFactory, you can pass it as a parameter to GetOrAdd if you want to avoid allocating a closure
     ```
     - Value factories can also be asynchronous
 - Fluent set difference method
@@ -214,19 +221,27 @@ using Unfucked;
     - The original and new items don't have to be of the same type.
 - Atomic swap on `ConcurrentDictionary` to upsert new value and get old value
     ```cs
-    ConcurrentDictionary<string, ValueHolder<int>> map = Enumerables.CreateConcurrentDictionary(Singleton.Dictionary("a", 1));
-    int? oldValue = map.Swap(key: "a", newValue: 2); // oldValue == 1, map["a"] == 2
+    ConcurrentDictionary<string, ValueHolder<int>> map = ConcurrentDictionary<string, int>.CreateWithMutableAtomicValues(Singleton.Dictionary("a", 1));
+    int? oldValue = map.AtomicSwap(key: "a", newValue: 2); // oldValue == 1, map["a"] == 2
     ```
 - Atomic compare and swap on `ConcurrentDictionary` to update new value if it exists and matches old value, and also get the old value
     ```cs
-    ConcurrentDictionary<string, ValueHolder<int>> map = Enumerables.CreateConcurrentDictionary(Singleton.Dictionary("a", 1));
-    int? oldValue = map.CompareAndSwap(key: "a", oldValue: 1, newValue: 2);
+    ConcurrentDictionary<string, ValueHolder<int>> map = ConcurrentDictionary<string, int>.CreateWithMutableAtomicValues(Singleton.Dictionary("a", 1));
+    int? oldValue = map.AtomicCompareAndSwap(key: "a", oldValue: 1, newValue: 2);
+    ```
+- Atomic math on `ConcurrentDictionary` to update new value based on its old value and return the new value
+    ```cs
+    ConcurrentDictionary<string, ValueHolder<int>> map = ConcurrentDictionary<string, int>.CreateWithMutableAtomicValues(("a", 1).KeyValues());
+    int? oldValue = map.AtomicIncrement("a");
+    oldValue = map.AtomicDecrement("a");
+    oldValue = map.AtomicAdd("a", 2);
     ```
 - Get or add to `ConcurrentDictionary` and determine whether a new value was added or an existing value was returned
     ```cs
     ConcurrentDictionary<long, Person> clients = new();
     Person alice = clients.GetOrAdd(key: 1, newValue: new Person("Alice"), out bool aliceAdded);
     Person bob   = clients.GetOrAdd(key: 2, valueFactory: id => new Person(id, "Bob"), out bool bobAdded);
+    // if you have a value you want to be in scope in the valueFactory, you can pass it as a parameter to GetOrAdd if you want to avoid allocating a closure
     ```
 - Get or add to `ConcurrentDictionary` and dispose of created but unadded values.
     ```cs
@@ -240,9 +255,12 @@ using Unfucked;
     ```
 - Factories for singleton Dictionaries, Sets, and enumerables of key-value pairs
     ```cs
-    IReadOnlyDictionary<string, int>       dict = Singleton.Dictionary(key: "a", value: 1);
-    IReadOnlySet<string>                   set  = Singleton.Set(item: "a");
-    IEnumerable<KeyValuePair<string, int>> kvs  = Singleton.KeyValues(key: "a", value: 1);
+    IReadOnlyDictionary<string, int> dict = IDictionary.Singleton(key: "a", value: 1);
+    dict = IReadOnlyDictionary<string, int>.Singleton(key: "a", value: 1);
+
+    IReadOnlySet<string> set = ISet<string>.Singleton(item: "a");
+
+    IEnumerable<KeyValuePair<string, int>> kvs = (key: "a", value: 1).KeyValues();
     ```
 - Filter by exact type instead of [by superclass](https://learn.microsoft.com/en-us/dotnet/api/system.linq.enumerable.oftype).
     ```cs
@@ -262,7 +280,7 @@ using Unfucked;
 - Get the chain of causes for an exception, which is a sequence of all of its inner exceptions, recursively. Excludes outermost exception.
     ```cs
     Exception e;
-    IEnumerable<Exception> causeChain = e.GetCauseChain();
+    IEnumerable<Exception> causeChain = e.CauseChain;
     // equivalent to [e.InnerException, e.InnerException.InnerException, ...]
     ```
 - Get the chain of messages for an exception, which is a string of all of its inner messages, recursively. Includes outermost message.
@@ -275,7 +293,7 @@ using Unfucked;
     ```cs
     try {
         Stream file = new FileStream("filename", FileMode.CreateNew, FileAccess.Write);
-    } catch (IOException e) when (e.IsCausedByExistingWindowsFile()){
+    } catch (IOException e) when (e.IsCausedByExistingWindowsFile{
         // filename already exists
     }
     ```
@@ -291,23 +309,18 @@ using Unfucked;
 ### Paths
 - Trim trailing slashes
     ```cs
-    Paths.TrimTrailingSlashes(@"C:\Users\Ben\Desktop\") == @"C:\Users\Ben\Desktop"
-    Paths.TrimTrailingSlashes("/home/ben/") == "/home/ben"
-    ```
-- Create new empty temporary subdirectory in specific parent directory
-    ```cs
-    Paths.CreateTempDir(); // example: %LOCALAPPDATA%\Temp\temp-12345678
-    Paths.CreateTempDir(Environment.ExpandEnvironmentVariables(@"%temp%\myapp")); // example: %LOCALAPPDATA%\Temp\myapp\temp-abcdefgh
+    Path.TrimTrailingSlashes(@"C:\Users\Ben\Desktop\") == @"C:\Users\Ben\Desktop"
+    Path.TrimTrailingSlashes("/home/ben/") == "/home/ben"
     ```
 - Convert DOS backslashes to Unix forward slashes
     ```cs
-    Paths.Dos2UnixSlashes(@"C:\Users\Ben\Desktop") == "C:/Users/Ben/Desktop"
+    Path.Dos2UnixSlashes(@"C:\Users\Ben\Desktop") == "C:/Users/Ben/Desktop"
     ```
 - Match file extension against a set
     ```cs
-    IReadOnlySet<string> videoExtensions { get; } = new HashSet<string> {
-           ".3gpp", ".asf", ".avi", ".bik", ".divx", ".dv", ".f4v", ".flv", ".m1v", ".m4v", ".mkv", ".mov", ".mp4", ".mp4v", ".mpeg", ".mpg", ".ts", ".vob", ".webm", ".wmv"}.ToFrozenSet();
-    bool hasVideoExt = Paths.MatchesExtensions("myfile.mp4", videoExtensions);
+    FrozenSet<string> videoExtensions { get; } = FrozenSet.Create(
+           ".3gpp", ".asf", ".avi", ".bik", ".divx", ".dv", ".f4v", ".flv", ".m1v", ".m4v", ".mkv", ".mov", ".mp4", ".mp4v", ".mpeg", ".mpg", ".ts", ".vob", ".webm", ".wmv");
+    bool hasVideoExt = Path.MatchesExtensions("myfile.mp4", videoExtensions);
     ```
 
 ### Processes
@@ -327,21 +340,21 @@ using Unfucked;
     ```
 - Determine whether the current program is a console or Windows GUI app.
     ```cs
-    bool isWindowsGuiProgram = Processes.IsWindowsGuiProgram();
+    bool isWindowsGuiProgram = Processes.IsWindowsGuiProgram;
     ```
 
 ### Strings
 - Coerce empty strings to `null`
     ```cs
-    "".EmptyToNull(); // null
+    "".EmptyToNull; // null
     ```
 - Fluently check if a string has any non-whitespace characters
     ```cs
-    " ".HasText(); // false
+    " ".HasText; // false
     ```
 - Fluently check if a string has any characters
     ```cs
-    "".HasLength(); // false
+    "".HasLength; // false
     ```
 - Fluent join method
     ```cs
@@ -387,18 +400,18 @@ using Unfucked;
 ### Tasks
 - Unbounded delay time (.NET ≥ 6 tops out at 49.7 days, .NET < 6 tops out at 24.9 days)
     ```cs
-    await Tasks.Delay(TimeSpan.FromDays(365));
+    await Task.LongDelay(TimeSpan.FromDays(365));
     ```
 - Await multiple tasks and proceed when any of them both completes and the return value passes a predicate, or they all fail to complete or the predicate
     - Return `true` if any passed or `false` if they all failed
         ```cs
         Task<string> a, b;
-        bool any = await Tasks.WhenAny([a, b], s => s.Length > 1);
+        bool any = await Task.WhenAny([a, b], s => s.Length > 1);
         ```
     - Return the first passing task's result, or `null` if they all failed
         ```cs
         Task<string> a, b;
-        string? firstOrDefault = await Tasks.FirstOrDefault([a, b], s => s.Length > 1);
+        string? firstOrDefault = await Task.FirstOrDefault([a, b], s => s.Length > 1);
         ```
 - Asynchronously await the cancellation of a `CancellationToken` without blocking the thread, which is especially important to prevent a deadlock if a CancellationToken is used to keep your main thread from exiting
     ```cs
@@ -411,18 +424,18 @@ using Unfucked;
     ```
 - Get the result of a task, or `null` if it threw an exception, to allow fluent null-coalescing to a fallback chain, instead of a temporary variable and multi-line `try`/`catch` block statement
     ```cs
-    object resultWithFallback = await Task.FromException<object>(new Exception()).ResultOrNullForException() ?? new object();
+    object resultWithFallback = await Task.FromException<object>(new Exception()).ExceptionToNull() ?? new object();
     ```
 - Easily await tasks that may be null without having to add parentheses and null coalescing operators.
     ```cs
     Task? myOptionalTask = null;
-    await myOptionalTask.CompleteIfNull();
+    await myOptionalTask.OrComplete();
     ```
 
 ### URIs
 - Fluent method to get URL query parameters
     ```cs
-    string? value = new Uri("https://aldaviva.com?key=value").GetQuery()["key"];
+    string? value = new Uri("https://aldaviva.com?key=value").QueryParams["key"];
     ```
 - Builder pattern for URLs
     ```cs
@@ -438,10 +451,28 @@ using Unfucked;
 - Truncate URIs to remove the fragment, query parameters, or path. Useful for getting the origin too.
     ```cs
     Uri full = new("https://ben@aldaviva.com:443/path?key=value#hash");
-    full.Truncate(URI.Part.Query);     // https://ben@aldaviva.com:443/path?key=value
-    full.Truncate(URI.Part.Path);      // https://ben@aldaviva.com:443/path
-    full.Truncate(URI.Part.Authority); // https://ben@aldaviva.com:443/
-    full.Truncate(URI.Part.Origin);    // https://aldaviva.com:443
+    full.Truncate(UriExtensions.Part.Query);     // https://ben@aldaviva.com:443/path?key=value
+    full.Truncate(UriExtensions.Part.Path);      // https://ben@aldaviva.com:443/path
+    full.Truncate(UriExtensions.Part.Authority); // https://ben@aldaviva.com:443/
+    full.Truncate(UriExtensions.Part.Origin);    // https://aldaviva.com:443
+    ```
+
+### Versions
+- Format version numbers without crashing if the input had too few components, and trim trailing zero components
+    ```cs
+    Version.Parse("1.0").ToString(4, 4)     → "1.0.0.0" // does not throw an exception
+    Version.Parse("1.0.0.0").ToString(1, 4) → "1"       // trims trailing zeros above min
+    Version.Parse("1.2.3.4").ToString(1, 4) → "1.2.3.4" // trims trailing zeros above min
+    ```
+- Get the program's version number, and optionally print it to stdout and exit with status code 0.
+    ```cs
+    Console.WriteLine(Version.GetProgramVersion());
+    // does not exit
+    ```
+    ```cs
+    // useful at the beginning of Main
+    Version.GetProgramVersion(printAndExit: true);
+    // prints version to stdout and exits with return code 0
     ```
 
 ### XML

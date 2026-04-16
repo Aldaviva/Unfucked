@@ -114,8 +114,8 @@ public static class WindowsExtensions {
         /// <remarks>By margnus1: <see href="https://stackoverflow.com/a/3751135/979493"/></remarks>
         public ulong LengthOnDisk {
             get {
-                uint clusterSize = CLUSTER_SIZE_CACHE.GetOrAdd(file.Directory!.Root.FullName, () => {
-                    if (0 == GetDiskFreeSpaceW(file.Directory.Root.FullName, out uint sectorsPerCluster, out uint bytesPerSector, out _, out _)) throw new Win32Exception();
+                uint clusterSize = CLUSTER_SIZE_CACHE.GetOrAdd(file.Directory!.Root.FullName, static driveLetter => {
+                    if (0 == GetDiskFreeSpaceW(driveLetter, out uint sectorsPerCluster, out uint bytesPerSector, out _, out _)) throw new Win32Exception();
                     return sectorsPerCluster * bytesPerSector;
                 }, out _);
 

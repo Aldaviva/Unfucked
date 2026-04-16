@@ -22,7 +22,7 @@ public static class Tasks {
         /// <param name="cancellationToken">To stop waiting before <paramref name="duration"/> has elapsed.</param>
         // ExceptionAdjustment: M:System.TimeSpan.Subtract(System.TimeSpan) -T:System.OverflowException
         [Pure]
-        public static Task DelayLong(TimeSpan duration, CancellationToken cancellationToken = default) {
+        public static Task LongDelay(TimeSpan duration, CancellationToken cancellationToken = default) {
             Task result = Task.CompletedTask;
 
             for (TimeSpan remaining = duration; remaining > TimeSpan.Zero; remaining = remaining.Subtract(MAX_SHORT_DELAY)) {
@@ -43,7 +43,7 @@ public static class Tasks {
         /// <param name="cancellationToken">To stop waiting before <paramref name="duration"/> has elapsed.</param>
         // ExceptionAdjustment: M:System.TimeSpan.Subtract(System.TimeSpan) -T:System.OverflowException
         [Pure]
-        public static Task DelayLong(TimeSpan duration, TimeProvider? timeProvider, CancellationToken cancellationToken = default) {
+        public static Task LongDelay(TimeSpan duration, TimeProvider? timeProvider, CancellationToken cancellationToken = default) {
             timeProvider ??= TimeProvider.System;
             Task result = Task.CompletedTask;
 
@@ -153,7 +153,7 @@ public static class Tasks {
     /// <typeparam name="T">Type of result</typeparam>
     /// <returns><paramref name="task"/>'s awaited return value, or <c>null</c> if <paramref name="task"/> threw an exception. This method doesn't throw exceptions (except <see cref="OutOfMemoryException"/>).</returns>
     [Pure]
-    public static async Task<T?> ExceptionsToNull<T>(this Task<T> task) where T: class? {
+    public static async Task<T?> ExceptionToNull<T>(this Task<T> task) where T: class? {
         try {
             return await task.ConfigureAwait(false);
         } catch (Exception e) when (e is not OutOfMemoryException) {
@@ -161,11 +161,11 @@ public static class Tasks {
         }
     }
 
-    /// <inheritdoc cref="Tasks.ExceptionsToNull{T}" />
+    /// <inheritdoc cref="Tasks.ExceptionToNull{T}" />
     /// <param name="task">A task that return a result of type <typeparamref name="T"/> or throws an exception</param>
     /// <typeparam name="T">Type of result</typeparam>
     [Pure]
-    public static async Task<T?> ExceptionsToNullStruct<T>(this Task<T> task) where T: struct {
+    public static async Task<T?> ExceptionToNullStruct<T>(this Task<T> task) where T: struct {
         try {
             return await task.ConfigureAwait(false);
         } catch (Exception e) when (e is not OutOfMemoryException) {
@@ -173,11 +173,11 @@ public static class Tasks {
         }
     }
 
-    /// <inheritdoc cref="Tasks.ExceptionsToNull{T}" />
+    /// <inheritdoc cref="Tasks.ExceptionToNull{T}" />
     /// <param name="task">A task that return a result of type <typeparamref name="T"/> or throws an exception</param>
     /// <typeparam name="T">Type of result</typeparam>
     [Pure]
-    public static async Task<T?> ExceptionsToNullStruct<T>(this Task<T?> task) where T: struct {
+    public static async Task<T?> ExceptionToNullStruct<T>(this Task<T?> task) where T: struct {
         try {
             return await task.ConfigureAwait(false);
         } catch (Exception e) when (e is not OutOfMemoryException) {

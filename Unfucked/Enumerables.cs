@@ -148,10 +148,34 @@ public static partial class Enumerables {
     /// <param name="added">after this method returns, this will be set to <c>true</c> if the new value was added to <paramref name="dictionary"/>, or <c>false</c> if a value with key <paramref name="key"/> was already present</param>
     /// <returns>the existing value with key <paramref name="key"/>, or the new value if it was not already present</returns>
     /// <exception cref="NotSupportedException"><paramref name="dictionary"/> is read-only</exception>
-    public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TValue> valueFactory, out bool added) {
+    public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> valueFactory, out bool added) {
         added = !dictionary.TryGetValue(key, out TValue? oldValue);
         if (added) {
-            TValue value = valueFactory();
+            TValue value = valueFactory(key);
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+            added = dictionary.TryAdd(key, value);
+#else
+            try {
+                dictionary.Add(key, value);
+                added = true;
+            } catch (ArgumentException) {
+                added = false;
+                return dictionary[key];
+            }
+#endif
+            return value;
+        } else {
+            return oldValue!;
+        }
+    }
+
+    /// <inheritdoc cref="GetOrAdd{TKey,TValue}(System.Collections.Generic.IDictionary{TKey,TValue},TKey,Func{TKey,TValue},out bool)" />
+    /// <param name="factoryArg">Value to pass to <paramref name="valueFactory"/> to avoid constructing a closure.</param>
+    public static TValue GetOrAdd<TKey, TValue, TFactoryArg>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TFactoryArg?, TValue> valueFactory, out bool added,
+                                                             TFactoryArg? factoryArg = default) {
+        added = !dictionary.TryGetValue(key, out TValue? oldValue);
+        if (added) {
+            TValue value = valueFactory(key, factoryArg);
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
             added = dictionary.TryAdd(key, value);
 #else
@@ -180,9 +204,33 @@ public static partial class Enumerables {
     /// <param name="valueFactory">Function that lazily returns the new value to add if <paramref name="key"/> is not already present</param>
     /// <returns>a tuple that contains the existing value with key <paramref name="key"/>, or the new value if it was not already present, as well as a boolean that shows whether the value was added to the dictionary in this method invocation</returns>
     /// <exception cref="NotSupportedException"><paramref name="dictionary"/> is read-only</exception>
-    public static async Task<(TValue value, bool added)> GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<Task<TValue>> valueFactory) {
+    public static async Task<(TValue value, bool added)> GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, Task<TValue>> valueFactory) {
         if (!dictionary.TryGetValue(key, out TValue? oldValue)) {
-            TValue value = await valueFactory().ConfigureAwait(false);
+            TValue value = await valueFactory(key).ConfigureAwait(false);
+            bool   added;
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+            added = dictionary.TryAdd(key, value);
+#else
+            try {
+                dictionary.Add(key, value);
+                added = true;
+            } catch (ArgumentException) {
+                value = dictionary[key];
+                added = false;
+            }
+#endif
+            return (value, added);
+        } else {
+            return (value: oldValue, added: false);
+        }
+    }
+
+    /// <inheritdoc cref="GetOrAdd{TKey,TValue}(System.Collections.Generic.IDictionary{TKey,TValue},TKey,Func{TKey,Task{TValue}})" />
+    /// <param name="factoryArg">Value to pass to <paramref name="valueFactory"/> to avoid constructing a closure.</param>
+    public static async Task<(TValue value, bool added)> GetOrAdd<TKey, TValue, TFactoryArg>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TFactoryArg?, Task<TValue>> valueFactory,
+                                                                                             TFactoryArg? factoryArg = default) {
+        if (!dictionary.TryGetValue(key, out TValue? oldValue)) {
+            TValue value = await valueFactory(key, factoryArg).ConfigureAwait(false);
             bool   added;
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
             added = dictionary.TryAdd(key, value);

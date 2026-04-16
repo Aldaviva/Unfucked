@@ -19,7 +19,7 @@ public class ExceptionsTest {
         InvalidOperationException c      = new("c");
         ApplicationException      b      = new("b", c);
         Exception                 a      = new("a", b);
-        IList<Exception>          actual = a.CauseChain().ToList();
+        IList<Exception>          actual = a.CauseChain.ToList();
 
         actual.Should().HaveCount(2);
         actual[0].Should().BeSameAs(b);
@@ -28,12 +28,12 @@ public class ExceptionsTest {
 
     [Fact]
     public void IsCausedByExistingWindowsFile() {
-        new IOException().IsCausedByExistingWindowsFile().Should().BeFalse();
+        new IOException().IsCausedByExistingWindowsFile.Should().BeFalse();
 
         string tempFile = Path.GetTempFileName();
         try {
             Func<FileStream> thrower = () => new FileStream(tempFile, FileMode.CreateNew, FileAccess.Write);
-            thrower.Should().Throw<IOException>().And.IsCausedByExistingWindowsFile().Should().BeTrue();
+            thrower.Should().Throw<IOException>().And.IsCausedByExistingWindowsFile.Should().BeTrue();
         } finally {
             File.Delete(tempFile);
         }

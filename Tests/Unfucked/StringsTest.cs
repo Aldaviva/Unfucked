@@ -260,4 +260,23 @@ public class StringsTest {
         { ",", [null, "bb", "ccc", null], ",bb,ccc," },
     };
 
+    [Theory]
+    [InlineData("", 0, "")]
+    [InlineData("", 1, "")]
+    [InlineData("Hello", 0, "")]
+    [InlineData("Hello", 5, "Hello")]
+    [InlineData("Hello", 6, "Hello")]
+    [InlineData("Hello", 1, "H")]
+    [InlineData("Hello", -1, "o")]
+    [InlineData("Hello", 4, "Hell")]
+    [InlineData("Hello", -4, "ello")]
+    [InlineData("Hello 👖", 7, "Hello ")]
+    [InlineData("👖 Hello", -7, " Hello")]
+    [InlineData("👖", 1, "")]
+    [InlineData("👖", -1, "")]
+    public void Truncate(string input, int maxLength, string expected) {
+        string actual = input.Truncate(maxLength);
+        actual.Should().Be(expected, $"\"{input}\".{nameof(Strings.Truncate)}({maxLength})");
+    }
+
 }

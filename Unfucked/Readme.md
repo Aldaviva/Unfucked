@@ -392,6 +392,11 @@ using Unfucked;
     ```cs
     "Ben".Repeat(4); // "BenBenBenBen"
     ```
+- Truncate the beginning or end of a string, never leaving widowed or orphaned Unicode surrogate code points.
+    ```cs
+    "Hello 👖".Truncate(7);  // "Hello "
+    "👖 Hello".Truncate(-7); // " Hello"
+    ```
 - Polyfills for [`StringBuilder.AppendJoin`](https://learn.microsoft.com/en-us/dotnet/api/system.text.stringbuilder.appendjoin) in .NET Standard 2.0
 - Polyfills for [`string.StartsWith(char)`](https://learn.microsoft.com/en-us/dotnet/api/system.string.startswith#system-string-startswith(system-char)) and [`string.EndsWith(char)`](https://learn.microsoft.com/en-us/dotnet/api/system.string.endswith#system-string-endswith(system-char)) in .NET Standard 2.0
 - Polyfills for [`string.Contains(string, StringComparison)`](https://learn.microsoft.com/en-us/dotnet/api/system.string.contains#system-string-contains(system-string-system-stringcomparison)) in .NET Standard 2.0

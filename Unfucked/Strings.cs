@@ -115,7 +115,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first = true;
+        bool          first         = true;
         StringBuilder stringBuilder = new();
         foreach (string? s in strings) {
             if (!first) {
@@ -135,7 +135,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first = true;
+        bool          first         = true;
         StringBuilder stringBuilder = new();
         foreach (string? s in strings) {
             if (!first) {
@@ -155,7 +155,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first = true;
+        bool          first         = true;
         StringBuilder stringBuilder = new();
         foreach (object? s in strings) {
             if (!first) {
@@ -175,7 +175,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first = true;
+        bool          first         = true;
         StringBuilder stringBuilder = new();
         foreach (object? s in strings) {
             if (!first) {
@@ -558,5 +558,39 @@ public static class Strings {
 #else
         str.IndexOf(value, comparisonType) != -1;
 #endif
+
+    /// <summary>Truncation from the start or end of a string. A safer alternative to <see cref="string.Substring(int)"/> that will never leave a widowed or orphaned Unicode surrogate at either end.</summary>
+    /// <param name="str">Input string to truncate. May contain multi-char Unicode surrogate pairs.</param>
+    /// <param name="maxLength">The maximum length of the output string. When nonnegative, the beginning of <paramref name="str"/> is returned; otherwise, when negative, the end is returned.</param>
+    /// <returns>At most <paramref name="maxLength"/> characters from the beginning or end of <paramref name="str"/>. It will never start with a low surrogate code point or end with a high surrogate code point.</returns>
+    public static string Truncate(this string str, int maxLength) {
+        if (str.Length <= maxLength) {
+            return str;
+        } else if (maxLength == 0) {
+            return string.Empty;
+        }
+
+        if (maxLength > 0) {
+            while (maxLength > 0 && isUnicodeSurrogateCodePoint(str[maxLength - 1])) {
+                maxLength--;
+            }
+            return str.Substring(0, maxLength);
+        } else {
+            maxLength = -maxLength;
+
+            int startIndex = str.Length - maxLength;
+            while (startIndex < str.Length && isUnicodeSurrogateCodePoint(str[startIndex])) {
+                startIndex++;
+            }
+            return str.Substring(startIndex);
+        }
+
+        static bool isUnicodeSurrogateCodePoint(char c) =>
+#if NETCOREAPP3_0_OR_GREATER
+            !Rune.IsValid(c);
+#else
+            c >= 0xd800 && c <= 0xdfff;
+#endif
+    }
 
 }

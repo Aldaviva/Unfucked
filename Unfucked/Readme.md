@@ -466,18 +466,18 @@ using Unfucked;
 - Format version numbers without crashing if the input had too few components, and trim trailing zero components
     ```cs
     Version.Parse("1.0").ToString(4, 4)     → "1.0.0.0" // does not throw an exception
-    Version.Parse("1.0.0.0").ToString(1, 4) → "1"       // trims trailing zeros above min
-    Version.Parse("1.2.3.4").ToString(1, 4) → "1.2.3.4" // trims trailing zeros above min
+    Version.Parse("1.0.0.0").ToString(1, 4) → "1"       // trims trailing zeros to have [1,4] components
+    Version.Parse("1.2.3.4").ToString(1, 4) → "1.2.3.4" // trims trailing zeros to have [1,4] components
     ```
-- Get the program's version number, and optionally print it to stdout and exit with status code 0.
+- Get the program's version number, or print it to stdout and exit with status code 0.
     ```cs
-    Console.WriteLine(Version.GetProgramVersion());
+    Console.WriteLine(Version.ProgramVersion);
     // does not exit
     ```
     ```cs
     // useful at the beginning of Main
-    Version.GetProgramVersion(printAndExit: true);
-    // prints version to stdout and exits with return code 0
+    Version.PrintProgramVersionAndExitIfRequested();
+    // prints version to stdout and exits with return code 0 if started with arguments -v, -version, or --version
     ```
 
 ### XML

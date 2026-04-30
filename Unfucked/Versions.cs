@@ -1,5 +1,8 @@
 using System.Diagnostics;
 using System.Reflection;
+#if NET9_0_OR_GREATER
+using System.Buffers;
+#endif
 
 namespace Unfucked;
 
@@ -7,6 +10,34 @@ namespace Unfucked;
 /// Methods that make it easier to work with version numbers.
 /// </summary>
 public static class Versions {
+
+    private static readonly Lazy<string?> PROGRAM_VERSION = new(static () => {
+        string?   programVersion = null;
+        Assembly? assembly       = Assembly.GetEntryAssembly();
+        programVersion ??= assembly?.GetCustomAttributes<AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion;
+        programVersion ??= assembly?.GetName().Version?.ToString(4).TrimEnd(1, ".0");
+
+        if (programVersion is null) {
+            using Process    selfProcess       = Process.GetCurrentProcess();
+            FileVersionInfo? mainModuleVersion = selfProcess.MainModule?.FileVersionInfo;
+            programVersion ??= mainModuleVersion?.ProductVersion;
+            programVersion ??= mainModuleVersion?.FileVersion?.TrimEnd(1, ".0");
+        }
+
+        return programVersion;
+    }, LazyThreadSafetyMode.PublicationOnly);
+
+#if NET9_0_OR_GREATER
+    private static readonly SearchValues<string> VERSION_ARGUMENTS = SearchValues.Create(
+#else
+    private static readonly string[] VERSION_ARGUMENTS =
+#endif
+        ["--version", "-v", "-version"]
+#if NET9_0_OR_GREATER
+        , StringComparison.Ordinal);
+#else
+        ;
+#endif
 
     extension(Version version) {
 
@@ -73,33 +104,24 @@ public static class Versions {
             };
         }
 
-        // ExceptionAdjustment: P:System.Diagnostics.Process.MainModule get -T:System.ComponentModel.Win32Exception
-        /// <summary>If the program was launched with the <c>-v</c> or <c>--version</c> arguments, print the program product or file version to stdout, then exit with code 0, otherwise, do nothing.</summary>
-        /// <param name="printAndExit">When <c>false</c>, just return the program version. When <c>true</c>, print the version to stdout and immediately exit with code 0.</param>
-        /// <returns>The current program's product or file version, or <c>null</c> if the command-line arguments do not contain <c>-v</c> or <c>--version</c>.</returns>
-        public static string? GetProgramVersion(bool printAndExit = false) {
-            string[] args           = Environment.GetCommandLineArgs();
-            string?  programVersion = null;
-            if (args.Contains("--version") || args.Contains("-v")) {
-                Assembly? assembly = Assembly.GetEntryAssembly();
-                programVersion ??= assembly?.GetCustomAttributes<AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion;
-                programVersion ??= assembly?.GetName().Version?.ToString(4).TrimEnd(1, ".0");
+        /// <summary>The current program's product or file version.</summary>
+        public static string? ProgramVersion => PROGRAM_VERSION.Value;
 
-                if (programVersion is null) {
-                    using Process selfProcess = Process.GetCurrentProcess();
-                    programVersion ??= selfProcess.MainModule?.FileVersionInfo.ProductVersion;
-                    programVersion ??= selfProcess.MainModule?.FileVersionInfo.FileVersion?.TrimEnd(1, ".0");
-                }
+        /// <summary>If the program was launched with the <c>-v</c>, <c>-version</c>, or <c>--version</c> arguments, print the program's product or file version to stdout, then exit with code 0; otherwise, do nothing.</summary>
+        public static void PrintProgramVersionAndExitIfRequested() {
+            string[] args = Environment.GetCommandLineArgs();
 
-                programVersion ??= "?";
+            bool userRequestedVersion =
+#if NET8_0_OR_GREATER
+                args.ContainsAny(VERSION_ARGUMENTS);
+#else
+                args.Intersect(VERSION_ARGUMENTS).Any();
+#endif
 
-                if (printAndExit) {
-                    Console.WriteLine(programVersion);
-                    Environment.Exit(0);
-                }
+            if (userRequestedVersion) {
+                Console.WriteLine(Version.ProgramVersion);
+                Environment.Exit(0);
             }
-
-            return programVersion;
         }
 
         /// <summary>The third component of the version number, or -1 if it is not defined.</summary>

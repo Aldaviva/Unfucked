@@ -4,8 +4,13 @@ using Timer = System.Timers.Timer;
 
 namespace Unfucked.Caching;
 
+/// <summary>Strongly-typed in-memory cache that can encapsulate automatic value loading logic into the cache itself, instead of duplicating it across every single call site. Supports expiration after read or write, and periodic refresh for expired values.</summary>
+/// <remarks>Inspired by Guava Cache.</remarks>
+/// <typeparam name="K">Type of the cache key.</typeparam>
+/// <typeparam name="V">Type of the cached values.</typeparam>
 public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
 
+    /// <inheritdoc />
     public event RemovalNotification<K, V>? Removal;
 
     private readonly CacheOptions                           options;
@@ -15,6 +20,9 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
 
     private volatile bool isDisposed;
 
+    /// <summary>Create a new in-memory cache for specific key and value types, with the given optional <paramref name="options"/> and value <paramref name="loader"/>.</summary>
+    /// <param name="options">Customize the caching behavior, including expiration durations and automatic refreshes.</param>
+    /// <param name="loader">Cache-wide callback used to generate a cached value when a key is requested that doesn't already have an unexpired value cached. Can be <c>null</c> if values are always manually cached with <see cref="Put"/>, and can be overridden on a per-read basis by supplying a <c>loader</c> callback to <see cref="Get"/>. Also used when automatically refreshing values. Can throw exceptions, which will not be cached.</param>
     public InMemoryCache(CacheOptions? options = null, Func<K, ValueTask<V>>? loader = null) {
         this.options = (options ?? new CacheOptions()) with {
             ConcurrencyLevel = this.options.ConcurrencyLevel is > 0 and var c ? c : Environment.ProcessorCount,
@@ -47,7 +55,7 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
                     cacheEntry.RefreshTimer?.Start();
                     cacheEntry.IsNew = false;
                 }
-            } catch (KeyNotFoundException) {
+            } catch (Exception e) when (e is not OutOfMemoryException) {
                 cache.TryRemove(key, out _);
                 cacheEntry.Dispose();
                 throw;
@@ -117,14 +125,15 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
             async void refreshEntry(object o, ElapsedEventArgs elapsedEventArgs) {
                 if (!entry.IsDisposed) {
                     try {
-                        V oldValue;
                         await entry.ValueLock.WaitAsync().ConfigureAwait(false);
+                        V oldValue = entry.Value;
                         try {
-                            oldValue    = entry.Value;
                             entry.Value = await defaultLoader!(key).ConfigureAwait(false);
                             entry.LastWritten.Restart();
-                            entry.RefreshTimer.Start();
+                        } catch (Exception e) when (e is not OutOfMemoryException) {
+                            // try again next timer execution
                         } finally {
+                            entry.RefreshTimer.Start();
                             entry.ValueLock.Release();
                         }
                         Removal?.Invoke(this, key, oldValue, RemovalCause.Replaced);
@@ -150,7 +159,7 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
     }
 
     private static KeyNotFoundException KeyNotFoundException(K key) => new(
-        $"Value with key {key} not found in cache, and a loader function was not provided when constructing the {nameof(InMemoryCache<K, V>)} or getting the value.");
+        $"Value with key {key} not found in cache, and a loader function was not provided when constructing the {nameof(InMemoryCache<,>)} or getting the value.");
 
     private bool IsExpired(CacheEntry<V> cacheEntry) =>
         (options.ExpireAfterWrite > TimeSpan.Zero && options.ExpireAfterWrite <= cacheEntry.LastWritten.Elapsed)

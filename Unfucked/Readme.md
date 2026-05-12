@@ -17,6 +17,7 @@
     - [Directories](#directories)
     - [DNS](#dns)
     - [Enumerables](#enumerables)
+    - [Events](#events)
     - [Exceptions](#exceptions)
     - [Lazy](#lazy)
     - [Paths](#paths)
@@ -274,6 +275,13 @@ using Unfucked;
 - Polyfill for [`IList<T>.AsReadOnly`](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.collectionextensions.asreadonly#system-collections-generic-collectionextensions-asreadonly-1(system-collections-generic-ilist((-0)))) for .NET versions before 8, including .NET Standard
     ```cs
     IReadOnlyList<string> ro = new List<string> { "a", "b" }.AsReadOnly();
+    ```
+
+### Events
+- Subscribe to a producer's events without the producer holding a strong reference to the subscriber, which would have prevented the subscriber from being garbage collected. Without this, you would need to manually unsubscribe, and convert any lambda callbacks into methods or local functions.
+    ```cs
+    publisher.EventHappened += WeakSubscriber.Subscribe<EventHandler>((object? sender, EventArgs args) =>
+        Console.WriteLine("Event happened"));
     ```
 
 ### Exceptions

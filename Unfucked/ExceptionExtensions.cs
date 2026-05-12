@@ -17,7 +17,7 @@ public static class ExceptionExtensions {
         /// <returns>Semicolon-delimited (or colons, if <paramref name="includeClassNames"/> is <c>false</c>) list of exception <see cref="Exception.Message"/>s for each exception in the cause chain, starting with <paramref name="exception"/>.</returns>
         public string MessageChain(bool includeClassNames = true) {
             StringBuilder messageChain = new();
-            foreach (Exception ex in exception.CauseChain.Prepend(exception)) {
+            foreach (Exception ex in ((IEnumerable<Exception>) [exception]).Concat(exception.CauseChain)) {
                 if (messageChain.Length != 0) {
                     messageChain.Append(includeClassNames ? ';' : ':').Append(' ');
                 }
@@ -33,7 +33,7 @@ public static class ExceptionExtensions {
 
     }
 
-    /// <param name="exception">Starting exception. It will not be included in the output, so if you want it in the chain too, call <see cref="Enumerable.Prepend"/>.</param>
+    /// <param name="exception">Starting exception. It will not be included in the output, so if you want it in the chain too, call <c>Enumerable.Prepend</c>.</param>
     extension(Exception exception) {
 
         /// <summary>

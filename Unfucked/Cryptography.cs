@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-#if NETSTANDARD2_0
+#if !(NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER)
 using System.Text;
 #endif
 
@@ -63,7 +63,7 @@ public static class Cryptography {
 #if NET8_0_OR_GREATER
         return RandomNumberGenerator.GetString(alphabet, (int) length);
 #else
-        char[] distinctAlphabet = alphabet.Distinct().ToArray();
+        char[] distinctAlphabet       = alphabet.Distinct().ToArray();
         int    distinctAlphabetLength = distinctAlphabet.Length;
 
 #if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
@@ -74,7 +74,7 @@ public static class Cryptography {
 
         return new string(result);
 #else
-        StringBuilder result = new((int) length);
+        StringBuilder result       = new((int) length);
         byte[]        randomBuffer = new byte[length * 4];
         RNG.GetBytes(randomBuffer);
 

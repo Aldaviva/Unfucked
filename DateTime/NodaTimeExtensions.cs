@@ -1,6 +1,8 @@
 using NodaTime;
 using NodaTime.Extensions;
+using NodaTime.TimeZones;
 using System.Diagnostics.Contracts;
+using Unfucked.DateTime;
 
 namespace Unfucked;
 
@@ -8,6 +10,16 @@ namespace Unfucked;
 /// Methods that make it easier to work with NodaTime dates and times
 /// </summary>
 public static class NodaTimeExtensions {
+
+    internal static ZonedClock localClock {
+        get {
+            try {
+                return SystemClock.Instance.InTzdbSystemDefaultZone();
+            } catch (DateTimeZoneNotFoundException) {
+                return SystemClock.Instance.InBclSystemDefaultZone();
+            }
+        }
+    }
 
     /// <param name="input">a duration that may be positive, negative, or zero</param>
     extension(Duration input) {
@@ -61,8 +73,27 @@ public static class NodaTimeExtensions {
 
     }
 
+    extension(DateTimeZone zone) {
+
+        /// <summary>Create a clock that can the current time in the given zone.</summary>
+        [Pure]
+        public ZonedClock Clock => SystemClock.Instance.InZone(zone);
+
+    }
+
+    extension(DateTimeZoneProviders) {
+
+        /// <summary>Create a time zone provider that periodically automatically updates the tzdb online from Noda Time's servers.</summary>
+        /// <param name="updateInterval">How often to check for updates.</param>
+        /// <returns>A time zone provider that can look up IANA time zones, like <see cref="DateTimeZoneProviders.Tzdb"/>.</returns>
+        [Pure]
+        public static IDateTimeZoneProvider CreateOnlineUpdatingTzdbProvider(TimeSpan updateInterval) => new OnlineUpdatingTzdbDateTimeZoneProvider(updateInterval);
+
+    }
+
 }
 
+/// <inheritdoc cref="NodaTimeExtensions" />
 public static class InstantExtensions {
 
     extension(Instant) {
@@ -77,6 +108,7 @@ public static class InstantExtensions {
 
 }
 
+/// <inheritdoc cref="NodaTimeExtensions" />
 public static class LocalDateTimeExtensions {
 
     extension(LocalDateTime) {
@@ -86,12 +118,45 @@ public static class LocalDateTimeExtensions {
         /// </summary>
         /// <exception cref="NodaTime.TimeZones.DateTimeZoneNotFoundException" accessor="get"></exception>
         [Pure]
-        public static LocalDateTime Now => SystemClock.Instance.InTzdbSystemDefaultZone().GetCurrentLocalDateTime();
+        public static LocalDateTime Now => NodaTimeExtensions.localClock.GetCurrentLocalDateTime();
 
     }
 
 }
 
+/// <inheritdoc cref="NodaTimeExtensions" />
+public static class LocalDateExtensions {
+
+    extension(LocalTime) {
+
+        /// <summary>
+        /// Gets the current system date in the system's IANA time zone.
+        /// </summary>
+        /// <exception cref="NodaTime.TimeZones.DateTimeZoneNotFoundException" accessor="get"></exception>
+        [Pure]
+        public static LocalDate Now => LocalDateTime.Now.Date;
+
+    }
+
+}
+
+/// <inheritdoc cref="NodaTimeExtensions" />
+public static class LocalTimeExtensions {
+
+    extension(LocalTime) {
+
+        /// <summary>
+        /// Gets the current system time in the system's IANA time zone.
+        /// </summary>
+        /// <exception cref="NodaTime.TimeZones.DateTimeZoneNotFoundException" accessor="get"></exception>
+        [Pure]
+        public static LocalTime Now => LocalDateTime.Now.TimeOfDay;
+
+    }
+
+}
+
+/// <inheritdoc cref="NodaTimeExtensions" />
 public static class OffsetDateTimeExtensions {
 
     /// <param name="time">a time</param>
@@ -102,7 +167,7 @@ public static class OffsetDateTimeExtensions {
         /// </summary>
         /// <exception cref="NodaTime.TimeZones.DateTimeZoneNotFoundException" accessor="get"></exception>
         [Pure]
-        public static OffsetDateTime Now => SystemClock.Instance.InTzdbSystemDefaultZone().GetCurrentOffsetDateTime();
+        public static OffsetDateTime Now => NodaTimeExtensions.localClock.GetCurrentOffsetDateTime();
 
         /// <summary>
         /// Gets the current system date and time with zero offset from UTC.
@@ -130,6 +195,7 @@ public static class OffsetDateTimeExtensions {
 
 }
 
+/// <inheritdoc cref="NodaTimeExtensions" />
 public static class ZonedDateTimeExtensions {
 
     /// <param name="time">a time</param>
@@ -140,7 +206,7 @@ public static class ZonedDateTimeExtensions {
         /// </summary>
         /// <exception cref="NodaTime.TimeZones.DateTimeZoneNotFoundException" accessor="get"></exception>
         [Pure]
-        public static ZonedDateTime Now => SystemClock.Instance.InTzdbSystemDefaultZone().GetCurrentZonedDateTime();
+        public static ZonedDateTime Now => NodaTimeExtensions.localClock.GetCurrentZonedDateTime();
 
         /// <summary>
         /// Gets the current system date and time in UTC.

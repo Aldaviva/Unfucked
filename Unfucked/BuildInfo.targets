@@ -1,0 +1,11 @@
+<Project>
+    
+    <Target Name="GenerateBuildInfo" BeforeTargets="BeforeCompile">
+        <WriteLinesToFile File="$(BaseIntermediateOutputPath)\Unfucked.BuildInfo.g.cs" Lines="[assembly:Unfucked.BuildInfo(buildDate: &quot;$([System.DateTimeOffset]::UtcNow.ToString('O'))&quot;)]" Overwrite="true" />
+        
+        <ItemGroup>
+            <Compile Include="$(BaseIntermediateOutputPath)\Unfucked.BuildInfo.g.cs" />
+        </ItemGroup>
+    </Target>
+    
+</Project>

@@ -14,6 +14,7 @@
         <None Include="..\Unfucked\icon.png" Pack="true" PackagePath="\" Visible="true" />
         <None Include="..\*.props;..\*.ps1;..\.github*\**" />
         <AdditionalFiles Include="..\ExceptionAdjustments.txt" Visible="true" />
+        <None Include="BuildInfo.targets" Pack="true" PackagePath="buildTransitive\$(PackageId).targets" />
     </ItemGroup>
 
     <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('netstandard2.0', '$(TargetFramework)')) or $([MSBuild]::IsTargetFrameworkCompatible('net47', '$(TargetFramework)'))">

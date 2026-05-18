@@ -32,7 +32,7 @@ public static class Versions {
 #else
     private static readonly string[] VERSION_ARGUMENTS =
 #endif
-        ["--version", "-v", "-version"]
+            ["--version", "-v", "-version"]
 #if NET9_0_OR_GREATER
         , StringComparison.Ordinal);
 #else
@@ -119,7 +119,11 @@ public static class Versions {
 #endif
 
             if (userRequestedVersion) {
-                Console.WriteLine(Version.ProgramVersion);
+                Console.WriteLine($"Version: {Version.ProgramVersion}");
+                if (BuildInfoAttribute.Get() is {} buildInfo) {
+                    DateTimeOffset buildDate = buildInfo.BuildDate.ToLocalTime();
+                    Console.WriteLine($"Built:   {buildDate:F} ({buildDate:zzzz})");
+                }
                 Environment.Exit(0);
             }
         }

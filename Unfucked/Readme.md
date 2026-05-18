@@ -480,12 +480,17 @@ using Unfucked;
 - Get the program's version number, or print it to stdout and exit with status code 0.
     ```cs
     Console.WriteLine(Version.ProgramVersion);
-    // does not exit
+    // prints output like the following to stdout and does not exit
+
+    5.0.1+e7a9d7252f1e8d0cdae7d47358039192fa5a4af4
     ```
     ```cs
     // useful at the beginning of Main
     Version.PrintProgramVersionAndExitIfRequested();
-    // prints version to stdout and exits with return code 0 if started with arguments -v, -version, or --version
+    // prints output like the following to stdout and exits with return code 0 if started with arguments -v, -version, or --version
+
+    Version: 5.0.1+e7a9d7252f1e8d0cdae7d47358039192fa5a4af4
+    Built:   Monday, May 18, 2026 3:31:15 p (-07:00)
     ```
 
 ### XML

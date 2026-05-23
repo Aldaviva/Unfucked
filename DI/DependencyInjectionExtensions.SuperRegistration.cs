@@ -139,7 +139,7 @@ public static partial class DependencyInjectionExtensions {
             extra => scope == ServiceLifetime.Singleton ? new ServiceDescriptor(extra, ServiceProvider<TImpl>, scope) : new ServiceDescriptor(extra, typeof(TImpl), scope));
 
     private static IServiceCollection Add<TImpl>(IServiceCollection services, SuperRegistration alsoRegister, TImpl instance) where TImpl: class =>
-        Add<TImpl>(services, alsoRegister, () => [new ServiceDescriptor(typeof(TImpl), instance, ServiceLifetime.Singleton)],
+        Add<TImpl>(services, alsoRegister, () => [new ServiceDescriptor(typeof(TImpl), instance)],
             extra => new ServiceDescriptor(extra, _ => instance, ServiceLifetime.Singleton));
 
     private static IServiceCollection Add<TImpl>(IServiceCollection services, ServiceLifetime scope, SuperRegistration alsoRegister, Func<IServiceProvider, TImpl> factory) where TImpl: class =>

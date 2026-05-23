@@ -80,6 +80,22 @@ public class SuperRegistrationTest: IDisposable {
         services.GetKeyedService<MySuperClass>(serviceKey).Should().BeOfType<MyClass>().And.NotBeNull();
     }
 
+    [Fact]
+    public async Task SingletonInstance() {
+        HostApplicationBuilder builder = new();
+        builder.Services.AddSingleton(new MyClass(), SuperRegistration.Interfaces | SuperRegistration.Superclasses);
+
+        app = builder.Build();
+        await app.StartAsync();
+
+        IServiceProvider services = app.Services;
+
+        MyClass? myClass = services.GetService<MyClass>();
+        myClass.Should().NotBeNull();
+        services.GetService<MyInterface>().Should().BeSameAs(myClass);
+        services.GetService<MySuperClass>().Should().BeSameAs(myClass);
+    }
+
     private interface MyInterface;
 
     private abstract class MySuperClass: MyInterface;

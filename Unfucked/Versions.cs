@@ -107,7 +107,7 @@ public static class Versions {
         /// <summary>The current program's product or file version.</summary>
         public static string? ProgramVersion => PROGRAM_VERSION.Value;
 
-        /// <summary>If the program was launched with the <c>-v</c>, <c>-version</c>, or <c>--version</c> arguments, print the program's product or file version to stdout, then exit with code 0; otherwise, do nothing.</summary>
+        /// <summary>If the program was launched with the <c>-v</c>, <c>-version</c>, or <c>--version</c> arguments, print the program's product/file version and build date to stdout, then exit with code 0; otherwise, do nothing.</summary>
         public static void PrintProgramVersionAndExitIfRequested() {
             string[] args = Environment.GetCommandLineArgs();
 

@@ -10,6 +10,7 @@
 - [Installation](#installation)
 - [Usage](#usage)
     - [Dependency Injection](#dependency-injection)
+    - [Configuration](#configuration)
     - [Logging](#logging)
 - [All Unfucked libraries](#all-unfucked-libraries)
 
@@ -38,10 +39,6 @@ await app.RunAsync();
 
 ### Dependency Injection
 
-- In addition to searching for configuration JSON files in the current working directory, also search in the executable file's directory, so launching the program with a different CWD doesn't break configuration if that's where you're storing them.
-    ```cs
-    appBuilder.Configuration.AlsoSearchForJsonFilesInExecutableDirectory();
-    ```
 - Allow providers for a dependency service to be injected into a dependent instead of the service itself, which is useful when the dependent either has a longer lifetime than the dependency or needs to make multiple distinct instances of the dependency.
     ```cs
     appBuilder.Services
@@ -68,6 +65,22 @@ await app.RunAsync();
     class MyDependent(MyInterface dependency);
     ```
     - Available for singletons, transients, scoped, hosted, and keyed services.
+
+
+### Configuration
+
+- In addition to searching for configuration JSON files in the current working directory, also search in the executable file's directory, so launching the program with a different CWD doesn't break configuration if that's where you're storing them.
+    ```cs
+    appBuilder.Configuration.AlsoSearchForJsonFilesInExecutableDirectory();
+    ```
+- Don't foolishly ignore configuration files when they are hidden, system, or dot files. In fact, configuration files are often hidden (on Windows) or prefixed with a dot (on *nix).
+    ```cs
+    appBuilder.Configuration
+        .AddJsonFile("conf.json", optional: false, reloadOnChange: true, includeHidden: true);
+    ```
+    ```cs
+    appBuilder.Configuration.UnignoreHiddenFiles();
+    ```
 
 ### Logging
 

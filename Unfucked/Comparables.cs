@@ -27,6 +27,15 @@ public static class Comparables {
         }
     }
 
+    extension(StringComparison) {
+
+        /// <summary>
+        /// Get the <see cref="StringComparison"/> for the case sensitivity of the current operating system platform's filesystem. This is case-insensitive on Windows and case-sensitive everywhere else (Linux, Mac OS, and all others).
+        /// </summary>
+        public static StringComparison FilesystemPaths => Environment.OSVersion.Platform == PlatformID.Win32NT ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+    }
+
 /*#if NET8_0_OR_GREATER
     public static T Clamp<T>(this T input, T min, T max) where T: IComparisonOperators<T, T, bool> {
         if (input > max) {

@@ -1,3 +1,7 @@
+#if NET9_0_OR_GREATER
+using System.Buffers;
+#endif
+
 namespace Unfucked;
 
 /// <summary>
@@ -36,20 +40,29 @@ public static class Paths {
         /// Test if a given filename has one of a set of expected extensions.
         /// </summary>
         /// <param name="filename">Filename or path to file.</param>
-        /// <param name="allowedExtensions">A set of lowercase file extensions with or without leading periods. Compound extensions like .tar.gz are not supported. Can be a <c>FrozenSet</c> for faster lookups (<c>new HashSet&lt;string&gt;{ ... }.ToFrozenSet()</c>, which may require the <c>System.Collections.Immutable</c> package in .NET 6 and earlier).</param>
-        /// <returns><c>true</c> if the file extension is in <paramref name="allowedExtensions"/>, <c>false</c> otherwise</returns>
+        /// <param name="allowedExtensions">A set of lowercase file extensions with or without leading periods. Compound extensions like .tar.gz are not supported. Can be a <c>FrozenSet</c> for faster lookups (<c>FrozenSet.Create(".jpg", ".gif")</c>, which depends on the <c>System.Collections.Immutable</c> package in .NET 6 and earlier).</param>
+        /// <returns><c>true</c> if the file extension is in <paramref name="allowedExtensions"/>, <c>false</c> otherwise.</returns>
         [Pure]
         public static bool MatchesExtensions(string filename,
 #if NET5_0_OR_GREATER
                                              IReadOnlySet<string>
 #else
-                                         ISet<string>
+                                             ISet<string>
 #endif
-                                                 allowedExtensions) {
+                                                 allowedExtensions) =>
             // don't use Contains(string, IEqualityComparer<string>) because that's an O(N) operation, in case we have a fast FrozenSet in allowedExtensions
-            string actualExtensionWithLeadingPeriod = Path.GetExtension(filename).ToLowerInvariant();
-            return allowedExtensions.Contains(actualExtensionWithLeadingPeriod) || allowedExtensions.Contains(actualExtensionWithLeadingPeriod.TrimStart('.'));
-        }
+            Path.GetExtension(filename).ToLowerInvariant() is { Length: not 0 } actualExtensionWithLeadingPeriod &&
+            (allowedExtensions.Contains(actualExtensionWithLeadingPeriod) || allowedExtensions.Contains(actualExtensionWithLeadingPeriod.TrimStart('.')));
+
+#if NET9_0_OR_GREATER
+        /// <summary>Test if a given filename has one of a set of expected extensions.</summary>
+        /// <param name="filename">Filename or path to file.</param>
+        /// <param name="allowedExtensions">A set of lowercase file extensions with leading periods. Compound extensions like .tar.gz are not supported. Instantiate this value with e.g. <code>SearchValues.Create([".jpg", ".gif"], StringComparison.OrdinalIgnoreCase);</code></param>
+        /// <returns><c>true</c> if the file extension is in <paramref name="allowedExtensions"/>, <c>false</c> otherwise.</returns>
+        [Pure]
+        public static bool MatchesExtensions(string filename, SearchValues<string> allowedExtensions) =>
+            Path.GetExtension(filename).ToLowerInvariant() is { Length: not 0 } actualExtensionWithLeadingPeriod && allowedExtensions.Contains(actualExtensionWithLeadingPeriod);
+#endif
 
     }
 

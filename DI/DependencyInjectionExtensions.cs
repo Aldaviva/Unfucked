@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.FileProviders.Physical;
 using Microsoft.Extensions.Hosting;
 using Unfucked.DI;
 #if !NET6_0_OR_GREATER
@@ -18,8 +19,8 @@ namespace Unfucked;
 public static partial class DependencyInjectionExtensions {
 
     /// <summary>
-    /// <para>By default, the .NET host only looks for configuration files in the working directory, not the installation directory, which breaks when you run the program from any other directory.</para>
-    /// <para>Fix this by also looking for JSON configuration files in the same directory as this executable.</para>
+    /// <para>By default, the .NET host only looks for CWD configuration files in the working directory, not the installation directory, which breaks when you run the program from any other directory.</para>
+    /// <para>Fix this by also looking for CWD JSON configuration files in the same directory as this executable.</para>
     /// </summary>
     /// <param name="builder">see <c>HostApplicationBuilder.Configuration</c></param>
     /// <returns>the same <see cref="IConfigurationBuilder"/> for chaining</returns>
@@ -43,21 +44,19 @@ public static partial class DependencyInjectionExtensions {
             return builder;
         }
 
-        if (installationDir != null) {
-            PhysicalFileProvider fileProvider = new(installationDir);
+        if (installationDir != null && !installationDir.Equals(Environment.CurrentDirectory, StringComparison.FilesystemPaths)) {
+            PhysicalFileProvider fileProvider = new(installationDir, ExclusionFilters.None);
 
             IEnumerable<(int index, IConfigurationSource source)> sourcesToAdd = builder.Sources.SelectMany<IConfigurationSource, (int, IConfigurationSource)>((src, oldIndex) =>
-                src is JsonConfigurationSource { Path: {} path } source
-                    ? [
-                        (oldIndex, new JsonConfigurationSource {
-                            FileProvider   = fileProvider,
-                            Path           = path,
-                            Optional       = true,
-                            ReloadOnChange = source.ReloadOnChange,
-                            ReloadDelay    = source.ReloadDelay
-                        })
-                    ]
-                    : []).ToList();
+                src is JsonConfigurationSource { Path: {} path } source ? [
+                    (oldIndex, new JsonConfigurationSource {
+                        FileProvider   = fileProvider,
+                        Path           = path,
+                        Optional       = true,
+                        ReloadOnChange = source.ReloadOnChange,
+                        ReloadDelay    = source.ReloadDelay
+                    })
+                ] : []).ToList();
 
             int sourcesAdded = 0;
             foreach ((int index, IConfigurationSource source) in sourcesToAdd) {
@@ -66,6 +65,58 @@ public static partial class DependencyInjectionExtensions {
         }
 
         return builder;
+    }
+
+    /// <summary>
+    /// <para>Mutate all existing physical file configuration sources to allow them to load hidden, system, and dot files without ignoring them or crashing. Does not affect subsequently added configuration sources, so call this last.</para>
+    /// <para>This won't help if it is called after a required hidden file has already been added, because that will have crashed before calling this method. To fix this, either call <see cref="AddJsonFile"/> and pass <c>true</c> as the <c>includeHidden</c> argument, or pass a custom <see cref="PhysicalFileProvider"/> to <see cref="JsonConfigurationExtensions.AddJsonFile(IConfigurationBuilder,IFileProvider,string,bool,bool)"/> with its <c>filters</c> constructor argument set to <see cref="ExclusionFilters.None"/>.</para>
+    /// </summary>
+    /// <param name="builder">The <c>Configuration</c> property value of the <see cref="HostApplicationBuilder"/> or other application builder.</param>
+    /// <seealso cref="AddJsonFile"/>
+    public static IConfigurationBuilder UnignoreHiddenFiles(this IConfigurationBuilder builder) {
+        IDictionary<PhysicalFileProvider, PhysicalFileProvider> replacementProviders = new Dictionary<PhysicalFileProvider, PhysicalFileProvider>();
+        foreach (FileConfigurationSource source in builder.Sources.OfType<FileConfigurationSource>()) {
+            if (source.FileProvider is PhysicalFileProvider fileProvider && !replacementProviders.Values.Contains(fileProvider)) {
+                source.FileProvider = replacementProviders.GetOrAdd(fileProvider, static replaced => new PhysicalFileProvider(replaced.Root, ExclusionFilters.None), out bool _);
+            }
+        }
+        foreach (PhysicalFileProvider replaced in replacementProviders.Keys) {
+            replaced.Dispose();
+        }
+        (builder as IConfigurationRoot)?.Reload();
+        return builder;
+    }
+
+    /// <inheritdoc cref="JsonConfigurationExtensions.AddJsonFile(IConfigurationBuilder,string,bool,bool)" />
+    /// <param name="includeHidden">If <c>false</c> (default), hidden, system, and dot files will be ignored and will not be loaded, causing a crash if <paramref name="optional"/> is <c>true</c>. Otherwise, if <c>true</c>, then hidden, system, and dot files will be treated normally and loaded properly.</param>
+    /// <seealso cref="UnignoreHiddenFiles"/>
+    public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, string path, bool optional, bool reloadOnChange, bool includeHidden = false) {
+        if (!includeHidden) {
+            return JsonConfigurationExtensions.AddJsonFile(builder, path, optional, reloadOnChange);
+        } else {
+            return builder.AddJsonFile(source => {
+                source.Path           = path;
+                source.Optional       = optional;
+                source.ReloadOnChange = reloadOnChange;
+                resolveFileProvider(source);
+            });
+        }
+
+        // Copied from Microsoft.Extensions.Configuration.FileConfigurationSource.ResolveFileProvider(), which stupidly hardcodes always excluding hidden files
+        static void resolveFileProvider(JsonConfigurationSource source) {
+            if (source.FileProvider == null && !string.IsNullOrEmpty(source.Path) && Path.IsPathRooted(source.Path)) {
+                string? directory  = Path.GetDirectoryName(source.Path);
+                string  pathToFile = Path.GetFileName(source.Path);
+                while (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) {
+                    pathToFile = Path.Combine(Path.GetFileName(directory), pathToFile);
+                    directory  = Path.GetDirectoryName(directory);
+                }
+                if (Directory.Exists(directory)) {
+                    source.FileProvider = new PhysicalFileProvider(directory, ExclusionFilters.None);
+                    source.Path         = pathToFile;
+                }
+            }
+        }
     }
 
     /// <summary>

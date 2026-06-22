@@ -91,19 +91,20 @@ public static partial class DependencyInjectionExtensions {
     /// <param name="includeHidden">If <c>false</c> (default), hidden, system, and dot files will be ignored and will not be loaded, causing a crash if <paramref name="optional"/> is <c>true</c>. Otherwise, if <c>true</c>, then hidden, system, and dot files will be treated normally and loaded properly.</param>
     /// <seealso cref="UnignoreHiddenFiles"/>
     public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, string path, bool optional, bool reloadOnChange, bool includeHidden = false) {
-        if (!includeHidden) {
-            return JsonConfigurationExtensions.AddJsonFile(builder, path, optional, reloadOnChange);
-        } else {
-            return builder.AddJsonFile(source => {
+
+        return includeHidden
+            ? builder.AddJsonFile(source => {
                 source.Path           = path;
                 source.Optional       = optional;
                 source.ReloadOnChange = reloadOnChange;
                 resolveFileProvider(source);
-            });
-        }
+            })
+            : JsonConfigurationExtensions.AddJsonFile(builder, path, optional, reloadOnChange);
 
-        // Copied from Microsoft.Extensions.Configuration.FileConfigurationSource.ResolveFileProvider(), which stupidly hardcodes always excluding hidden files
+        // Copied from Microsoft.Extensions.Configuration.FileConfigurationSource.ResolveFileProvider(), which stupidly hardcodes always excluding hidden/sensitive files
         static void resolveFileProvider(JsonConfigurationSource source) {
+            const ExclusionFilters filter = ExclusionFilters.None;
+
             if (source.FileProvider == null && !string.IsNullOrEmpty(source.Path) && Path.IsPathRooted(source.Path)) {
                 string? directory  = Path.GetDirectoryName(source.Path);
                 string  pathToFile = Path.GetFileName(source.Path);
@@ -112,7 +113,7 @@ public static partial class DependencyInjectionExtensions {
                     directory  = Path.GetDirectoryName(directory);
                 }
                 if (Directory.Exists(directory)) {
-                    source.FileProvider = new PhysicalFileProvider(directory, ExclusionFilters.None);
+                    source.FileProvider = new PhysicalFileProvider(directory, filter);
                     source.Path         = pathToFile;
                 }
             }

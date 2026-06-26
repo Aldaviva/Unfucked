@@ -26,7 +26,7 @@ using Unfucked;
 ## Usage
 
 - Asynchronously serialize iCalendar files to a byte stream, to prevent Kestrel and IIS errors on synchronous I/O
-- Converters between the three implementations of a datetime used by Ical.Net, NodaTime, and .NET
+- Converters between the three implementations of a datetime used by Ical.Net, Noda Time, and .NET
 
 ## All Unfucked libraries
 - [Unfucked](https://github.com/Aldaviva/Unfucked/tree/master/Unfucked)

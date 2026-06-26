@@ -5,7 +5,7 @@
         <Version>0.0.1-beta.6</Version>
         <RootNamespace>Unfucked</RootNamespace>
         <Description>Fix egregiously broken or missing functionality in Noda Time.</Description>
-        <PackageTags>NodaTime date time $(PackageTags)</PackageTags>
+        <PackageTags>Noda-Time NodaTime date time $(PackageTags)</PackageTags>
     </PropertyGroup>
 
     <ItemGroup>

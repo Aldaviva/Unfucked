@@ -78,4 +78,24 @@ public class DateConversionTests {
         actual.Second.Should().Be(0);
     }
 
+    [Fact]
+    public void ToIcalDateTimeFromDateOnly() {
+        CalDateTime actual = new DateOnly(1988, 8, 17).ToIcalDateTime();
+
+        actual.Year.Should().Be(1988);
+        actual.Month.Should().Be(8);
+        actual.Day.Should().Be(17);
+        actual.HasTime.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ToIcalDateTimeFromLocalDate() {
+        CalDateTime actual = new LocalDate(1988, 8, 17).ToIcalDateTime();
+
+        actual.Year.Should().Be(1988);
+        actual.Month.Should().Be(8);
+        actual.Day.Should().Be(17);
+        actual.HasTime.Should().BeFalse();
+    }
+
 }

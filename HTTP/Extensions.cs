@@ -28,14 +28,22 @@ public static class Extensions {
     /// <inheritdoc cref="Target(System.Net.Http.HttpClient,System.Uri)" />
     /// <param name="isTemplate"><c>false</c> if <paramref name="uri"/> is a regular URI, or <c>true</c> if it is a URI Template with <c>{placeholders}</c></param>
     [Pure]
-    public static IWebTarget Target(this HttpClient httpClient, string uri, bool isTemplate = false) {
+    public static IWebTarget Target(this HttpClient httpClient,
+#if NET7_0_OR_GREATER
+                                    [StringSyntax("Uri")]
+#endif
+                                    string uri, bool isTemplate = false) {
         IHttpClient client = HttpClientWrapper.Wrap(httpClient);
         return isTemplate ? new WebTarget(client, UrlBuilder.FromTemplate(uri)) : new WebTarget(client, uri);
     }
 
     /// <inheritdoc cref="Target(System.Net.Http.HttpClient,string,bool)" />
     [Pure]
-    public static IWebTarget Target<H>(this H httpClient, string uri, bool isTemplate = false) where H: IHttpClient =>
+    public static IWebTarget Target<H>(this H httpClient,
+#if NET7_0_OR_GREATER
+                                       [StringSyntax("Uri")]
+#endif
+                                       string uri, bool isTemplate = false) where H: IHttpClient =>
         isTemplate ? new WebTarget(httpClient, UrlBuilder.FromTemplate(uri)) : new WebTarget(httpClient, uri);
 
     /// <summary>

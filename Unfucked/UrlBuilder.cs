@@ -99,7 +99,11 @@ public sealed class UrlBuilder {
     }
 
     /// <exception cref="UriFormatException"></exception>
-    public UrlBuilder(string uri): this(new Uri(uri, UriKind.Absolute)) {}
+    public UrlBuilder(
+#if NET7_0_OR_GREATER
+        [StringSyntax("Uri")]
+#endif
+        string uri): this(new Uri(uri, UriKind.Absolute)) {}
 
     /// <inheritdoc cref="UrlBuilder(Uri)" />
     public static implicit operator UrlBuilder(Uri uri) => new(uri);
@@ -108,10 +112,18 @@ public sealed class UrlBuilder {
     public static implicit operator UrlBuilder(UriBuilder uri) => new(uri);
 
     /// <exception cref="UriFormatException"></exception>
-    public static explicit operator UrlBuilder(string uri) => new(uri);
+    public static explicit operator UrlBuilder(
+#if NET7_0_OR_GREATER
+        [StringSyntax("Uri")]
+#endif
+        string uri) => new(uri);
 
     /// <exception cref="UriFormatException"></exception>
-    public static UrlBuilder FromTemplate(string uriTemplate) {
+    public static UrlBuilder FromTemplate(
+#if NET7_0_OR_GREATER
+        [StringSyntax("Uri")]
+#endif
+        string uriTemplate) {
         const string alphabet            = "abcdefghijklmnopqrstuvwxyz";
         Regex        templatePattern     = new(@"\{(?<prefix>[/?&]?)(?<names>[\w-,]+?)\}");
         Regex        fakeTemplatePattern = new("template[A-Za-z]{16}");
@@ -502,10 +514,7 @@ internal static class UrlEncoder {
 
     public enum Component {
 
-        UserInfo,
-        PathSegment,
-        QueryParameter,
-        Fragment
+        UserInfo, PathSegment, QueryParameter, Fragment
 
     }
 

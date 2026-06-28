@@ -9,7 +9,8 @@ namespace Unfucked.STUN;
 
 public interface StunServerList: IDisposable {
 
-    Task<IEnumerable<DnsEndPoint>> ListStunServers();
+    /// <exception cref="OperationCanceledException"></exception>
+    Task<IEnumerable<DnsEndPoint>> ListStunServers(CancellationToken cancellationToken = default);
 
 }
 
@@ -49,14 +50,14 @@ public sealed class AlwaysOnlineStunServerList: StunServerList {
         blacklistedServers = (serverBlacklist?.Select(static s => s.ToLowerInvariant()) ?? new HashSet<string>(0)).ToFrozenSet();
 
         ServersCache = new InMemoryCache<string, IEnumerable<DnsEndPoint>>(new CacheOptions { ExpireAfterWrite = STUN_LIST_CACHE_DURATION, InitialCapacity = 1 },
-            async _ => await FetchStunServers().ConfigureAwait(false));
+            async (_, ct) => await FetchStunServers(ct).ConfigureAwait(false));
     }
 
     /// <exception cref="HttpRequestException"></exception>
-    /// <exception cref="TaskCanceledException"></exception>
-    private async Task<IEnumerable<DnsEndPoint>> FetchStunServers() {
+    /// <exception cref="OperationCanceledException"></exception>
+    private async Task<IEnumerable<DnsEndPoint>> FetchStunServers(CancellationToken ct) {
         Debug.WriteLine("Fetching list of STUN servers from pradt2/always-online-stun");
-        ReadOnlyCollection<DnsEndPoint> servers = (await http.GetStringAsync(STUN_SERVER_LIST_URL).ConfigureAwait(false))
+        ReadOnlyCollection<DnsEndPoint> servers = (await http.GetStringAsync(STUN_SERVER_LIST_URL, ct).ConfigureAwait(false))
             .TrimEnd()
             .Split('\n')
             .Select(static line => {
@@ -76,11 +77,14 @@ public sealed class AlwaysOnlineStunServerList: StunServerList {
         return servers;
     }
 
-    public async Task<IEnumerable<DnsEndPoint>> ListStunServers() {
+    /// <inheritdoc />
+    public async Task<IEnumerable<DnsEndPoint>> ListStunServers(CancellationToken cancellationToken = default) {
         DnsEndPoint[] servers = [];
         try {
-            servers = (await ServersCache.Get(CACHE_KEY).ConfigureAwait(false)).ToArray();
+            servers = (await ServersCache.Get(CACHE_KEY, cancellationToken: cancellationToken).ConfigureAwait(false)).ToArray();
         } catch (HttpRequestException) {} catch (TaskCanceledException) { // timeout
+        } catch (OperationCanceledException) {
+            throw;
         } catch (Exception e) when (e is not OutOfMemoryException) {}
 
         RANDOM.Shuffle(servers);
@@ -88,6 +92,7 @@ public sealed class AlwaysOnlineStunServerList: StunServerList {
         return servers.Concat(FALLBACK_SERVERS);
     }
 
+    /// <inheritdoc />
     public void Dispose() {
         ServersCache.Dispose();
         if (ownsHttpClient) {

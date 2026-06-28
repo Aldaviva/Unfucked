@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFrameworks>net10.0;net8.0</TargetFrameworks>
-        <Version>0.0.1-beta.4</Version>
+        <Version>0.0.1-beta.5</Version>
         <Description>Fix egregiously broken or missing functionality in Stun.Net.</Description>
         <PackageTags>stun Stun.Net session-traversal-utilities-for-nat ice $(PackageTags)</PackageTags>
     </PropertyGroup>

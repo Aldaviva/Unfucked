@@ -10,7 +10,7 @@ public class InMemoryCacheTest {
 
     private event EventHandler<string>? StringLengthLoaded;
 
-    private ValueTask<int> StringLengthLoader(string s) {
+    private ValueTask<int> StringLengthLoader(string s, CancellationToken cancellationToken = default) {
         Interlocked.Increment(ref loads);
         int length = s.Length;
         StringLengthLoaded?.Invoke(this, s);
@@ -46,7 +46,7 @@ public class InMemoryCacheTest {
 
     [Fact]
     public async Task BothLoaders() {
-        using var cache = new InMemoryCache<string, int>(loader: s => new ValueTask<int>(s.Length + 1));
+        using var cache = new InMemoryCache<string, int>(loader: (s, ct) => new ValueTask<int>(s.Length + 1));
         (await cache.Get("a", StringLengthLoader)).Should().Be(1);
     }
 

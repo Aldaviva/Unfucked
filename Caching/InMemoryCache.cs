@@ -4,7 +4,7 @@ using Timer = System.Timers.Timer;
 
 namespace Unfucked.Caching;
 
-/// <summary>Strongly-typed in-memory cache that can encapsulate automatic value loading logic into the cache itself, instead of duplicating it across every single call site. Supports expiration after read or write, and periodic refresh for expired values.</summary>
+/// <summary>Strongly-typed asynchronous in-memory cache that can encapsulate automatic value loading logic into the cache itself, instead of duplicating it across every single call site. Supports expiration after read or write, and periodic refresh for expired values.</summary>
 /// <remarks>Inspired by Guava Cache.</remarks>
 /// <typeparam name="K">Type of the cache key.</typeparam>
 /// <typeparam name="V">Type of the cached values.</typeparam>
@@ -13,17 +13,17 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
     /// <inheritdoc />
     public event RemovalNotification<K, V>? Removal;
 
-    private readonly CacheOptions                           options;
-    private readonly Func<K, ValueTask<V>>?                 defaultLoader;
-    private readonly ConcurrentDictionary<K, CacheEntry<V>> cache;
-    private readonly Timer?                                 expirationTimer;
+    private readonly CacheOptions                              options;
+    private readonly Func<K, CancellationToken, ValueTask<V>>? defaultLoader;
+    private readonly ConcurrentDictionary<K, CacheEntry<V>>    cache;
+    private readonly Timer?                                    expirationTimer;
 
     private volatile bool isDisposed;
 
     /// <summary>Create a new in-memory cache for specific key and value types, with the given optional <paramref name="options"/> and value <paramref name="loader"/>.</summary>
     /// <param name="options">Customize the caching behavior, including expiration durations and automatic refreshes.</param>
     /// <param name="loader">Cache-wide callback used to generate a cached value when a key is requested that doesn't already have an unexpired value cached. Can be <c>null</c> if values are always manually cached with <see cref="Put"/>, and can be overridden on a per-read basis by supplying a <c>loader</c> callback to <see cref="Get"/>. Also used when automatically refreshing values. Can throw exceptions, which will not be cached.</param>
-    public InMemoryCache(CacheOptions? options = null, Func<K, ValueTask<V>>? loader = null) {
+    public InMemoryCache(CacheOptions? options = null, Func<K, CancellationToken, ValueTask<V>>? loader = null) {
         this.options = (options ?? new CacheOptions()) with {
             ConcurrencyLevel = this.options.ConcurrencyLevel is > 0 and var c ? c : Environment.ProcessorCount,
             InitialCapacity = this.options.InitialCapacity is > 0 and var i ? i : 31
@@ -44,17 +44,19 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
     public long Count => cache.Count;
 
     /// <inheritdoc />
-    public async Task<V> Get(K key, Func<K, ValueTask<V>>? loader = null) {
+    public async Task<V> Get(K key, Func<K, CancellationToken, ValueTask<V>>? loader = null, CancellationToken cancellationToken = default) {
         CacheEntry<V> cacheEntry = cache.GetOrAdd(key, ValueFactory);
         if (cacheEntry.IsNew) {
-            await cacheEntry.ValueLock.WaitAsync().ConfigureAwait(false);
+            await cacheEntry.ValueLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try {
                 if (cacheEntry.IsNew) {
-                    cacheEntry.Value = await LoadValue(key, loader ?? defaultLoader).ConfigureAwait(false);
+                    cacheEntry.Value = await LoadValue(key, loader ?? defaultLoader, cancellationToken).ConfigureAwait(false);
                     cacheEntry.LastWritten.Start();
                     cacheEntry.RefreshTimer?.Start();
                     cacheEntry.IsNew = false;
                 }
+            } catch (OperationCanceledException) {
+                // don't remove or dispose cache entry
             } catch (Exception e) when (e is not OutOfMemoryException) {
                 cache.TryRemove(key, out _);
                 cacheEntry.Dispose();
@@ -65,15 +67,17 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
                 }
             }
         } else if (IsExpired(cacheEntry)) {
-            V? oldValue = default;
-            await cacheEntry.ValueLock.WaitAsync().ConfigureAwait(false);
+            V    oldValue = default!;
+            bool written  = false;
+            await cacheEntry.ValueLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try {
                 if (IsExpired(cacheEntry)) {
                     cacheEntry.RefreshTimer?.Stop();
                     try {
                         oldValue         = cacheEntry.Value;
-                        cacheEntry.Value = await LoadValue(key, loader ?? defaultLoader).ConfigureAwait(false);
+                        cacheEntry.Value = await LoadValue(key, loader ?? defaultLoader, cancellationToken).ConfigureAwait(false);
                         cacheEntry.LastWritten.Restart();
+                        written = true;
                     } finally {
                         cacheEntry.RefreshTimer?.Start();
                     }
@@ -82,7 +86,7 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
                 cacheEntry.ValueLock.Release();
             }
 
-            if (oldValue is not null) {
+            if (written) {
                 Removal?.Invoke(this, key, oldValue, RemovalCause.Expired);
             }
         }
@@ -93,15 +97,17 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
 
     /// <inheritdoc />
     public async Task Put(K key, V value) {
-        CacheEntry<V> cacheEntry = cache.GetOrAdd(key, ValueFactory);
+        V             removedValue = default!;
+        bool          written      = false;
+        CacheEntry<V> cacheEntry   = cache.GetOrAdd(key, ValueFactory);
         await cacheEntry.ValueLock.WaitAsync().ConfigureAwait(false);
-        V? removedValue = default;
         try {
             cacheEntry.RefreshTimer?.Stop();
             if (cacheEntry.IsNew) {
                 cacheEntry.IsNew = false;
             } else {
                 removedValue = cacheEntry.Value;
+                written      = true;
             }
 
             cacheEntry.Value = value;
@@ -111,7 +117,7 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
             cacheEntry.ValueLock.Release();
         }
 
-        if (removedValue is not null) {
+        if (written) {
             Removal?.Invoke(this, key, removedValue, RemovalCause.Replaced);
         }
     }
@@ -122,21 +128,27 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
         var    entry        = new CacheEntry<V>(refreshTimer);
 
         if (entry.RefreshTimer != null) {
-            async void refreshEntry(object o, ElapsedEventArgs elapsedEventArgs) {
+            async void refreshEntry(object sender, ElapsedEventArgs elapsedEventArgs) {
                 if (!entry.IsDisposed) {
                     try {
-                        await entry.ValueLock.WaitAsync().ConfigureAwait(false);
-                        V oldValue = entry.Value;
+                        V    oldValue = default!;
+                        bool written  = false;
                         try {
-                            entry.Value = await defaultLoader!(key).ConfigureAwait(false);
+                            await entry.ValueLock.WaitAsync().ConfigureAwait(false);
+                            oldValue    = entry.Value;
+                            entry.Value = await defaultLoader!(key, CancellationToken.None).ConfigureAwait(false);
                             entry.LastWritten.Restart();
+                            written = true;
                         } catch (Exception e) when (e is not OutOfMemoryException) {
                             // try again next timer execution
                         } finally {
                             entry.RefreshTimer.Start();
                             entry.ValueLock.Release();
                         }
-                        Removal?.Invoke(this, key, oldValue, RemovalCause.Replaced);
+
+                        if (written) {
+                            Removal?.Invoke(this, key, oldValue, RemovalCause.Replaced);
+                        }
                     } catch (ObjectDisposedException) {}
                 } else {
                     entry.RefreshTimer.Elapsed -= refreshEntry;
@@ -150,9 +162,9 @@ public sealed class InMemoryCache<K, V>: Cache<K, V> where K: notnull {
     }
 
     /// <exception cref="System.Collections.Generic.KeyNotFoundException">a value with the key <typeparamref name="K"/> was not found, and no <paramref name="loader"/> was not provided</exception>
-    private static ValueTask<V> LoadValue(K key, Func<K, ValueTask<V>>? loader) {
+    private static ValueTask<V> LoadValue(K key, Func<K, CancellationToken, ValueTask<V>>? loader, CancellationToken ct) {
         if (loader != null) {
-            return loader(key);
+            return loader(key, ct);
         } else {
             throw KeyNotFoundException(key);
         }

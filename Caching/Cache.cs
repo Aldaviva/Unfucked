@@ -14,11 +14,12 @@ public interface Cache<K, V>: IDisposable where K: notnull {
 
     /// <summary>Retrieve a cached value by its key, automatically loading the value if it's missing from the cache. If the cache has expiration times (<see cref="CacheOptions.ExpireAfterRead"/> or <see cref="CacheOptions.ExpireAfterWrite"/>) this will be automatically refreshed so an expired value is never returned.</summary>
     /// <param name="key">The key of the value which you want to get.</param>
-    /// <param name="loader">Optional callback used to generate the cache value if it's expired or not already in the cache. Overrides any loader specified on the cache itself in <see cref="InMemoryCache{K,V}(CacheOptions?,Func{K,ValueTask{V}}?)"/>. If this and the cache-wide loader are both <c>null</c>, you must first manually populate the cache with <see cref="Put"/>. This callback can throw an exception, which will not be cached.</param>
+    /// <param name="loader">Optional callback used to generate the cache value if it's expired or not already in the cache. Overrides any loader specified on the cache itself in <see cref="InMemoryCache{K,V}(CacheOptions?,Func{K,CancellationToken,ValueTask{V}}?)"/>. If this and the cache-wide loader are both <c>null</c>, you must first manually populate the cache with <see cref="Put"/>. This callback can throw an exception, which will not be cached.</param>
     /// <returns>The cached value for the key.</returns>
-    /// <exception cref="System.Collections.Generic.KeyNotFoundException">No value loader was specified in <paramref name="loader"/> or for the <see cref="Cache{K,V}"/> instance, and <paramref name="key"/> had not already been manually added to the cache with <see cref="Put"/>.</exception>
+    /// <exception cref="KeyNotFoundException">No value loader was specified in <paramref name="loader"/> or for the <see cref="Cache{K,V}"/> instance, and <paramref name="key"/> had not already been manually added to the cache with <see cref="Put"/>.</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
     /// <exception cref="Exception">The loader threw an exception while loading the value for <paramref name="key"/>, and the value was not cached.</exception>
-    Task<V> Get(K key, Func<K, ValueTask<V>>? loader = null);
+    Task<V> Get(K key, Func<K, CancellationToken, ValueTask<V>>? loader = null, CancellationToken cancellationToken = default);
 
     /// <summary>Manually and eagerly adds or replaces a value to the cache, instead of letting it get automatically and lazily loaded when the value is requested.</summary>
     /// <param name="key">The key of the value which you want to set.</param>

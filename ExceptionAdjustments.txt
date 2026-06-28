@@ -22,3 +22,4 @@ P:System.Lazy`1.Value get -T:System.MemberAccessException
 P:System.Lazy`1.Value get -T:System.MissingMemberException
 M:System.Reflection.FieldInfo.GetValue(System.Object) -T:System.FieldAccessException
 M:System.Reflection.FieldInfo.GetValue(System.Object) -T:System.Reflection.TargetException
+M:System.Threading.SemaphoreSlim.Release -T:System.Threading.SemaphoreFullException

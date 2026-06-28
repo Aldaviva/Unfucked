@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text;
 
@@ -115,7 +116,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first         = true;
+        bool          first = true;
         StringBuilder stringBuilder = new();
         foreach (string? s in strings) {
             if (!first) {
@@ -135,7 +136,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first         = true;
+        bool          first = true;
         StringBuilder stringBuilder = new();
         foreach (string? s in strings) {
             if (!first) {
@@ -155,7 +156,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first         = true;
+        bool          first = true;
         StringBuilder stringBuilder = new();
         foreach (object? s in strings) {
             if (!first) {
@@ -175,7 +176,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first         = true;
+        bool          first = true;
         StringBuilder stringBuilder = new();
         foreach (object? s in strings) {
             if (!first) {
@@ -592,5 +593,18 @@ public static class Strings {
             c >= 0xd800 && c <= 0xdfff;
 #endif
     }
+
+#if NET9_0_OR_GREATER
+    extension(SearchValues) {
+
+        /// <summary>Creates an optimized representation of <paramref name="values" /> used for efficient searching.</summary>
+        /// <param name="values">The set of values.</param>
+        /// <param name="caseSensitive"><c>true</c> to use case-sensitive string comparisons (<see cref="StringComparison.Ordinal"/>), or <c>false</c> to use case-insensitive string comparison (<see cref="StringComparison.OrdinalIgnoreCase"/>).</param>
+        /// <returns>The optimized representation of <paramref name="values" /> used for efficient searching.</returns>
+        public static SearchValues<string> Create(ReadOnlySpan<string> values, bool caseSensitive) =>
+            SearchValues.Create(values, caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
+
+    }
+#endif
 
 }

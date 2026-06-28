@@ -405,6 +405,10 @@ using Unfucked;
     "Hello 👖".Truncate(7);  // "Hello "
     "👖 Hello".Truncate(-7); // " Hello"
     ```
+- Typesafe `SearchValues.Create` that prevents callers from passing illegal `StringComparison` values at compile time, because the BCL method allows Current Culture and Invariant comparisons at compile time only to crash at runtime.
+    ```cs
+    SearchValues<string> searchValues = SearchValues.Create(["a", "b"], caseSensitive: true);
+    ```
 - Polyfills for [`StringBuilder.AppendJoin`](https://learn.microsoft.com/en-us/dotnet/api/system.text.stringbuilder.appendjoin) in .NET Standard 2.0
 - Polyfills for [`string.StartsWith(char)`](https://learn.microsoft.com/en-us/dotnet/api/system.string.startswith#system-string-startswith(system-char)) and [`string.EndsWith(char)`](https://learn.microsoft.com/en-us/dotnet/api/system.string.endswith#system-string-endswith(system-char)) in .NET Standard 2.0
 - Polyfills for [`string.Contains(string, StringComparison)`](https://learn.microsoft.com/en-us/dotnet/api/system.string.contains#system-string-contains(system-string-system-stringcomparison)) in .NET Standard 2.0

@@ -1,6 +1,10 @@
 <Project>
     
     <Target Name="GenerateBuildInfo" BeforeTargets="BeforeCompile">
+        <!-- 
+        Can cause a concurrent write problem:
+        C:\Users\Ben\.nuget\packages\unfucked\0.0.1-beta.47\buildTransitive\Unfucked.targets(4,9): error MSB3491: Could not write lines to file "obj\\Unfucked.BuildInfo.g.cs". Cannot create a file when that file already exists.
+        -->
         <WriteLinesToFile File="$(BaseIntermediateOutputPath)\Unfucked.BuildInfo.g.cs" Lines="[assembly:Unfucked.BuildInfo(buildDate: &quot;$([System.DateTimeOffset]::UtcNow.ToString('O'))&quot;)]" Overwrite="true" />
         
         <ItemGroup>

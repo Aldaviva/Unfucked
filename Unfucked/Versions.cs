@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
 #if NET9_0_OR_GREATER
 using System.Buffers;
 #endif
@@ -34,10 +36,9 @@ public static class Versions {
 #endif
             ["--version", "-v", "-version"]
 #if NET9_0_OR_GREATER
-        , StringComparison.Ordinal);
-#else
-        ;
+            , StringComparison.Ordinal)
 #endif
+        ;
 
     extension(Version version) {
 
@@ -107,7 +108,7 @@ public static class Versions {
         /// <summary>The current program's product or file version.</summary>
         public static string? ProgramVersion => PROGRAM_VERSION.Value;
 
-        /// <summary>If the program was launched with the <c>-v</c>, <c>-version</c>, or <c>--version</c> arguments, print the program's product/file version and build date to stdout, then exit with code 0; otherwise, do nothing.</summary>
+        /// <summary>If the program was launched with the <c>-v</c>, <c>-version</c>, or <c>--version</c> arguments, print the program's product/file version and build date to stdout (or a MessageBox for Windows GUI programs), then exit with code 0; otherwise, do nothing.</summary>
         public static void PrintProgramVersionAndExitIfRequested() {
             string[] args = Environment.GetCommandLineArgs();
 
@@ -119,10 +120,32 @@ public static class Versions {
 #endif
 
             if (userRequestedVersion) {
-                Console.WriteLine($"Version: {Version.ProgramVersion}");
+                StringBuilder versionTextBuilder = new StringBuilder("Version: ")
+                    .Append(Version.ProgramVersion);
                 if (BuildInfoAttribute.Get() is {} buildInfo) {
                     DateTimeOffset buildDate = buildInfo.BuildDate.ToLocalTime();
-                    Console.WriteLine($"Built:   {buildDate:F} ({buildDate:zzzz})");
+                    versionTextBuilder.AppendLine()
+                        .Append("Built:      ")
+                        .Append(buildDate.ToString("F"))
+                        .Append(" (")
+                        .Append(buildDate.ToString("zzzz"))
+                        .Append(')');
+                }
+
+                if (Environment.IsWindowsGuiProgram) {
+                    using Process currentProcess = Process.GetCurrentProcess();
+                    Assembly?     entryAssembly  = Assembly.GetEntryAssembly();
+                    string programName = entryAssembly?.GetCustomAttributes<AssemblyProductAttribute>().FirstOrDefault()?.Product.EmptyToNull
+                        ?? entryAssembly?.GetCustomAttributes<AssemblyTitleAttribute>().FirstOrDefault()?.Title.EmptyToNull
+                        ?? currentProcess.MainWindowTitle.EmptyToNull
+#if NET6_0_OR_GREATER
+                        ?? Path.GetFileNameWithoutExtension(Environment.ProcessPath)
+#endif
+                        ?? currentProcess.ProcessName;
+
+                    _ = MessageBoxW(currentProcess.MainWindowHandle, versionTextBuilder.ToString(), programName, 0x40 /* info icon */);
+                } else {
+                    Console.WriteLine(versionTextBuilder.ToString());
                 }
                 Environment.Exit(0);
             }
@@ -133,5 +156,9 @@ public static class Versions {
         public int Patch => version.Build;
 
     }
+
+    // Avoid creating a separate Windows-specific TFM for this project just to call one Win32 API method, because it poisons the dependent chain and often breaks tests
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+    private static extern int MessageBoxW(IntPtr ownerWindow, string body, string title, uint type);
 
 }

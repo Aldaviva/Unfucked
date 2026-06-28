@@ -31,7 +31,7 @@
 
     <!-- Self version numbers -->
     <PropertyGroup>
-        <UnfuckedVersion>0.0.1-beta.48</UnfuckedVersion>
+        <UnfuckedVersion>0.0.1-beta.49</UnfuckedVersion>
         <UnfuckedCachingVersion>0.0.1-beta.6</UnfuckedCachingVersion>
     </PropertyGroup>
 

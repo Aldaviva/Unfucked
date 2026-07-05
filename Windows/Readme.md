@@ -13,7 +13,9 @@
     - [Console](#console)
     - [Internationalization](#internationalization)
     - [Processes](#processes)
+    - [Security](#security)
     - [Standby and screensaver](#standby-and-screensaver)
+    - [Storage](#storage)
     - [UI Automation](#ui-automation)
 - [All Unfucked libraries](#all-unfucked-libraries)
 
@@ -22,6 +24,7 @@
 [![Unfuck your house](https://raw.githubusercontent.com/Aldaviva/Unfucked/master/.github/images/frame.jpg)](https://loadingreadyrun.com/videos/view/2484/Crapshots-Ep270-The-Home-Show)
 
 ## Installation
+
 ```sh
 dotnet package add Unfucked.Windows
 ```
@@ -39,14 +42,25 @@ using Unfucked.Windows;
         ```cs
         IEnumerable<string> argv = WindowsProcesses.CommandLineToEnumerable("arg1 arg2");
         ```
-    - Array to string
+    - Array to string (in the `Unfucked` library, `Unfucked.Windows` is not required)
         ```cs
-        string args = Processes.CommandLineToString(["arg1", "'argument' \"2\""]);
+        string args = Process.CommandLineToString(["arg1", "'argument' \"2\""]);
+        ```
+- Get command line for processes not started by the current process, includes program filename
+    - One big string
+        ```cs
+        string commandLine = process.CommandLine;
+        // "C:\path\to\myprogram.exe --arg1 --arg2"
+        ```
+    - Split into tokens
+        ```cs
+        IEnumerable<string> commandLine = process.CommandLineSplit;
+        // ["C:\path\to\myprogram.exe", "--arg1", "--arg2"]
         ```
 
 ### Console
 
-- Detach a console application from its console window if you want to prevent it from receiving `Ctrl`+`C`, because it's a child process of your console application, you're handling that signal in your parent process using [`Console.CancelKeyPress`](https://learn.microsoft.com/en-us/dotnet/api/system.console.cancelkeypress), and you don't want the console sidestepping your parent and killing your child.
+- Detach a console application from its console window if you want to prevent it from receiving <kbd>Ctrl</kbd>﻿+﻿<kbd>C</kbd>, because it's a child process of your console application, you're handling that signal in your parent process using [`Console.CancelKeyPress`](https://learn.microsoft.com/en-us/dotnet/api/system.console.cancelkeypress), and you don't want the console sidestepping your parent and killing your child.
    ```cs
    using Process child = Process.Start("child.exe", "args")!;
    child.DetachFromConsole();
@@ -63,36 +77,64 @@ using Unfucked.Windows;
 
 - Easier to get program's basename without memory leaks
     ```cs
-    string? basename = SystemWindow.ForegroundWindow.GetProcessExecutableBasename();
+    string? basename = SystemWindow.ForegroundWindow.ProcessExecutableBasename;
     ```
 - Get parent process of a process
     ```cs
-    Process? parent = Process.GetCurrentProcess().GetParentProcess();
+    using Process? parent = Process.GetCurrentProcess().Parent;
+    parent = Process.GetParentProcess(childPid);
     ```
 - Get descendant processes recursively of a process
     ```cs
-    IEnumerable<Process> decendants = Process.GetCurrentProcess().GetDescendantProcesses();
+    IEnumerable<Process> decendants = Process.GetCurrentProcess().Descendants;
     ```
-- Detect if a process is suspended
+- Suspend or resume a process
     ```cs
-    bool isSuspended = Process.GetProcessById(pid).IsProcessSuspended();
+    using Process process = Process.GetProcessById(pid)
+    bool isSuspended = process.Suspended;
+    process.Suspended = true;
+    process.Suspended = false;
     ```
 - Detect if a process is elevated (running as administrator)
     ```cs
     bool isElevated = Process.GetCurrentProcess().IsProcessElevated();
     ```
+- [Get process command line, even for processes not started by this process](#arguments)
    
+### Security
+
+- Determine if the user who ran a process is a member of the Administrators group, and if it's running elevated.
+    ```cs
+    WindowsIdentity.GetCurrent().AdministratorElevation
+    ```
+
+    <dl>
+        <dt><code>ElevatedAdmin</code></dt>
+        <dd>User is an administrator, and the process is running elevated</dd>
+        <dt><code>UnelevatedAdmin</code></dt>
+        <dd>User is an administrator, but the process is not running elevated</dd>
+        <dt><code>NotAdmin</code></dt>
+        <dd>User is not an administrator, and cannot run any processes elevated</dd>
+    </dl>
+
 ### Standby and screensaver
 
 - Reliably detect when computer is entering and exiting standby
     ```cs
     using IStandbyListener standbyListener = new EventLogStandbyListener();
-    standbyListener.StandingBy += (_, _) => Console.WriteLine("The computer is entering sleep mode");
-    standbyListener.Resumed += (_, _) => Console.WriteLine("The computer woke up from sleep mode");
+    standbyListener.StandingBy += (_,_) => Console.WriteLine("The computer is entering sleep mode");
+    standbyListener.Resumed += (_,_) => Console.WriteLine("The computer woke up from sleep mode");
     ```
 - Kill the running screensaver
     ```cs
     new ScreensaverKiller().KillScreensaver();
+    ```
+
+### Storage
+
+- Get a file's size on disk. This can be larger than the file's intrinsic size because of cluster size rounding up, or it can be smaller due to NTFS compression or sparse (*e.g.* partially downloaded) files.
+    ```cs
+    ulong sizeOnDiskBytes = new FileInfo("filename.txt").LengthOnDisk;
     ```
 
 ### UI Automation
@@ -119,6 +161,7 @@ using Unfucked.Windows;
 
 
 ## All Unfucked libraries
+
 - [Unfucked](https://github.com/Aldaviva/Unfucked/tree/master/Unfucked)
 - [Unfucked.Caching](https://github.com/Aldaviva/Unfucked/tree/master/Caching)
 - [Unfucked.Compression](https://github.com/Aldaviva/Unfucked/tree/master/Compression)

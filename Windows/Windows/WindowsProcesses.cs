@@ -1,4 +1,5 @@
 using Microsoft.Win32.SafeHandles;
+using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -75,68 +76,20 @@ public static class WindowsProcesses {
     /// </summary>
     /// <param name="pid">The child process ID of which you want to find the parent, or <c>null</c> to get the parent of the current process.</param>
     /// <returns>The parent process of the child process that has the given <paramref name="pid"/>, or <c>null</c> if the process cannot be found (possibly because it already exited). Remember to <see cref="IDisposable.Dispose"/> the returned value.</returns>
-    /// <inheritdoc cref="GetParentProcess(Process)" path="/remarks" />
+    /// <inheritdoc cref="get_Parent" path="/remarks" />
     [ExcludeFromCodeCoverage]
     [Pure]
     public static Process? GetParentProcess(int? pid = null) {
         using Process process = pid.HasValue ? Process.GetProcessById(pid.Value) : Process.GetCurrentProcess();
-        return process.GetParentProcess();
+        return process.Parent;
     }
 
-    /// <summary>
-    /// <para>Gets the process that started a given child process.</para>
-    /// <para>Windows only.</para>
-    /// </summary>
-    /// <param name="child">The child process of which you want to find the parent.</param>
-    /// <returns>The parent process of <paramref name="child"/>. Remember to <see cref="IDisposable.Dispose"/> the returned value.</returns>
-    /// <remarks>
-    /// <para>By Simon Mourier: <see href="https://stackoverflow.com/a/3346055/979493"/></para>
-    /// </remarks>
-    [ExcludeFromCodeCoverage]
-    [Pure]
-    public static Process? GetParentProcess(this Process child) {
-        try {
-            if (0 != NtQueryInformationProcess(child.Handle, 0, out ProcessBasicInformation basicInfo, Marshal.SizeOf<ProcessBasicInformation>(), out int _)) {
-                return null;
-            }
-
-            return Process.GetProcessById((int) basicInfo.InheritedFromUniqueProcessId.ToUInt32());
-        } catch (ArgumentException) {
-            // not found
-            return null;
-        } catch (InvalidOperationException) {
-            // child process already exited
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// <para>List all currently running processes that were started by the given <paramref name="ancestor"/> process, including transitively to an unlimited depth.</para>
-    /// <para>Windows only.</para>
-    /// </summary>
-    /// <param name="ancestor">The parent, grandparent, or further process that started the processes to return</param>
-    /// <returns>List of processes which were started by either <paramref name="ancestor"/>, one of its children, grandchildren, or further to an unlimited depth. Remember to <see cref="IDisposable.Dispose"/> all of these <see cref="Process"/> instances.</returns>
-    [Pure]
-    public static IEnumerable<Process> GetDescendantProcesses(this Process ancestor) {
-        Process[] allProcesses = Process.GetProcesses();
-
-        //eagerly find child processes, because once we start killing processes, their parent PIDs won't mean anything anymore
-        List<Process> descendants = GetDescendantProcesses(ancestor, allProcesses).ToList();
-
-        foreach (Process nonDescendant in allProcesses.Except(descendants, ProcessIdEqualityComparer.Instance)) {
-            nonDescendant.Dispose();
-        }
-
-        return descendants;
-    }
-
-    [Pure]
     // ReSharper disable once ParameterTypeCanBeEnumerable.Local (Avoid double enumeration heuristic)
     private static IEnumerable<Process> GetDescendantProcesses(Process ancestor, Process[] allProcesses) =>
         allProcesses.SelectMany(descendant => {
             bool isDescendantOfParent = false;
             try {
-                using Process? descendantParent = descendant.GetParentProcess();
+                using Process? descendantParent = descendant.Parent;
                 isDescendantOfParent = descendantParent?.Id == ancestor.Id;
             } catch (Exception e) when (e is not OutOfMemoryException) {
                 //leave isDescendentOfParent false
@@ -155,16 +108,123 @@ public static class WindowsProcesses {
 
     }
 
-    /// <summary>
-    /// Determine whether a process is suspended or not.
-    /// </summary>
-    /// <param name="process">The process to check, such as <see cref="Process.GetCurrentProcess"/>.</param>
-    /// <returns><c>true</c> if <paramref name="process"/> is suspended, or <c>false</c> if it is running normally</returns>
-    [Pure]
-    public static bool IsProcessSuspended(this Process process) {
-        uint returnCode = NtQueryInformationProcess(process.Handle, ProcessInfoClass.ProcessBasicInformation, out ProcessExtendedBasicInformation info,
-            Marshal.SizeOf<ProcessExtendedBasicInformation>(), out int _);
-        return returnCode == 0 && (info.Flags & ProcessExtendedBasicInformation.ProcessFlags.IsFrozen) != 0;
+    extension(Process process) {
+
+        /// <summary>
+        /// <para>List all currently running processes that were started by the current process, including transitively to an unlimited depth.</para>
+        /// <para>Windows only.</para>
+        /// </summary>
+        /// <returns>List of processes which were started by either this process, one of its children, grandchildren, or further to an unlimited depth. Remember to <see cref="IDisposable.Dispose"/> all of these <see cref="Process"/> instances.</returns>
+        [Pure]
+        public IEnumerable<Process> Descendants {
+            get {
+                Process[] allProcesses = Process.GetProcesses();
+
+                //eagerly find child processes, because once we start killing processes, their parent PIDs won't mean anything anymore
+                List<Process> descendants = GetDescendantProcesses(process, allProcesses).ToList();
+
+                foreach (Process nonDescendant in allProcesses.Except(descendants, ProcessIdEqualityComparer.Instance)) {
+                    nonDescendant.Dispose();
+                }
+
+                return descendants;
+            }
+        }
+
+        /// <summary>
+        /// <para>Gets the process that started a given child process.</para>
+        /// <para>Windows only.</para>
+        /// </summary>
+        /// <returns>The parent process of this process. Remember to <see cref="IDisposable.Dispose"/> the returned value.</returns>
+        /// <remarks>
+        /// <para>By Simon Mourier: <see href="https://stackoverflow.com/a/3346055/979493"/></para>
+        /// </remarks>
+        [ExcludeFromCodeCoverage]
+        public Process? Parent {
+            get {
+                try {
+                    if (0 != NtQueryInformationProcess(process.Handle, 0, out ProcessBasicInformation basicInfo, Marshal.SizeOf<ProcessBasicInformation>(), out int _)) {
+                        return null;
+                    }
+
+                    return Process.GetProcessById((int) basicInfo.InheritedFromUniqueProcessId.ToUInt32());
+                } catch (ArgumentException) {
+                    // not found
+                    return null;
+                } catch (InvalidOperationException) {
+                    // child process already exited
+                    return null;
+                }
+            }
+        }
+
+        /// <summary>Suspend (pause) or resume the process, or check if it is currently suspended.</summary>
+        public bool Suspended {
+            get {
+                uint returnCode = NtQueryInformationProcess(process.Handle, ProcessInfoClass.ProcessBasicInformation, out ProcessExtendedBasicInformation info,
+                    Marshal.SizeOf<ProcessExtendedBasicInformation>(), out int _);
+                return returnCode == 0 && (info.Flags & ProcessExtendedBasicInformation.ProcessFlags.IsFrozen) != 0;
+            }
+            set {
+                if (value) {
+                    NtSuspendProcess(process.Handle);
+                } else {
+                    NtResumeProcess(process.Handle);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Determine whether a process is running elevated (as Administrator) or not.
+        /// </summary>
+        /// <returns><c>true</c> if <paramref name="process"/> is running elevated, or <c>false</c> if it is unelevated</returns>
+        /// <exception cref="Win32Exception">failed to open handle to <paramref name="process"/>, possibly due to privileges.</exception>
+        /// <remarks>
+        /// By John Smith: <see href="https://stackoverflow.com/a/55079599/979493"/>
+        /// </remarks>
+        public bool Elevated {
+            get {
+                const uint maximumAllowed = 0x2000000;
+
+                if (!OpenProcessToken(process.Handle, maximumAllowed, out nint token)) {
+                    throw new Win32Exception(Marshal.GetLastWin32Error(), "OpenProcessToken failed");
+                }
+
+                try {
+                    using WindowsIdentity identity  = new(token);
+                    WindowsPrincipal      principal = new(identity);
+                    return principal.IsInRole(WindowsBuiltInRole.Administrator)
+                        || principal.IsInRole(0x200); //Domain Administrator
+                } finally {
+                    CloseHandle(token);
+                }
+            }
+        }
+
+        /// <summary>
+        /// <para>Get the command line that started the given process. This includes the program filename and all arguments.</para>
+        /// <para>Unlike <see cref="ProcessStartInfo.Arguments"/>, this succeeds for processes that were not started by the current process, and it contains the program filename instead of just the arguments.</para>
+        /// <para>To get an enumerable of each token instead of one big string, use <see cref="CommandLineSplit"/>.</para>
+        /// </summary>
+        public string CommandLine {
+            get {
+                byte[] resultBuffer = ArrayPool<byte>.Shared.Rent(16 + 2 * 8191 + 1);
+                try {
+                    return 0 == NtQueryInformationProcess(process.Handle, ProcessInfoClass.ProcessCommandLineInformation, resultBuffer, resultBuffer.Length, out int _) ?
+                        Encoding.Unicode.GetString(resultBuffer, 16, BitConverter.ToInt16(resultBuffer, 2)) : string.Empty;
+                } finally {
+                    ArrayPool<byte>.Shared.Return(resultBuffer);
+                }
+            }
+        }
+
+        /// <summary>
+        /// <para>Get a sequence of the command-line tokens that started the given process. This includes the program filename and all arguments.</para>
+        /// <para>Unlike <see cref="ProcessStartInfo.Arguments"/>, this succeeds for processes that were not started by the current process, and it contains the program filename instead of just the arguments.</para>
+        /// <para>To get one big string instead of a sequence of each token, use <see cref="CommandLine"/>.</para>
+        /// </summary>
+        public IEnumerable<string> CommandLineSplit => CommandLineToEnumerable(process.CommandLine);
+
     }
 
     [DllImport("ntdll.dll", SetLastError = true)]
@@ -172,6 +232,9 @@ public static class WindowsProcesses {
 
     [DllImport("ntdll.dll", SetLastError = true)]
     private static extern uint NtQueryInformationProcess(IntPtr process, ProcessInfoClass query, out ProcessBasicInformation result, int inputSize, out int resultSize);
+
+    [DllImport("ntdll.dll", SetLastError = true)]
+    private static extern uint NtQueryInformationProcess(IntPtr process, ProcessInfoClass query, byte[] result, int inputSize, out int resultSize);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct ProcessExtendedBasicInformation {
@@ -213,6 +276,7 @@ public static class WindowsProcesses {
     private enum ProcessInfoClass: uint {
 
         ProcessBasicInformation = 0x00,
+
         /*PROCESS_QUOTA_LIMITS                               = 0x01,
         PROCESS_IO_COUNTERS                                = 0x02,
         PROCESS_VM_COUNTERS                                = 0x03,
@@ -271,9 +335,9 @@ public static class WindowsProcesses {
         PROCESS_REVOKE_FILE_HANDLES                        = 0x38,
         PROCESS_WORKING_SET_CONTROL                        = 0x39,
         PROCESS_HANDLE_TABLE                               = 0x3A,
-        PROCESS_CHECK_STACK_EXTENTS_MODE                   = 0x3B,
-        PROCESS_COMMAND_LINE_INFORMATION                   = 0x3C,
-        PROCESS_PROTECTION_INFORMATION                     = 0x3D,
+        PROCESS_CHECK_STACK_EXTENTS_MODE                   = 0x3B,*/
+        ProcessCommandLineInformation = 0x3C,
+        /*PROCESS_PROTECTION_INFORMATION                     = 0x3D,
         PROCESS_MEMORY_EXHAUSTION                          = 0x3E,
         PROCESS_FAULT_INFORMATION                          = 0x3F,
         PROCESS_TELEMETRY_ID_INFORMATION                   = 0x40,
@@ -315,6 +379,12 @@ public static class WindowsProcesses {
         MAX_PROCESS_INFO_CLASS                             = 0x64*/
 
     }
+
+    [DllImport("ntdll.dll")]
+    private static extern IntPtr NtSuspendProcess(IntPtr processHandle);
+
+    [DllImport("ntdll.dll")]
+    private static extern IntPtr NtResumeProcess(IntPtr processHandle);
 
     /// <summary>
     /// <para>Call this on a child process if you want it to detach from the console and ignore Ctrl+C, because your parent console process will handle that signal.</para>
@@ -373,33 +443,6 @@ public static class WindowsProcesses {
     [DllImport("kernel32.dll")]
     private static extern IntPtr CreateRemoteThread(SafeProcessHandle hProcess, IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags,
                                                     IntPtr lpThreadId);
-
-    /// <summary>
-    /// Determine whether a process is running elevated (as Administrator) or not.
-    /// </summary>
-    /// <param name="process">The process to check, such as <see cref="Process.GetCurrentProcess"/>.</param>
-    /// <returns><c>true</c> if <paramref name="process"/> is running elevated, or <c>false</c> if it is unelevated</returns>
-    /// <exception cref="Win32Exception">failed to open handle to <paramref name="process"/>, possibly due to privileges.</exception>
-    /// <remarks>
-    /// By John Smith: <see href="https://stackoverflow.com/a/55079599/979493"/>
-    /// </remarks>
-    [Pure]
-    public static bool IsProcessElevated(this Process process) {
-        const uint maximumAllowed = 0x2000000;
-
-        if (!OpenProcessToken(process.Handle, maximumAllowed, out nint token)) {
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "OpenProcessToken failed");
-        }
-
-        try {
-            using WindowsIdentity identity  = new(token);
-            WindowsPrincipal      principal = new(identity);
-            return principal.IsInRole(WindowsBuiltInRole.Administrator)
-                || principal.IsInRole(0x200); //Domain Administrator
-        } finally {
-            CloseHandle(token);
-        }
-    }
 
     [DllImport("advapi32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

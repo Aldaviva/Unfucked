@@ -22,22 +22,20 @@ public static class Cultures {
 
     }
 
-    private static unsafe CultureInfo GetMachineCulture() {
+    private static CultureInfo GetMachineCulture() {
         int bufferSize = 0;
-        GetSystemPreferredUILanguages(MUI_LANGUAGE_NAME, out _, null, ref bufferSize);
+        GetSystemPreferredUILanguages(MUI_LANGUAGE_NAME, out _, [], ref bufferSize);
         char[] buffer = new char[bufferSize];
-        fixed (char* bufferStart = &buffer[0]) {
-            GetSystemPreferredUILanguages(MUI_LANGUAGE_NAME, out _, bufferStart, ref bufferSize);
-            return CultureInfo.GetCultureInfo(new string(bufferStart));
-        }
+        GetSystemPreferredUILanguages(MUI_LANGUAGE_NAME, out _, buffer, ref bufferSize);
+        return CultureInfo.GetCultureInfo(new string(buffer));
     }
 
     /// <summary>
     /// <para><see href="https://learn.microsoft.com/en-us/windows/win32/intl/user-interface-language-management#system-ui-language"/></para>
     /// <para><see href="https://learn.microsoft.com/en-us/windows/win32/api/winnls/nf-winnls-getsystempreferreduilanguages"/></para>
     /// </summary>
-    [DllImport("kernel32.dll", SetLastError = true)]
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern unsafe bool GetSystemPreferredUILanguages(uint flags, out uint languageCount, char* resultBuffer, ref int resultBufferLength);
+    private static extern bool GetSystemPreferredUILanguages(uint flags, out uint languageCount, char[] resultBuffer, ref int resultBufferLength);
 
 }

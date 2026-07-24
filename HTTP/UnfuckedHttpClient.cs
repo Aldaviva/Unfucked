@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Text.Json;
 using Unfucked.HTTP.Config;
 using Unfucked.HTTP.Exceptions;
 using Unfucked.HTTP.Serialization;
@@ -116,7 +117,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
             MaxResponseContentBufferSize = toClone.MaxResponseContentBufferSize,
 #if NETCOREAPP3_0_OR_GREATER
             DefaultRequestVersion = toClone.DefaultRequestVersion,
-            DefaultVersionPolicy = toClone.DefaultVersionPolicy
+            DefaultVersionPolicy  = toClone.DefaultVersionPolicy
 #endif
         };
 
@@ -139,7 +140,8 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
         };
 
         if (req.Content is Entity.JsonHttpContent json) {
-            json.ClientOptions ??= JsonBodyReader.DefaultJsonOptions;
+            json.ClientOptions ??= request.ClientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? requestJsonOptions) ?? false
+                ? requestJsonOptions : JsonBodyReader.DefaultJsonOptions;
         }
 
         try {
@@ -160,9 +162,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
             return await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         } catch (OperationCanceledException e) {
             // Official documentation is wrong: .NET Framework throws a TaskCanceledException for an HTTP request timeout, not an HttpRequestException (https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpclient.sendasync)
-            TimeoutException cause = e.InnerException as TimeoutException ??
-                new TimeoutException($"The request was canceled due to the configured {nameof(HttpClient)}.{nameof(Timeout)} of {client.Timeout.TotalSeconds} seconds elapsing.");
-            throw new ProcessingException(cause, HttpExceptionParams.FromRequest(request));
+            throw new ProcessingException(e.InnerException as TimeoutException as Exception ?? e, HttpExceptionParams.FromRequest(request));
         } catch (HttpRequestException e) {
             throw new ProcessingException(e.InnerException ?? e, HttpExceptionParams.FromRequest(request));
         } finally {

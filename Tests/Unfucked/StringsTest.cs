@@ -263,6 +263,7 @@ public class StringsTest {
     [Theory]
     [InlineData("", 0, "")]
     [InlineData("", 1, "")]
+    [InlineData("", -1, "")]
     [InlineData("Hello", 0, "")]
     [InlineData("Hello", 5, "Hello")]
     [InlineData("Hello", 6, "Hello")]

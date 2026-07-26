@@ -13,45 +13,50 @@ public static class Processes {
     extension(Process) {
 
         /// <summary>
-        /// Combine a sequence of arguments into a single command-line string with quotation marks and escaping using Windows rules.
+        /// Combine a sequence of arguments into a single command-line string with escaping using .NET rules.
         /// </summary>
         /// <param name="args">Zero or more command-line arguments</param>
-        /// <returns>A single string that contains all the arguments from <paramref name="args"/>, in order, with escaping and quotation marks.</returns>
-        /// <remarks>
-        /// From MSDN: <see href="https://stackoverflow.com/a/2611075/979493" />
-        /// </remarks>
-        [ExcludeFromCodeCoverage]
+        /// <returns>A single string that contains all the arguments from <paramref name="args"/>, in order, with escaping.</returns>
         [Pure]
         public static string CommandLineToString(params IEnumerable<string> args) {
-            StringBuilder sb = new();
-            foreach (string s in args) {
-                sb.Append('"');
-                // Escape double quotes (") and backslashes (\).
-                int searchIndex = 0;
-                while (true) {
-                    // Put this test first to support zero length strings.
-                    if (searchIndex >= s.Length) {
-                        break;
-                    }
+            StringBuilder lineBuilder = new(), argBuilder = new();
 
-                    int quoteIndex = s.IndexOf('"', searchIndex);
-                    if (quoteIndex < 0) {
-                        break;
-                    }
+            foreach (string arg in args) {
+                bool surroundWithDoubleQuotationMarks = false;
+                argBuilder.Length   = 0;
+                argBuilder.Capacity = Math.Max(arg.Length + 4, Math.Min(argBuilder.Capacity, 1024));
 
-                    sb.Append(s, searchIndex, quoteIndex - searchIndex);
-                    EscapeBackslashes(sb, s, quoteIndex - 1);
-                    sb.Append('\\');
-                    sb.Append('"');
-                    searchIndex = quoteIndex + 1;
+                if (lineBuilder.Length != 0) {
+                    lineBuilder.Append(' ');
                 }
 
-                sb.Append(s, searchIndex, s.Length - searchIndex);
-                EscapeBackslashes(sb, s, s.Length - 1);
-                sb.Append(@""" ");
+                for (int i = 0; i < arg.Length; i++) {
+                    char chr = arg[i];
+                    switch (chr) {
+                        case ' ':
+                            surroundWithDoubleQuotationMarks = true;
+                            break;
+                        case '"':
+                            surroundWithDoubleQuotationMarks = true;
+                            argBuilder.Append('\\');
+                            break;
+                        case '\\' when i + 1 < arg.Length && arg[i + 1] == '"':
+                            argBuilder.Append('\\');
+                            break;
+                    }
+                    argBuilder.Append(chr);
+                }
+
+                if (surroundWithDoubleQuotationMarks) {
+                    lineBuilder.Append('"');
+                }
+                lineBuilder.Append(argBuilder);
+                if (surroundWithDoubleQuotationMarks) {
+                    lineBuilder.Append('"');
+                }
             }
 
-            return sb.ToString(0, Math.Max(0, sb.Length - 1));
+            return lineBuilder.ToString();
         }
 
         /// <summary>

@@ -18,6 +18,32 @@ public static class UriExtensions {
         [Pure]
         public NameValueCollection QueryParams => HttpUtility.ParseQueryString(uri.Query);
 
+        /// <summary>Get the decoded path segments from a URI. Like <see cref="Uri.Segments"/>, but without the annoying URL-encoding or slash separators at the beginning of every segment.</summary>
+        /// <returns>List of path segments, URL-decoded, without slash separators. Empty segments (created by consecutive separators, like //) will be represented by <see cref="string.Empty"/>.</returns>
+        [Pure]
+        public IReadOnlyList<string> Path {
+            get {
+                string       rawPath  = uri.AbsolutePath;
+                List<string> segments = [];
+
+                int start;
+                int end = 0; // starts at 1 to skip the ubiquitous leading /
+                do {
+                    start = end + 1;
+                    end   = rawPath.IndexOf('/', start);
+
+                    if (start < end) {
+                        segments.Add(UrlEncoder.Decode(rawPath.AsSpan(start, end - start), UrlEncoder.Component.PathSegment).ToString());
+                    } else if (start == end) {
+                        segments.Add(string.Empty);
+                    }
+                } while (end != -1);
+
+                segments.Add(start < rawPath.Length ? UrlEncoder.Decode(rawPath.AsSpan(start), UrlEncoder.Component.PathSegment).ToString() : string.Empty);
+                return segments.AsReadOnly();
+            }
+        }
+
     }
 
     /// <summary>Test if a URL has the same domain as <paramref name="ancestorOrSelfDomain"/>, or if it is a subdomain of it. This can be used for site locking.</summary>

@@ -1,6 +1,8 @@
-using System.Buffers;
 using System.Globalization;
 using System.Text;
+#if NET9_0_OR_GREATER
+using System.Buffers;
+#endif
 
 // ReSharper disable ReplaceSliceWithRangeIndexer - not in .NET Standard 2.0, which this project targets
 
@@ -116,7 +118,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first = true;
+        bool          first         = true;
         StringBuilder stringBuilder = new();
         foreach (string? s in strings) {
             if (!first) {
@@ -136,7 +138,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first = true;
+        bool          first         = true;
         StringBuilder stringBuilder = new();
         foreach (string? s in strings) {
             if (!first) {
@@ -156,7 +158,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first = true;
+        bool          first         = true;
         StringBuilder stringBuilder = new();
         foreach (object? s in strings) {
             if (!first) {
@@ -176,7 +178,7 @@ public static class Strings {
 #if NET9_0_OR_GREATER
         return string.Join(separator, strings);
 #else
-        bool          first = true;
+        bool          first         = true;
         StringBuilder stringBuilder = new();
         foreach (object? s in strings) {
             if (!first) {
@@ -565,10 +567,10 @@ public static class Strings {
     /// <param name="maxLength">The maximum length of the output string. When nonnegative, the beginning of <paramref name="str"/> is returned; otherwise, when negative, the end is returned.</param>
     /// <returns>At most <paramref name="maxLength"/> characters from the beginning or end of <paramref name="str"/>. It will never start with a low surrogate code point or end with a high surrogate code point.</returns>
     public static string Truncate(this string str, int maxLength) {
-        if (str.Length <= maxLength) {
-            return str;
-        } else if (maxLength == 0) {
+        if (maxLength == 0) {
             return string.Empty;
+        } else if (str.Length <= Math.Abs(maxLength)) {
+            return str;
         }
 
         if (maxLength > 0) {

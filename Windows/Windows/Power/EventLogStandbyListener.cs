@@ -34,6 +34,7 @@ public sealed class EventLogStandbyListener: IStandbyListener {
 
     private readonly EventLogWatcher logWatcher;
 
+    /// <inheritdoc cref="EventLogStandbyListener" />
     public EventLogStandbyListener() {
         logWatcher = new EventLogWatcher(new EventLogQuery("System", PathType.LogName,
             $"*[System[Provider/@Name=\"Microsoft-Windows-Kernel-Power\" and (EventID={STAND_BY_EVENT_ID} or EventID={RESUME_EVENT_ID})]]"));

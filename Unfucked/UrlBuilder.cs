@@ -4,10 +4,11 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER
+using System.Buffers;
+#endif
 
 // ReSharper disable UseIndexFromEndExpression - incompatible with .NET Standard 2.0, which this project obviously targets
-
-#pragma warning disable SYSLIB1045 // Generate regex at compile time - not possible with .NET Standard
 
 namespace Unfucked;
 
@@ -228,6 +229,7 @@ public sealed class UrlBuilder {
             } else {
                 built.Append(hostname);
             }
+            //TODO do we need to encode hostnames, and if not, why not?
         }
 
         if (_port.HasValue) {
@@ -481,13 +483,35 @@ public sealed class UrlBuilder {
 
 }
 
-internal static class UrlEncoder {
+internal static partial class UrlEncoder {
+
+    private const string       URI_ILLEGAL_PATTERN             = @"[^a-z0-9_\-!.~'()*,;:$&+=?/\[\]@]"; // lang=regex
+    private const string       USER_INFO_ILLEGAL_PATTERN       = @"[^a-z0-9_\-!.~'()*,;:$&+=]";        // lang=regex
+    private const string       PATH_SEGMENT_ILLEGAL_PATTERN    = @"[^a-z0-9_\-!.~'()*,;:$&+=@]";       // lang=regex
+    private const string       QUERY_PARAMETER_ILLEGAL_PATTERN = @"[^a-z0-9_\-!.~'()*,;:$+=/\[\]@]";   // lang=regex
+    private const RegexOptions REGEX_OPTIONS                   = RegexOptions.IgnoreCase;
+
+#if NET7_0_OR_GREATER
+    [GeneratedRegex(URI_ILLEGAL_PATTERN, REGEX_OPTIONS)] public static partial Regex UriIllegal();
+    [GeneratedRegex(USER_INFO_ILLEGAL_PATTERN, REGEX_OPTIONS)] public static partial Regex UserInfoIllegal();
+    [GeneratedRegex(PATH_SEGMENT_ILLEGAL_PATTERN, REGEX_OPTIONS)] public static partial Regex PathSegmentIllegal();
+    [GeneratedRegex(QUERY_PARAMETER_ILLEGAL_PATTERN, REGEX_OPTIONS)] public static partial Regex QueryParameterIllegal();
+#else
+    private static readonly Regex URI_ILLEGAL = new(URI_ILLEGAL_PATTERN, REGEX_OPTIONS);
+    private static readonly Regex USER_INFO_ILLEGAL = new(USER_INFO_ILLEGAL_PATTERN, REGEX_OPTIONS);
+    private static readonly Regex PATH_SEGMENT_ILLEGAL = new(PATH_SEGMENT_ILLEGAL_PATTERN, REGEX_OPTIONS);
+    private static readonly Regex QUERY_PARAMETER_ILLEGAL = new(QUERY_PARAMETER_ILLEGAL_PATTERN, REGEX_OPTIONS);
+    public static Regex UriIllegal() => URI_ILLEGAL;
+    public static Regex UserInfoIllegal() => USER_INFO_ILLEGAL;
+    public static Regex PathSegmentIllegal() => PATH_SEGMENT_ILLEGAL;
+    public static Regex QueryParameterIllegal() => QUERY_PARAMETER_ILLEGAL;
+#endif
 
     public static string Encode(string raw, Component component) => component switch {
-        Component.UserInfo       => CharCategories.UserInfoIllegal.Replace(raw, EscapeMatch),
-        Component.PathSegment    => CharCategories.PathSegmentIllegal.Replace(raw, EscapeMatch),
-        Component.QueryParameter => CharCategories.QueryParameterIllegal.Replace(raw, EscapeMatch),
-        _                        => CharCategories.URIIllegal.Replace(raw, EscapeMatch)
+        Component.UserInfo       => UserInfoIllegal().Replace(raw, EscapeMatch),
+        Component.PathSegment    => PathSegmentIllegal().Replace(raw, EscapeMatch),
+        Component.QueryParameter => QueryParameterIllegal().Replace(raw, EscapeMatch),
+        _                        => UriIllegal().Replace(raw, EscapeMatch)
     };
 
     private static string EscapeMatch(Match match) {
@@ -503,13 +527,106 @@ internal static class UrlEncoder {
         return string.Join(null, utf8Buffer.Take(utf8BytesUsed).Select(static b => $"%{b:X2}"));
     }
 
-    private static class CharCategories {
+    public static ReadOnlySpan<char> Decode(ReadOnlySpan<char> encoded, Component component) {
+        int length = encoded.Length;
+        if (length == 0 || !encoded.Contains(['%'], StringComparison.OrdinalIgnoreCase)) {
+            return encoded;
+        } else if (length < 2 || encoded[length - 2] == '%') { // TODO what about if the last character is % instead of the next to last character?
+            throw new ArgumentException($"Malformed encoded octet in URI component {encoded.ToString()}");
+        }
+        return component switch {
+            Component.QueryParameter => DecodeQueryParam(encoded, length),
+            _                        => Decode(encoded, length)
+        };
 
-        public static readonly Regex URIIllegal            = new(@"[^a-z0-9_\-!.~'()*,;:$&+=?/\[\]@]", RegexOptions.IgnoreCase);
-        public static readonly Regex UserInfoIllegal       = new(@"[^a-z0-9_\-!.~'()*,;:$&+=]", RegexOptions.IgnoreCase);
-        public static readonly Regex PathSegmentIllegal    = new(@"[^a-z0-9_\-!.~'()*,;:$&+=@]", RegexOptions.IgnoreCase);
-        public static readonly Regex QueryParameterIllegal = new(@"[^a-z0-9_\-!.~'()*,;:$+=/\[\]@]", RegexOptions.IgnoreCase);
+    }
 
+    private static string Decode(ReadOnlySpan<char> encoded, int length) {
+        StringBuilder decoded = new(length);
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER
+        ArrayBufferWriter<byte>? decodedBytesExtent = null;
+#else
+        List<byte>? decodedBytesExtent = null;
+#endif
+        for (int index = 0; index < length;) {
+            char c = encoded[index++];
+            if (c == '%') {
+                decodedBytesExtent = UnescapeExtent(encoded, index, decodedBytesExtent);
+                index              = DeserializeBytes(index, decodedBytesExtent, decoded);
+            } else {
+                decoded.Append(c);
+            }
+        }
+        return decoded.ToString();
+    }
+
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER
+    private static ArrayBufferWriter<byte> UnescapeExtent(ReadOnlySpan<char> encoded, int index, ArrayBufferWriter<byte>? decodedBytesExtent) {
+        if (decodedBytesExtent is null) {
+            decodedBytesExtent = new ArrayBufferWriter<byte>(1);
+        } else {
+            decodedBytesExtent.Clear();
+        }
+
+        do {
+#if NET9_0_OR_GREATER
+            if (Convert.FromHexString(encoded.Slice(index, 2), decodedBytesExtent.GetSpan(1), out int consumed, out int written) is var result and not OperationStatus.Done) {
+                throw new ArgumentException($"Decoding hex characters {encoded.Slice(index, 2)} returned {result}");
+            } else {
+                decodedBytesExtent.Advance(written);
+            }
+#else
+            decodedBytesExtent.Write(Convert.FromHexString(encoded.Slice(index, 2)));
+            const int consumed = 1;
+#endif
+
+            index += consumed;
+        } while (index < encoded.Length && encoded[index++] == '%');
+
+        return decodedBytesExtent;
+    }
+#else
+    private static List<byte> UnescapeExtent(ReadOnlySpan<char> encoded, int index, List<byte>? decodedBytesExtent) {
+        if (decodedBytesExtent is null) {
+            decodedBytesExtent = new List<byte>(1);
+        } else {
+            decodedBytesExtent.Clear();
+        }
+
+        while (index < encoded.Length && encoded[index++] == '%') {
+            decodedBytesExtent.Add(Convert.ToByte(encoded.Slice(index, 2).ToString(), 16));
+            index += 2;
+        }
+
+        return decodedBytesExtent;
+    }
+#endif
+
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER
+    private static int DeserializeBytes(int index, ArrayBufferWriter<byte> decodedBytesExtent, StringBuilder decoded) {
+        ReadOnlySpan<byte> decodedSpan = decodedBytesExtent.WrittenSpan;
+        if (decodedBytesExtent.WrittenCount == 1 && decodedSpan[0] is < 128 and var singleByte) {
+            decoded.Append((char) singleByte);
+            return index + 2;
+        } else {
+            decoded.Append(Strings.Utf8.GetString(decodedSpan));
+            return index + decodedBytesExtent.WrittenCount * 3;
+        }
+    }
+#else
+    private static int DeserializeBytes(int index, IList<byte> decodedBytesExtent, StringBuilder decoded) {
+        if (decodedBytesExtent.Count == 1 && decodedBytesExtent[0] is < 128 and var singleByte) {
+            decoded.Append((char)singleByte);
+            return index + 2;
+        } else {
+            decoded.Append(Strings.Utf8.GetChars([.. decodedBytesExtent]));
+            return index + decodedBytesExtent.Count * 3;
+        }
+    }
+#endif
+
+    private static ReadOnlySpan<char> DecodeQueryParam(ReadOnlySpan<char> encoded, int length) {
+        throw new NotImplementedException();
     }
 
     public enum Component {

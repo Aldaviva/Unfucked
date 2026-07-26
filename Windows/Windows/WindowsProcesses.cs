@@ -204,7 +204,7 @@ public static class WindowsProcesses {
         /// <summary>
         /// <para>Get the command line that started the given process. This includes the program filename and all arguments.</para>
         /// <para>Unlike <see cref="ProcessStartInfo.Arguments"/>, this succeeds for processes that were not started by the current process, and it contains the program filename instead of just the arguments.</para>
-        /// <para>To get an enumerable of each token instead of one big string, use <see cref="CommandLineSplit"/>.</para>
+        /// <para>To get an enumerable of each token instead of one big string, use <see cref="get_CommandLineSplit"/>.</para>
         /// </summary>
         public string CommandLine {
             get {
@@ -221,7 +221,7 @@ public static class WindowsProcesses {
         /// <summary>
         /// <para>Get a sequence of the command-line tokens that started the given process. This includes the program filename and all arguments.</para>
         /// <para>Unlike <see cref="ProcessStartInfo.Arguments"/>, this succeeds for processes that were not started by the current process, and it contains the program filename instead of just the arguments.</para>
-        /// <para>To get one big string instead of a sequence of each token, use <see cref="CommandLine"/>.</para>
+        /// <para>To get one big string instead of a sequence of each token, use <see cref="get_CommandLine"/>.</para>
         /// </summary>
         public IEnumerable<string> CommandLineSplit => CommandLineToEnumerable(process.CommandLine);
 
@@ -434,11 +434,15 @@ public static class WindowsProcesses {
     [DllImport("kernel32.dll")]
     private static extern SafeProcessHandle OpenProcess(ProcessSecurityAndAccessRight dwDesiredAccess, bool bInheritHandle, int dwProcessId);
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr GetModuleHandle(string lpModuleName);
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
+#pragma warning disable CA2101 // the encoding is already literally specified as ANSI, with no Unicode alternative; it's documented as LPCSTR: https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getprocaddress
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Ansi, SetLastError = true)]
     private static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+
+#pragma warning restore CA2101
 
     [DllImport("kernel32.dll")]
     private static extern IntPtr CreateRemoteThread(SafeProcessHandle hProcess, IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags,

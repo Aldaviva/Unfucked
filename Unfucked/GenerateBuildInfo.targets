@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    
+    <UsingTask TaskName="GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" Architecture="x86" Runtime="CLR4" />
+    <UsingTask TaskName="GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" Architecture="x86" Runtime="NET" />
+    <UsingTask TaskName="GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" Architecture="x64" Runtime="CLR4" />
+    <UsingTask TaskName="GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" Architecture="x64" Runtime="NET" />
+        
+    <Target Name="GenerateBuildInfo" BeforeTargets="BeforeBuild">
+        <GenerateBuildInfo ProjectDir="$(MSBuildProjectDirectory)" OutputFile="$(IntermediateOutputPath)\Unfucked.BuildInfo.g.cs" />
+        <Message Text="Wrote build info file $(IntermediateOutputPath)\Unfucked.BuildInfo.g.cs" Importance="high" />
+        
+        <ItemGroup>
+            <Compile Include="$(IntermediateOutputPath)\Unfucked.BuildInfo.g.cs" />
+        </ItemGroup>
+    </Target>
+    
+    <Target Name="CleanBuildInfo" AfterTargets="AfterClean">
+        <Delete Files="$(IntermediateOutputPath)\Unfucked.BuildInfo.g.cs" />
+    </Target>
+    
+</Project>

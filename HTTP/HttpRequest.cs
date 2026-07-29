@@ -1,8 +1,26 @@
+using System.Text.Json;
 using Unfucked.HTTP.Config;
+using Unfucked.HTTP.Serialization;
 
 namespace Unfucked.HTTP;
 
-public readonly record struct HttpRequest(HttpMethod Verb, Uri Uri, IEnumerable<KeyValuePair<string, string>> Headers, HttpContent? Body, IClientConfig? ClientConfig) {
+public readonly record struct HttpRequest {
+
+    public HttpMethod Verb { get; init; }
+    public Uri Uri { get; init; }
+    public IEnumerable<KeyValuePair<string, string>> Headers { get; init; }
+    public HttpContent? Body { get; init; }
+    public IClientConfig? ClientConfig { get; init; }
+
+    public HttpRequest(HttpMethod verb, Uri uri, IEnumerable<KeyValuePair<string, string>> headers, HttpContent? body, IClientConfig? clientConfig) {
+        Verb         = verb;
+        Uri          = uri;
+        Headers      = headers;
+        ClientConfig = clientConfig;
+        Body = body is Entity.JsonHttpContent { JsonOptions: null } jsonBody ? jsonBody.WithJsonOptions(
+            ClientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? requestJsonOptions) ?? false
+                ? requestJsonOptions : JsonBodyReader.DefaultJsonOptions) : body;
+    }
 
     public static async Task<HttpRequest> Copy(HttpRequestMessage original) {
         IEnumerable<KeyValuePair<string, string>> replayedHeaders = original.Headers.SelectMany(static header => header.Value.Select(val => new KeyValuePair<string, string>(header.Key, val)));
@@ -52,6 +70,14 @@ public readonly record struct HttpRequest(HttpMethod Verb, Uri Uri, IEnumerable<
         """;
 
     private string? SerializeBodySync() => Body?.ReadAsStringAsync().GetAwaiter().GetResult();
+
+    public void Deconstruct(out HttpMethod verb, out Uri uri, out IEnumerable<KeyValuePair<string, string>> headers, out HttpContent? body, out IClientConfig? clientConfig) {
+        verb         = Verb;
+        uri          = Uri;
+        headers      = Headers;
+        body         = Body;
+        clientConfig = ClientConfig;
+    }
 
     private sealed class HeaderNameEqualityComparer: IEqualityComparer<KeyValuePair<string, string>> {
 

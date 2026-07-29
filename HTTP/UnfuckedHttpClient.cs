@@ -1,9 +1,7 @@
 using System.Net.Http.Headers;
 using System.Reflection;
-using System.Text.Json;
 using Unfucked.HTTP.Config;
 using Unfucked.HTTP.Exceptions;
-using Unfucked.HTTP.Serialization;
 #if NET8_0_OR_GREATER
 using Unfucked.HTTP.Filters;
 #endif
@@ -138,11 +136,6 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
             Content = request.Body,
             Config  = request.ClientConfig
         };
-
-        if (req.Content is Entity.JsonHttpContent json) {
-            json.ClientOptions ??= request.ClientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? requestJsonOptions) ?? false
-                ? requestJsonOptions : JsonBodyReader.DefaultJsonOptions;
-        }
 
         try {
             foreach (KeyValuePair<string, string> header in request.Headers) {

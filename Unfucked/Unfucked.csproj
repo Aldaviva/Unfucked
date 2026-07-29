@@ -14,14 +14,14 @@
         <None Include="..\Unfucked\icon.png" Pack="true" PackagePath="\" Visible="true" />
         <None Include="..\*.props;..\*.ps1;..\.github*\**" />
         <AdditionalFiles Include="..\ExceptionAdjustments.txt" Visible="true" />
-        <None Include="BuildInfo.targets" Pack="true" PackagePath="buildTransitive\$(PackageId).targets" />
+        <None Include="GenerateBuildInfo.targets" Pack="true" PackagePath="buildTransitive\$(PackageId).targets" />
     </ItemGroup>
 
     <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('netstandard2.0', '$(TargetFramework)')) or $([MSBuild]::IsTargetFrameworkCompatible('net47', '$(TargetFramework)'))">
         <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
         <PackageReference Include="System.Collections.Immutable" />
     </ItemGroup>
-    
+
     <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net47'))">
         <Reference Include="System.Net.Http" />
         <Reference Include="System.Web" />
@@ -29,6 +29,7 @@
 
     <ItemGroup>
         <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" IncludeAssets="compile" />
+        <PackageReference Include="Microsoft.Build.Utilities.Core" PrivateAssets="all" ExcludeAssets="runtime" /> <!-- for GenerateBuildInfo -->
     </ItemGroup>
-    
+
 </Project>

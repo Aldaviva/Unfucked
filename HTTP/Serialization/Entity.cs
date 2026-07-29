@@ -86,33 +86,39 @@ public static class Entity {
         private readonly Lazy<HttpContent?>     inner;
         private readonly object?                json;
         private readonly Type                   jsonType;
-        private readonly JsonSerializerOptions? userOptions;
+        private readonly MediaTypeHeaderValue?  mediaType;
 
-        public JsonSerializerOptions? ClientOptions { get; set; }
+        public JsonSerializerOptions? JsonOptions { get; }
 
         private static bool hasJsonContent = true;
 
-        public JsonHttpContent(object? json, Type jsonType, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? userOptions) {
-            this.json        = json;
-            this.jsonType    = jsonType;
-            this.userOptions = userOptions;
+        public JsonHttpContent(object? json, Type jsonType, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? jsonOptions) {
+            this.json      = json;
+            this.jsonType  = jsonType;
+            this.mediaType = mediaType;
+            JsonOptions    = jsonOptions;
 
-            inner = new Lazy<HttpContent?>(() => {
-                if (!hasJsonContent) return null;
+            inner = new Lazy<HttpContent?>(CreateHttpContent, LazyThreadSafetyMode.ExecutionAndPublication);
+        }
 
-                HttpContent jsonContent;
-                try {
-                    jsonContent = JsonContentDelegate.Create(json, jsonType, mediaType, userOptions ?? ClientOptions);
-                } catch (FileNotFoundException) {
-                    hasJsonContent = false;
-                    return null;
-                }
+        public JsonHttpContent WithJsonOptions(JsonSerializerOptions? jsonOptions) =>
+            new(json, jsonType, mediaType, jsonOptions);
 
-                foreach (KeyValuePair<string, IEnumerable<string>> header in jsonContent.Headers) {
-                    Headers.TryAddWithoutValidation(header.Key, header.Value);
-                }
-                return jsonContent;
-            }, LazyThreadSafetyMode.ExecutionAndPublication);
+        private HttpContent? CreateHttpContent() {
+            if (!hasJsonContent) return null;
+
+            HttpContent jsonContent;
+            try {
+                jsonContent = JsonContentDelegate.Create(json, jsonType, mediaType, JsonOptions);
+            } catch (FileNotFoundException) {
+                hasJsonContent = false;
+                return null;
+            }
+
+            foreach (KeyValuePair<string, IEnumerable<string>> header in jsonContent.Headers) {
+                Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+            return jsonContent;
         }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) => SerializeToStreamAsyncInner(stream, context, CancellationToken.None);
@@ -122,7 +128,7 @@ public static class Entity {
             if (inner.Value is not null) {
                 inner.Value.CopyTo(stream, context, cancellationToken);
             } else {
-                JsonSerializer.Serialize(stream, json, jsonType, userOptions ?? ClientOptions);
+                JsonSerializer.Serialize(stream, json, jsonType, JsonOptions);
             }
         }
 
@@ -138,13 +144,20 @@ public static class Entity {
                 await inner.Value.CopyToAsync(stream, context).ConfigureAwait(false);
 #endif
             } else {
-                await JsonSerializer.SerializeAsync(stream, json, jsonType, userOptions ?? ClientOptions, cancellationToken).ConfigureAwait(false);
+                await JsonSerializer.SerializeAsync(stream, json, jsonType, JsonOptions, cancellationToken).ConfigureAwait(false);
             }
         }
 
         protected override bool TryComputeLength(out long length) {
             length = inner.Value?.Headers.ContentLength ?? 0;
             return length != 0;
+        }
+
+        protected override void Dispose(bool disposing) {
+            if (disposing) {
+                inner.TryDisposeValue();
+            }
+            base.Dispose(disposing);
         }
 
     }

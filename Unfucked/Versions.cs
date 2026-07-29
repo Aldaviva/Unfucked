@@ -1,7 +1,12 @@
+using Microsoft.Build.Framework;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
+using MSBuildTask = Microsoft.Build.Utilities.Task;
 #if NET9_0_OR_GREATER
 using System.Buffers;
 #endif
@@ -16,14 +21,23 @@ public static class Versions {
     private static readonly Lazy<string?> PROGRAM_VERSION = new(static () => {
         string?   programVersion = null;
         Assembly? assembly       = Assembly.GetEntryAssembly();
-        programVersion ??= assembly?.GetCustomAttributes<AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion;
-        programVersion ??= assembly?.GetName().Version?.ToString(4).TrimEnd(1, ".0");
+        programVersion ??= normalizeVersion(assembly?.GetCustomAttributes<AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion);
+        programVersion ??= assembly?.GetName().Version?.ToString(2, 4);
 
         if (programVersion is null) {
             using Process    selfProcess       = Process.GetCurrentProcess();
             FileVersionInfo? mainModuleVersion = selfProcess.MainModule?.FileVersionInfo;
-            programVersion ??= mainModuleVersion?.ProductVersion;
-            programVersion ??= mainModuleVersion?.FileVersion?.TrimEnd(1, ".0");
+            programVersion ??= normalizeVersion(mainModuleVersion?.ProductVersion);
+            programVersion ??= normalizeVersion(mainModuleVersion?.FileVersion);
+        }
+
+        if (programVersion?.IndexOf('+') is not -1 and {} plusIndex) {
+            programVersion = programVersion.Substring(0, plusIndex);
+        }
+
+        static string? normalizeVersion(string? version) {
+            string? normalized = version?.IndexOf('+') is not -1 and {} plusIndex ? version.Substring(0, plusIndex) : version;
+            return normalized is not null && Version.TryParse(normalized, out Version? result) ? ToString(result, 2, 4) : normalized;
         }
 
         return programVersion;
@@ -120,12 +134,18 @@ public static class Versions {
 #endif
 
             if (userRequestedVersion) {
-                StringBuilder versionTextBuilder = new StringBuilder("Version: ")
+                StringBuilder versionTextBuilder = new StringBuilder("Version:  ")
                     .Append(Version.ProgramVersion);
                 if (BuildInfoAttribute.Get() is {} buildInfo) {
+                    if (buildInfo.CommitHash is not null) {
+                        versionTextBuilder.AppendLine()
+                            .Append("Commit: ")
+                            .Append(buildInfo.CommitHash);
+                    }
+
                     DateTimeOffset buildDate = buildInfo.BuildDate.ToLocalTime();
                     versionTextBuilder.AppendLine()
-                        .Append("Built:      ")
+                        .Append("Built:                   ")
                         .Append(buildDate.ToString("F"))
                         .Append(" (")
                         .Append(buildDate.ToString("zzzz"))
@@ -160,5 +180,72 @@ public static class Versions {
     // Avoid creating a separate Windows-specific TFM for this project just to call one Win32 API method, because it poisons the dependent chain and often breaks tests
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
     private static extern int MessageBoxW(IntPtr ownerWindow, string body, string title, uint type);
+
+    /// <summary>Metadata about the program's build, automatically generated at compile time.</summary>
+    /// <param name="buildDate">When the program was built, in ISO 8601 ("O") format</param>
+    /// <param name="commitHash">Source Code Management commit identifier for the current commit when the program was built, or <c>null</c> if the project was not version controlled by Git</param>
+    [EditorBrowsable(EditorBrowsableState.Advanced)]
+    public sealed class BuildInfoAttribute(string buildDate, string? commitHash = null): Attribute {
+
+        /// <summary>When the program was built</summary>
+        public DateTimeOffset BuildDate { get; } = DateTimeOffset.ParseExact(buildDate, "O", CultureInfo.InvariantCulture);
+
+        /// <summary>Source Code Management commit identifier for the current commit when the program was built, or <c>null</c> if the project was not version controlled by Git</summary>
+        public string? CommitHash { get; } = commitHash;
+
+        /// <summary>Look up a build metadata instance.</summary>
+        /// <param name="assembly">The assembly of the program. Defaults to <see cref="Assembly.GetEntryAssembly"/>.</param>
+        /// <returns>The <see cref="BuildInfoAttribute"/> instance that was generated at compile time, or <c>null</c> if it was not generated (such as if the <c>Unfucked</c> package was not a dependency of the build).</returns>
+        public static BuildInfoAttribute? Get(Assembly? assembly = null) =>
+            (assembly ?? Assembly.GetEntryAssembly())?.GetCustomAttributes<BuildInfoAttribute>().FirstOrDefault();
+
+    }
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public class GenerateBuildInfo: MSBuildTask {
+
+        // If this gets file sharing errors as multiple TFMs or RIDs in a build try to write the same file at the same time, change this to an OS-wide Semaphore instead of a process-wide Mutex
+        private static readonly object FILE_LOCK = new();
+
+        [Required]
+        public string ProjectDir { get; set; } = null!;
+
+        [Required]
+        public string OutputFile { get; set; } = null!;
+
+        public override bool Execute() {
+            string? gitDirectory = null;
+            for (string? parentDirectory = ProjectDir; gitDirectory is null && !string.IsNullOrEmpty(parentDirectory); parentDirectory = Path.GetDirectoryName(parentDirectory)) {
+                string gitDir = Path.Combine(parentDirectory, ".git");
+                gitDirectory = Directory.Exists(gitDir) ? gitDir : null;
+            }
+
+            string? headCommit = null;
+            try {
+                if (gitDirectory is not null && File.ReadAllLines(Path.Combine(gitDirectory, "HEAD")).FirstOrDefault(line => line.StartsWith("ref: "))?.Substring(5) is {} branchName) {
+                    headCommit = File.ReadAllLines(Path.Combine(gitDirectory, branchName))[0].Trim();
+                    if (!Regex.IsMatch(headCommit, @"^[\da-f]{40}$", RegexOptions.IgnoreCase)) {
+                        headCommit = null;
+                    }
+                }
+            } catch (FileNotFoundException) {}
+
+            string fileContents =
+                $"""[assembly:Unfucked.Versions.BuildInfo(buildDate: "{DateTimeOffset.UtcNow:O}", commitHash: {(headCommit is not null ? $"\"{headCommit}\"" : "null")})]""";
+
+            lock (FILE_LOCK) {
+                try {
+                    using FileStream   fileStream   = File.Open(OutputFile, FileMode.Create, FileAccess.Write, FileShare.Read);
+                    using StreamWriter streamWriter = new(fileStream, Strings.Utf8);
+                    streamWriter.WriteLine(fileContents);
+                } catch (IOException e) when (e.HResult is unchecked((int) 0x80070020)) {
+                    // file is in use by another concurrent build (like multitargeting), so we can skip it because it will already be up to date by the other build
+                }
+            }
+
+            return true;
+        }
+
+    }
 
 }

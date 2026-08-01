@@ -1,22 +1,78 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    
-    <UsingTask TaskName="GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" Architecture="x86" Runtime="CLR4" />
-    <UsingTask TaskName="GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" Architecture="x86" Runtime="NET" />
-    <UsingTask TaskName="GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" Architecture="x64" Runtime="CLR4" />
-    <UsingTask TaskName="GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" Architecture="x64" Runtime="NET" />
-        
+
+    <!--<UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="x86" Runtime="CLR4" />
+    ~1~ <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="x86" Runtime="NET" /> @1@
+    <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="x86" Runtime="CurrentRuntime" />
+    <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="x86" Runtime="*" />
+    <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="x64" Runtime="CLR4" />
+    ~1~ <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="x64" Runtime="NET" /> @1@
+    <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="x64" Runtime="CurrentRuntime" />
+    <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="x64" Runtime="*" />
+    <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="CurrentArchitecture" Runtime="CLR4" />
+    ~1~ <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="CurrentArchitecture" Runtime="NET" /> @1@
+    <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="CurrentArchitecture" Runtime="CurrentRuntime" />
+    <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="CurrentArchitecture" Runtime="*" />
+    <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="*" Runtime="CLR4" />
+    ~1~ <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="*" Runtime="NET" /> @1@
+    <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="*" Runtime="CurrentRuntime" />
+    <UsingTask TaskName="Unfucked.GenerateBuildInfo" AssemblyFile="..\lib\netstandard2.0\Unfucked.dll" TaskFactory="AssemblyTaskFactory" Architecture="*" Runtime="*" />-->
+
+    <UsingTask TaskName="GenerateBuildInfo" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+        <ParameterGroup>
+            <ProjectDir Required="true" ParameterType="System.String" />
+            <OutputFile Required="true" ParameterType="System.String" />
+        </ParameterGroup>
+        <Task>
+            <Using Namespace="System" />
+            <Using Namespace="System.IO" />
+            <Using Namespace="System.Linq" />
+            <Using Namespace="System.Text" />
+            <Using Namespace="System.Text.RegularExpressions" />
+            <Code Type="Fragment" Language="cs"><![CDATA[
+                #nullable enable
+            
+                string? gitDirectory = null;
+                for (string? parentDirectory = ProjectDir; gitDirectory is null && !string.IsNullOrEmpty(parentDirectory); parentDirectory = Path.GetDirectoryName(parentDirectory)) {
+                    string gitDir = Path.Combine(parentDirectory, ".git");
+                    gitDirectory = Directory.Exists(gitDir) ? gitDir : null;
+                }
+
+                string? headCommit = null;
+                try {
+                    if (gitDirectory is not null && File.ReadAllLines(Path.Combine(gitDirectory, "HEAD")).FirstOrDefault(line => line.StartsWith("ref: "))?.Substring(5) is {} branchName) {
+                        headCommit = File.ReadAllLines(Path.Combine(gitDirectory, branchName))[0].Trim();
+                        if (!Regex.IsMatch(headCommit, @"^[\da-f]{40}$", RegexOptions.IgnoreCase)) {
+                            headCommit = null;
+                        }
+                    }
+                } catch (FileNotFoundException) {}
+
+                string fileContents =
+                    $"""[assembly:Unfucked.Versions.BuildInfo(buildDate: "{DateTimeOffset.UtcNow:O}", commitHash: {(headCommit is not null ? $"\"{headCommit}\"" : "null")})]""";
+
+                try {
+                    using FileStream   fileStream   = File.Open(OutputFile, FileMode.Create, FileAccess.Write, FileShare.Read);
+                    using StreamWriter streamWriter = new(fileStream, new UTF8Encoding(false, true));
+                    streamWriter.WriteLine(fileContents);
+                } catch (IOException e) when (e.HResult is unchecked((int) 0x80070020)) {
+                    // file is in use by another concurrent build (like multitargeting), so we can skip it because it will already be up to date by the other build
+                }
+            ]]></Code>
+        </Task>
+    </UsingTask>
+
     <Target Name="GenerateBuildInfo" BeforeTargets="BeforeBuild">
-        <GenerateBuildInfo ProjectDir="$(MSBuildProjectDirectory)" OutputFile="$(IntermediateOutputPath)\Unfucked.BuildInfo.g.cs" />
-        <Message Text="Wrote build info file $(IntermediateOutputPath)\Unfucked.BuildInfo.g.cs" Importance="high" />
-        
+        <GenerateBuildInfo ProjectDir="$(MSBuildProjectDirectory)" OutputFile="$(IntermediateOutputPath)Unfucked.BuildInfo.g.cs" />
+        <Message Text="Wrote build info file $(IntermediateOutputPath)Unfucked.BuildInfo.g.cs" Importance="high" />
+
         <ItemGroup>
-            <Compile Include="$(IntermediateOutputPath)\Unfucked.BuildInfo.g.cs" />
+            <Compile Include="$(IntermediateOutputPath)Unfucked.BuildInfo.g.cs" />
         </ItemGroup>
     </Target>
-    
+
     <Target Name="CleanBuildInfo" AfterTargets="AfterClean">
-        <Delete Files="$(IntermediateOutputPath)\Unfucked.BuildInfo.g.cs" />
+        <Delete Files="$(IntermediateOutputPath)Unfucked.BuildInfo.g.cs" />
     </Target>
-    
+
 </Project>

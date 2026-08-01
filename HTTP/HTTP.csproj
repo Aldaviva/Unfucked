@@ -11,7 +11,7 @@
         <PackageReference Include="System.Net.Http.Json" PrivateAssets="all" /> <!-- Used if available, or reimplemented otherwise -->
         <PackageReference Include="System.Text.Json" />
     </ItemGroup>
-    
+
     <Choose>
         <When Condition="'$(Configuration)' != 'Debug'">
             <ItemGroup>

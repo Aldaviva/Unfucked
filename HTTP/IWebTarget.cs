@@ -40,22 +40,28 @@ public interface IWebTarget: Configurable<IWebTarget> {
     IWebTarget Path(string? segments, bool autoSplit = true);
 
     /// <summary>
-    /// Add URL path segments, also called pathname, script info, path info, filePath, or directory/fileName.
+    /// Add a URL path segment, also called pathname, script info, path info, filePath, or directory/fileName.
     /// </summary>
-    /// <param name="segments">New path suffix to append to this request's URL path. To replace instead of append, make this start with <c>/</c>.</param>
+    /// <param name="segment"><para>New path suffix to append to this request's URL path.</para>
+    /// <para>To replace instead of append, make this start with <c>/</c>.</para>
+    /// <para>This won't be split on <c>/</c> into multiple segments, so it is safe to consume user inputs. To automatically split, call <see cref="Path(string?,bool)"/></para></param>
     /// <returns>New immutable target instance with the changed value.</returns>
     [Pure]
-    IWebTarget Path(object segments);
+    IWebTarget Path(object segment);
 
     /// <summary>
     /// Add URL path segments, also called pathname, script info, path info, filePath, or directory/fileName.
     /// </summary>
     /// <param name="segments"><para>New path suffixes to append to this request's URL path.</para>
     /// <para>To replace instead of append, make the first segment start with <c>/</c>.</para>
-    /// <para>Each segment is also split on <c>/</c> into multiple segments; to disable this (including when one of <paramref name="segments"/> is untrusted), call <see cref="Path(string?,bool)"/> instead.</para></param>
+    /// <para>Each segment is also split on <c>/</c> into multiple segments. To disable splitting (especially when one of <paramref name="segments"/> is untrusted), call <see cref="Path(string?,bool)"/> instead.</para></param>
     /// <returns>New immutable target instance with the changed value.</returns>
     [Pure]
     IWebTarget Path(params IEnumerable<string> segments);
+
+    /// <inheritdoc cref="Path(IEnumerable{string})" />
+    [Pure]
+    IWebTarget Path(params string[] segments);
 
     /// <summary>
     /// Set the URL host port.

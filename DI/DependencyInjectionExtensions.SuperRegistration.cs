@@ -1,8 +1,12 @@
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Reflection;
 using System.Runtime.Serialization;
 using Unfucked.DI;
+#if NET5_0_OR_GREATER
+using System.Diagnostics.CodeAnalysis;
+#endif
 
 namespace Unfucked;
 
@@ -26,7 +30,13 @@ public static partial class DependencyInjectionExtensions {
     /// <param name="services"><see cref="IHostApplicationBuilder.Services"/> or similar</param>
     /// <param name="alsoRegister">Also register the class as its own concrete class, all of its extended superclasses, or all of its implemented interfaces, or <see cref="SuperRegistration.None"/> to only register it as its own type (default <c>Microsoft.Extensions.DependencyInjection</c> behavior). A union of multiple values can be passed with logical OR (<see cref="SuperRegistration.Superclasses"/><c> | </c><see cref="SuperRegistration.Interfaces"/>).</param>
     /// <returns>The same collection of service registrations, for chained calls</returns>
-    public static IServiceCollection AddSingleton<TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class =>
+    public static IServiceCollection AddSingleton<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        [MeansImplicitUse(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
+        TImpl>(
+        this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class =>
         Add<TImpl>(services, ServiceLifetime.Singleton, alsoRegister);
 
     /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
@@ -40,7 +50,12 @@ public static partial class DependencyInjectionExtensions {
         Add(services, ServiceLifetime.Singleton, alsoRegister, factory);
 
     /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
-    public static IServiceCollection AddTransient<TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class =>
+    public static IServiceCollection AddTransient<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        [MeansImplicitUse(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
+        TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class =>
         Add<TImpl>(services, ServiceLifetime.Transient, alsoRegister);
 
     /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
@@ -49,7 +64,12 @@ public static partial class DependencyInjectionExtensions {
         Add(services, ServiceLifetime.Transient, alsoRegister, factory);
 
     /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
-    public static IServiceCollection AddScoped<TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class =>
+    public static IServiceCollection AddScoped<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        [MeansImplicitUse(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
+        TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class =>
         Add<TImpl>(services, ServiceLifetime.Scoped, alsoRegister);
 
     /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
@@ -62,7 +82,12 @@ public static partial class DependencyInjectionExtensions {
     #region Hosted services
 
     /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
-    public static IServiceCollection AddHostedService<TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class, IHostedService {
+    public static IServiceCollection AddHostedService<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        [MeansImplicitUse(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
+        TImpl>(this IServiceCollection services, SuperRegistration alsoRegister) where TImpl: class, IHostedService {
         if ((alsoRegister & SuperRegistration.ConcreteClass) != 0) {
             return Add<TImpl>(services, alsoRegister & ~SuperRegistration.ConcreteClass, static () => [
                 new ServiceDescriptor(typeof(TImpl), typeof(TImpl), ServiceLifetime.Singleton),
@@ -101,7 +126,12 @@ public static partial class DependencyInjectionExtensions {
 
     /// <inheritdoc cref="AddSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,SuperRegistration)" />
     /// <param name="serviceKey">Key that identifies this registration, to be used when injecting using <see cref="ServiceKeyAttribute"/>.</param>
-    public static IServiceCollection AddKeyedSingleton<TImpl>(this IServiceCollection services, object? serviceKey, SuperRegistration alsoRegister) where TImpl: class =>
+    public static IServiceCollection AddKeyedSingleton<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        [MeansImplicitUse(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
+        TImpl>(this IServiceCollection services, object? serviceKey, SuperRegistration alsoRegister) where TImpl: class =>
         Add<TImpl>(services, ServiceLifetime.Singleton, alsoRegister, serviceKey);
 
     /// <inheritdoc cref="AddKeyedSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,object?,Unfucked.DI.SuperRegistration)" />
@@ -115,7 +145,12 @@ public static partial class DependencyInjectionExtensions {
         where TImpl: class => Add(services, ServiceLifetime.Singleton, alsoRegister, factory, serviceKey);
 
     /// <inheritdoc cref="AddKeyedSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,object?,Unfucked.DI.SuperRegistration)" />
-    public static IServiceCollection AddKeyedTransient<TImpl>(this IServiceCollection services, object? serviceKey, SuperRegistration alsoRegister) where TImpl: class =>
+    public static IServiceCollection AddKeyedTransient<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        [MeansImplicitUse(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
+        TImpl>(this IServiceCollection services, object? serviceKey, SuperRegistration alsoRegister) where TImpl: class =>
         Add<TImpl>(services, ServiceLifetime.Transient, alsoRegister, serviceKey);
 
     /// <inheritdoc cref="AddKeyedSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,object?,Unfucked.DI.SuperRegistration)" />
@@ -124,7 +159,12 @@ public static partial class DependencyInjectionExtensions {
         where TImpl: class => Add(services, ServiceLifetime.Transient, alsoRegister, factory, serviceKey);
 
     /// <inheritdoc cref="AddKeyedSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,object?,Unfucked.DI.SuperRegistration)" />
-    public static IServiceCollection AddKeyedScoped<TImpl>(this IServiceCollection services, object? serviceKey, SuperRegistration alsoRegister) where TImpl: class =>
+    public static IServiceCollection AddKeyedScoped<
+#if NET5_0_OR_GREATER
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+        [MeansImplicitUse(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
+        TImpl>(this IServiceCollection services, object? serviceKey, SuperRegistration alsoRegister) where TImpl: class =>
         Add<TImpl>(services, ServiceLifetime.Scoped, alsoRegister, serviceKey);
 
     /// <inheritdoc cref="AddKeyedSingleton{TImpl}(Microsoft.Extensions.DependencyInjection.IServiceCollection,object?,Unfucked.DI.SuperRegistration)" />
@@ -160,7 +200,7 @@ public static partial class DependencyInjectionExtensions {
 
     private static IServiceCollection Add<TImpl>(IServiceCollection services, SuperRegistration alsoRegister, Func<IEnumerable<ServiceDescriptor>> defaultRegistrations,
                                                  Func<Type, ServiceDescriptor> extraRegistration) where TImpl: class {
-        List<ServiceDescriptor> registrations = [..defaultRegistrations()];
+        List<ServiceDescriptor> registrations = [.. defaultRegistrations()];
 
         try {
             if ((alsoRegister & SuperRegistration.ConcreteClass) != 0) {

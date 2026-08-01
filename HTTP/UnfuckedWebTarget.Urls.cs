@@ -17,10 +17,13 @@ public partial class WebTarget {
     public IWebTarget Path(string? segments, bool autoSplit = true) => With(urlBuilder.Path(segments, autoSplit));
 
     [Pure]
-    public IWebTarget Path(object segments) => With(urlBuilder.Path(segments));
+    public IWebTarget Path(object segment) => With(urlBuilder.Path(segment));
 
     [Pure]
     public IWebTarget Path(params IEnumerable<string> segments) => With(urlBuilder.Path(segments));
+
+    [Pure]
+    public IWebTarget Path(params string[] segments) => With(urlBuilder.Path(segments));
 
     [Pure]
     public IWebTarget Port(ushort? port) => With(urlBuilder.Port(port));

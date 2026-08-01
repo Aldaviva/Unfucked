@@ -307,7 +307,9 @@ public sealed class UrlBuilder {
     /// <summary>
     /// Add URL path segments, also called pathname, script info, path info, filePath, or directory/fileName.
     /// </summary>
-    /// <param name="segments">New path suffix to append to this request's URL path. To replace instead of append, make this start with <c>/</c>. To remove, pass <c>null</c>.</param>
+    /// <param name="segments">
+    /// <para>New path suffix to append to this request's URL path.</para>
+    /// <para>To replace instead of append, make this start with <c>/</c>. To remove, pass <c>null</c>.</para></param>
     /// <param name="autoSplit">If <c>true</c> (default), <paramref name="segments"/> will be split by <c>/</c> into multiple path segments, all of them will be appended, and the <c>/</c> separators won't be URL-encoded into <c>%2F</c>. Otherwise, if <c>false</c>, <paramref name="segments"/> will be appended as one big path segment, and any <c>/</c> separators inside it will be URL-encoded as <c>%2F</c>. You should set this to <c>false</c> if <paramref name="segments"/> is user-supplied.</param>
     /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
@@ -330,12 +332,14 @@ public sealed class UrlBuilder {
     }
 
     /// <summary>
-    /// Add URL path segments, also called pathname, script info, path info, filePath, or directory/fileName.
+    /// Add a URL path segment, also called pathname, script info, path info, filePath, or directory/fileName.
     /// </summary>
-    /// <param name="segments">New path suffix to append to this request's URL path. To replace instead of append, make this start with <c>/</c>.</param>
+    /// <param name="segment"><para>New path suffix to append to this request's URL path.</para>
+    /// <para>To replace instead of append, make this start with <c>/</c>.</para>
+    /// <para>This won't be split on <c>/</c> into multiple segments, so it is safe to consume user inputs. To automatically split, call <see cref="Path(string?,bool)"/></para></param>
     /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
-    public UrlBuilder Path(object segments) => Path(Stringify(segments), false);
+    public UrlBuilder Path(object segment) => Path(Stringify(segment), false);
 
     /// <inheritdoc cref="Path(IEnumerable{string})" />
     [Pure]
@@ -346,7 +350,7 @@ public sealed class UrlBuilder {
     /// </summary>
     /// <param name="segments"><para>New path suffixes to append to this request's URL path.</para>
     /// <para>To replace instead of append, make the first segment start with <c>/</c>.</para>
-    /// <para>Each segment is also split on <c>/</c> into multiple segments; to disable this (including when one of <paramref name="segments"/> is untrusted), call <see cref="Path(string?,bool)"/> instead.</para></param>
+    /// <para>Each segment is also split on <c>/</c> into multiple segments. To disable splitting (especially when one of <paramref name="segments"/> is untrusted), call <see cref="Path(string?,bool)"/> instead.</para></param>
     /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder Path(params IEnumerable<string> segments) => segments.Aggregate(this, static (builder, segment) => builder.Path(segment));

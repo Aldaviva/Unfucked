@@ -1,12 +1,9 @@
-using Microsoft.Build.Framework;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
-using MSBuildTask = Microsoft.Build.Utilities.Task;
 #if NET9_0_OR_GREATER
 using System.Buffers;
 #endif
@@ -201,51 +198,51 @@ public static class Versions {
 
     }
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public class GenerateBuildInfo: MSBuildTask {
+}
 
-        // If this gets file sharing errors as multiple TFMs or RIDs in a build try to write the same file at the same time, change this to an OS-wide Semaphore instead of a process-wide Mutex
-        private static readonly object FILE_LOCK = new();
+/*
+public class GenerateBuildInfo: Task {
 
-        [Required]
-        public string ProjectDir { get; set; } = null!;
+    // If this gets file sharing errors as multiple TFMs or RIDs in a build try to write the same file at the same time, change this to an OS-wide Semaphore instead of a process-wide Mutex
+    // private static readonly object FILE_LOCK = new();
 
-        [Required]
-        public string OutputFile { get; set; } = null!;
+    // [Required]
+    public string ProjectDir { get; set; } = null!;
 
-        public override bool Execute() {
-            string? gitDirectory = null;
-            for (string? parentDirectory = ProjectDir; gitDirectory is null && !string.IsNullOrEmpty(parentDirectory); parentDirectory = Path.GetDirectoryName(parentDirectory)) {
-                string gitDir = Path.Combine(parentDirectory, ".git");
-                gitDirectory = Directory.Exists(gitDir) ? gitDir : null;
-            }
+    // [Required]
+    public string OutputFile { get; set; } = null!;
 
-            string? headCommit = null;
-            try {
-                if (gitDirectory is not null && File.ReadAllLines(Path.Combine(gitDirectory, "HEAD")).FirstOrDefault(line => line.StartsWith("ref: "))?.Substring(5) is {} branchName) {
-                    headCommit = File.ReadAllLines(Path.Combine(gitDirectory, branchName))[0].Trim();
-                    if (!Regex.IsMatch(headCommit, @"^[\da-f]{40}$", RegexOptions.IgnoreCase)) {
-                        headCommit = null;
-                    }
-                }
-            } catch (FileNotFoundException) {}
-
-            string fileContents =
-                $"""[assembly:Unfucked.Versions.BuildInfo(buildDate: "{DateTimeOffset.UtcNow:O}", commitHash: {(headCommit is not null ? $"\"{headCommit}\"" : "null")})]""";
-
-            lock (FILE_LOCK) {
-                try {
-                    using FileStream   fileStream   = File.Open(OutputFile, FileMode.Create, FileAccess.Write, FileShare.Read);
-                    using StreamWriter streamWriter = new(fileStream, Strings.Utf8);
-                    streamWriter.WriteLine(fileContents);
-                } catch (IOException e) when (e.HResult is unchecked((int) 0x80070020)) {
-                    // file is in use by another concurrent build (like multitargeting), so we can skip it because it will already be up to date by the other build
-                }
-            }
-
-            return true;
+    public override bool Execute() {
+        string? gitDirectory = null;
+        for (string? parentDirectory = ProjectDir; gitDirectory is null && !string.IsNullOrEmpty(parentDirectory); parentDirectory = Path.GetDirectoryName(parentDirectory)) {
+            string gitDir = Path.Combine(parentDirectory, ".git");
+            gitDirectory = Directory.Exists(gitDir) ? gitDir : null;
         }
 
+        string? headCommit = null;
+        try {
+            if (gitDirectory is not null && File.ReadAllLines(Path.Combine(gitDirectory, "HEAD")).FirstOrDefault(line => line.StartsWith("ref: "))?.Substring(5) is {} branchName) {
+                headCommit = File.ReadAllLines(Path.Combine(gitDirectory, branchName))[0].Trim();
+                if (!Regex.IsMatch(headCommit, @"^[\da-f]{40}$", RegexOptions.IgnoreCase)) {
+                    headCommit = null;
+                }
+            }
+        } catch (FileNotFoundException) {}
+
+        string fileContents =
+            $"""[assembly:Unfucked.Versions.BuildInfo(buildDate: "{DateTimeOffset.UtcNow:O}", commitHash: {(headCommit is not null ? $"\"{headCommit}\"" : "null")})]""";
+
+        // lock (FILE_LOCK) {
+        try {
+            using FileStream   fileStream   = File.Open(OutputFile, FileMode.Create, FileAccess.Write, FileShare.Read);
+            using StreamWriter streamWriter = new(fileStream, new UTF8Encoding(false, true));
+            streamWriter.WriteLine(fileContents);
+        } catch (IOException e) when (e.HResult is unchecked((int) 0x80070020)) {
+            // file is in use by another concurrent build (like multitargeting), so we can skip it because it will already be up to date by the other build
+        }
+        // }
+
+        return true;
     }
 
-}
+}*/

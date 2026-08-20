@@ -131,25 +131,29 @@ public static class Versions {
 #endif
 
             if (userRequestedVersion) {
-                StringBuilder versionTextBuilder = new StringBuilder("Version:  ")
+                bool isGui = Environment.IsWindowsGuiProgram;
+                StringBuilder versionTextBuilder = new StringBuilder("Version:")
+                    .Append(isGui ? "  " : " ")
                     .Append(Version.ProgramVersion);
                 if (BuildInfoAttribute.Get() is {} buildInfo) {
                     if (buildInfo.CommitHash is not null) {
                         versionTextBuilder.AppendLine()
-                            .Append("Commit: ")
+                            .Append("Commit:")
+                            .Append(isGui ? " " : "  ")
                             .Append(buildInfo.CommitHash);
                     }
 
                     DateTimeOffset buildDate = buildInfo.BuildDate.ToLocalTime();
                     versionTextBuilder.AppendLine()
-                        .Append("Built:                   ")
+                        .Append("Built:")
+                        .Append(isGui ? "                   " : "   ")
                         .Append(buildDate.ToString("F"))
                         .Append(" (")
                         .Append(buildDate.ToString("zzzz"))
                         .Append(')');
                 }
 
-                if (Environment.IsWindowsGuiProgram) {
+                if (isGui) {
                     using Process currentProcess = Process.GetCurrentProcess();
                     Assembly?     entryAssembly  = Assembly.GetEntryAssembly();
                     string programName = entryAssembly?.GetCustomAttributes<AssemblyProductAttribute>().FirstOrDefault()?.Product.EmptyToNull

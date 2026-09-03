@@ -39,6 +39,19 @@ public class UriExtensionsTest {
     }
 
     [Theory]
+    [InlineData("http://münchen.de/path", "münchen.de", true)]
+    [InlineData("http://münchen.de/path", "xn--mnchen-3ya.de", true)]
+    [InlineData("http://xn--mnchen-3ya.de/path", "münchen.de", true)]
+    [InlineData("http://xn--mnchen-3ya.de/path", "xn--mnchen-3ya.de", true)]
+    [InlineData("http://subdomain.münchen.de/path", "münchen.de", true)]
+    [InlineData("http://subdomain.münchen.de/path", "xn--mnchen-3ya.de", true)]
+    [InlineData("http://subdomain.xn--mnchen-3ya.de/path", "münchen.de", true)]
+    [InlineData("http://subdomain.xn--mnchen-3ya.de/path", "xn--mnchen-3ya.de", true)]
+    public void BelongsToInternationalDomain(string uri, string domain, bool shouldBelong) {
+        new Uri(uri).BelongsToDomain(domain).Should().Be(shouldBelong);
+    }
+
+    [Theory]
     [InlineData("https://aldaviva.com", "https://aldaviva.com")]
     [InlineData("https://aldaviva.com:443", "https://aldaviva.com")]
     [InlineData("https://foo:bar@aldaviva.com:444/path?query#frag", "https://aldaviva.com:444")]

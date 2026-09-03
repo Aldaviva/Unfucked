@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Web;
 
 namespace Unfucked;
@@ -46,23 +47,29 @@ public static class UriExtensions {
 
     }
 
-    /// <summary>Test if a URL has the same domain as <paramref name="ancestorOrSelfDomain"/>, or if it is a subdomain of it. This can be used for site locking.</summary>
+    private static IdnMapping? idnMapping;
+
+    /// <summary>Test if a URL has the same domain as <paramref name="expectedBaseDomain"/>, or if it is a subdomain of it. This can be used for site locking.</summary>
     /// <param name="url">A URL to test, such as <c>https://west.aldaviva.com</c>.</param>
-    /// <param name="ancestorOrSelfDomain">The expected exact domain or ancestor domain of <paramref name="url"/>, such as <c>aldaviva.com</c>.</param>
-    /// <returns><c>true</c> if the <paramref name="url"/> hostname is the same as <paramref name="ancestorOrSelfDomain"/> or is a subdomain of it; <c>false</c> otherwise. For example, <c>https://west.aldaviva.com</c> does belong to the domain <c>aldaviva.com</c>, so this would return <c>true</c>.</returns>
+    /// <param name="expectedBaseDomain">The expected exact domain or ancestor domain of <paramref name="url"/>, such as <c>aldaviva.com</c>.</param>
+    /// <returns><c>true</c> if the <paramref name="url"/> hostname is the same as <paramref name="expectedBaseDomain"/> or is a subdomain of it; <c>false</c> otherwise. For example, <c>https://west.aldaviva.com</c> does belong to the domain <c>aldaviva.com</c>, so this would return <c>true</c>; however, <c>https://aldaviva.com.evilsite.com</c> does not belong to the domain <c>aldaviva.com</c>, so this would return <c>false</c>.</returns>
     [Pure]
-    public static bool BelongsToDomain(this Uri url, string ancestorOrSelfDomain) {
-        string actualHostname = url.Host;
-        return actualHostname.Equals(ancestorOrSelfDomain, StringComparison.InvariantCultureIgnoreCase)
-            || actualHostname.EndsWith("." + ancestorOrSelfDomain, StringComparison.InvariantCultureIgnoreCase);
+    public static bool BelongsToDomain(this Uri url, string expectedBaseDomain) {
+        if (!url.IsAbsoluteUri || url.IsFile) return false;
+
+        string actualHostname = url.IdnHost;
+        idnMapping         ??= new IdnMapping();
+        expectedBaseDomain =   idnMapping.GetAscii(expectedBaseDomain);
+        return actualHostname.Equals(expectedBaseDomain, StringComparison.InvariantCultureIgnoreCase)
+            || actualHostname.EndsWith('.' + expectedBaseDomain, StringComparison.InvariantCultureIgnoreCase);
     }
 
-    /// <summary>Test if a URL has the same domain as <paramref name="ancestorOrSelfUri"/>, or if it is a subdomain of it. This can be used for site locking.</summary>
+    /// <summary>Test if a URL has the same domain as <paramref name="expectedBaseDomain"/>, or if it is a subdomain of it. This can be used for site locking.</summary>
     /// <param name="url">A URL to test, such as <c>https://west.aldaviva.com</c>.</param>
-    /// <param name="ancestorOrSelfUri">A URI with the expected exact domain or ancestor domain of <paramref name="url"/>, such as <c>aldaviva.com</c>.</param>
-    /// <returns><c>true</c> if the <paramref name="url"/> hostname is the same as the host of <paramref name="ancestorOrSelfUri"/> or is a subdomain of it; <c>false</c> otherwise. For example, <c>https://west.aldaviva.com</c> does belong to the domain of <c>http://aldaviva.com/</c>, so this would return <c>true</c>.</returns>
+    /// <param name="expectedBaseDomain">A URI with the expected exact domain or ancestor domain of <paramref name="url"/>, such as <c>https://aldaviva.com</c>. All URI components besides the hostname are ignored and do not have to match, such as the scheme and path.</param>
+    /// <returns><c>true</c> if the <paramref name="url"/> hostname is the same as the host of <paramref name="expectedBaseDomain"/> or is a subdomain of it; <c>false</c> otherwise. For example, <c>https://west.aldaviva.com</c> does belong to the domain of <c>http://aldaviva.com/</c>, so this would return <c>true</c>; however, <c>https://aldaviva.com.evilsite.com</c> does not belong to the domain of <c>https://aldaviva.com</c>, so this would return <c>false</c>.</returns>
     [Pure]
-    public static bool BelongsToDomain(this Uri url, Uri ancestorOrSelfUri) => url.BelongsToDomain(ancestorOrSelfUri.Host);
+    public static bool BelongsToDomain(this Uri url, Uri expectedBaseDomain) => url.BelongsToDomain(expectedBaseDomain.IdnHost);
 
     /// <summary>Test if a request's URL has the same domain as <paramref name="ancestorOrSelfDomain"/>, or if it is a subdomain of it. This can be used for site locking.</summary>
     /// <param name="request">A request whose URL (such as <c>https://west.aldaviva.com/</c>) will be tested.</param>

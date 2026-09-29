@@ -24,7 +24,7 @@
         <PackageIcon>icon.png</PackageIcon>
         <PackageReadmeFile>Readme.md</PackageReadmeFile>
         <NoWarn>$(NoWarn);VSTHRD200;NU1507</NoWarn>
-        <NoWarn>$(NoWarn);1591</NoWarn>
+        <!-- <NoWarn>$(NoWarn);1591</NoWarn> -->
         <!--<NoWarn Condition="'$(Configuration)' == 'Debug'">$(NoWarn);MSB3277</NoWarn>--><!-- MSBuild incorrectly assumes System.Collections.Immutable should transitively flow to dependents of Unfucked like HTTP because it depends on Microsoft.Build.Utilities.Core, even though PrivateAssets=all -->
         <WarningsAsErrors>CA1859</WarningsAsErrors>
         <RestoreEnablePackagePruning>true</RestoreEnablePackagePruning>

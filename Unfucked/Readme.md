@@ -12,6 +12,7 @@
     - [Comparables](#comparables)
     - [Console](#console)
     - [Cryptography](#cryptography)
+    - [Dataflow](#dataflow)
     - [Date and Time](#date-and-time)
     - [Decimal math](#decimal-math)
     - [Directories](#directories)
@@ -88,6 +89,51 @@ using Unfucked;
     string? issuerOrg = myCert.Issuer.Get("O");
     ```
 
+### Dataflow
+- Simple aggregating [Dataflow](https://learn.microsoft.com/en-us/dotnet/standard/parallel-programming/dataflow-task-parallel-library) block that consumes all the items it's provided with until its linked source completes, then emits all consumed items in one big list (instead of one at a time like `BufferBlock`). Useful for joining/aggregating/reducing the stream of items so they can all be analyzed together, like finding the minimum item. Like a `BatchBlock` of unbounded size, in case you don't know how many producers there are, or to insulate your code from that changes to that quantity.
+    ```cs
+    JoinAllBlock<int> joinAllBlock = new();
+    joinAllBlock.Post(1);
+    joinAllBlock.Post(2);
+    joinAllBlock.Post(3);
+    joinAllBlock.Complete();
+    IReadOnlyCollection<int> joined = joinAllBlock.Receive(); // [1, 2, 3]
+    ```
+- Easily create a block that produces and consumes items with custom logic, without all the boilerplate of `IPropagatorBlock` or the lack of reusability of `DataflowBlock.Encapsulate`. Just subclass and provide implementations of the `Input` and `Output` blocks. Useful when the built-in blocks almost do what you want, but not quite.
+    ```cs
+    public class JoinAllBlock<T>: InputOutputBlock<T, IReadOnlyCollection<T>> {
+
+        protected sealed override ITargetBlock<T> Input { get; }
+        protected override IReceivableSourceBlock<IReadOnlyCollection<T>> Output { get; }
+        private readonly IList<T> items = [];
+
+        public JoinAllBlock() {
+            Input = new ActionBlock<T>(items.Add);
+            BufferBlock<IReadOnlyCollection<T>> outputBuffer = new();
+            Output = outputBuffer;
+
+            Input.Completion.ContinueWith(_ => {
+                if (items.Count != 0) {
+                    outputBuffer.Post(items.AsReadOnly());
+                }
+                Output.Complete();
+            });
+        }
+    }
+    ```
+- Fix the completion propagation defect where multiple source blocks link to the same target block, then one of the sources completes, causing the target to inadvertently complete early, instead of waiting for all the other sources to also complete. Like `Task.WhenAll` instead of `Task.WhenAny`. Useful when a block has multiple sources.
+    ```cs
+    ISourceBlock<int> source1, source2;
+    ITargetBlock<int> target;
+    PatientDataflowLinkOptions opts = new {
+        PropagateCompletion = true,
+        PropagatingCompletionWaitsForAllSources = true
+    };
+    
+    source1.LinkTo(target, opts);
+    source2.LinkTo(target, opts);
+    // target will complete when both source1 and source2 have completed, not just when one source has completed
+    ```
 
 ### Date and Time
 - Absolute value of `TimeSpan` with a more discoverable name that `Duration`, whose name doesn't imply absolute value at all

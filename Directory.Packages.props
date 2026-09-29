@@ -14,9 +14,9 @@
     <!-- <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="17.5.0" /> -->
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="[10.0.111,10.0.200)" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="[10.0.112,10.0.200)" />
     <PackageVersion Include="mwinapi" Version="0.3.0.6" />
-    <PackageVersion Include="NodaTime" Version="3.3.3" />
+    <PackageVersion Include="NodaTime" Version="3.3.4" />
     <PackageVersion Include="OBSClient" Version="3.0.1" />
     <PackageVersion Include="PgpCore" Version="8.0.0" />
     <PackageVersion Include="ReSharper.ExportAnnotations.Task" Version="1.4.0" />
@@ -25,19 +25,20 @@
     <PackageVersion Include="System.Net.Http.Json" Version="8.0.1" />
     <PackageVersion Include="System.Text.Encodings.Web" Version="8.0.0" />
     <PackageVersion Include="System.Text.Json" Version="8.0.6" />
+    <PackageVersion Include="System.Threading.Tasks.Dataflow" Version="10.0.12" />
     <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
-    <PackageVersion Include="ThrottleDebounce" Version="3.0.0-beta6" />
+    <PackageVersion Include="ThrottleDebounce" Version="3.0.0" />
     <PackageVersion Include="TwitchApi.Net" Version="3.2.0" />
   </ItemGroup>
   <Choose>
-    <When Condition="'$(TargetFramework)' != 'net10.0'">
+    <When Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">
       <ItemGroup>
-        <PackageVersion Include="Stun.Net" Version="9.0.1" />
+        <PackageVersion Include="Stun.Net" Version="10.0.8" />
       </ItemGroup>
     </When>
     <Otherwise>
       <ItemGroup>
-        <PackageVersion Include="Stun.Net" Version="10.0.7" />
+        <PackageVersion Include="Stun.Net" Version="9.0.1" />
       </ItemGroup>
     </Otherwise>
   </Choose>

@@ -19,7 +19,7 @@ public static class Versions {
         string?   programVersion = null;
         Assembly? assembly       = Assembly.GetEntryAssembly();
         programVersion ??= normalizeVersion(assembly?.GetCustomAttributes<AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion);
-        programVersion ??= assembly?.GetName().Version?.ToString(2, 4);
+        programVersion ??= assembly?.GetName().Version?.ToString(1, 4);
 
         if (programVersion is null) {
             using Process    selfProcess       = Process.GetCurrentProcess();
@@ -34,7 +34,7 @@ public static class Versions {
 
         static string? normalizeVersion(string? version) {
             string? normalized = version?.IndexOf('+') is not -1 and {} plusIndex ? version.Substring(0, plusIndex) : version;
-            return normalized is not null && Version.TryParse(normalized, out Version? result) ? ToString(result, 2, 4) : normalized;
+            return normalized is not null && Version.TryParse(normalized, out Version? result) ? result.ToString(1, 4) : normalized;
         }
 
         return programVersion;

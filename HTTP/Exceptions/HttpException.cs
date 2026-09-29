@@ -86,7 +86,7 @@ public sealed record HttpExceptionParams(
 /// Unsuccessful HTTP status code
 /// </summary>
 public class WebApplicationException(HttpStatusCode status, string reasonPhrase, HttpExceptionParams exceptionParams)
-    : HttpException(status, $"{(int) status} {reasonPhrase} from {exceptionParams.RequestUrl}", null, exceptionParams) {
+    : HttpException(status, $"{(int) status} {(reasonPhrase.HasText ? reasonPhrase : status.ToString())} from {exceptionParams?.RequestUrl}", null, exceptionParams!) {
 
     public string ReasonPhrase => reasonPhrase;
     public HttpResponseHeaders ResponseHeaders => HttpExceptionParams.ResponseHeaders!;

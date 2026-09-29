@@ -3,7 +3,6 @@ namespace Unfucked.HTTP;
 public partial class WebTarget {
 
     private static readonly HttpMethod PATCH_VERB   = new("PATCH");
-    private static readonly Type       STREAM_CLASS = typeof(Stream);
 
     /*
      * Must not be async so the AsyncLocal scope for wire logging is high enough in the async chain.
@@ -36,7 +35,7 @@ public partial class WebTarget {
         try {
             return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
         } finally {
-            DisposeIfNotStream<T>(response);
+            DisposeUnlessStreamRequested<T>(response);
         }
     }
 
@@ -46,7 +45,7 @@ public partial class WebTarget {
         try {
             return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
         } finally {
-            DisposeIfNotStream<T>(response);
+            DisposeUnlessStreamRequested<T>(response);
         }
     }
 
@@ -56,7 +55,7 @@ public partial class WebTarget {
         try {
             return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
         } finally {
-            DisposeIfNotStream<T>(response);
+            DisposeUnlessStreamRequested<T>(response);
         }
     }
 
@@ -66,7 +65,7 @@ public partial class WebTarget {
         try {
             return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
         } finally {
-            DisposeIfNotStream<T>(response);
+            DisposeUnlessStreamRequested<T>(response);
         }
     }
 
@@ -76,7 +75,7 @@ public partial class WebTarget {
         try {
             return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
         } finally {
-            DisposeIfNotStream<T>(response);
+            DisposeUnlessStreamRequested<T>(response);
         }
     }
 
@@ -86,12 +85,12 @@ public partial class WebTarget {
         try {
             return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
         } finally {
-            DisposeIfNotStream<T>(response);
+            DisposeUnlessStreamRequested<T>(response);
         }
     }
 
-    private static void DisposeIfNotStream<T>(HttpResponseMessage response) {
-        if (typeof(T) != STREAM_CLASS) {
+    private static void DisposeUnlessStreamRequested<T>(HttpResponseMessage response) {
+        if (typeof(T) != typeof(Stream) && typeof(T) != typeof(HttpResponseMessage)) {
             response.Dispose();
         }
     }

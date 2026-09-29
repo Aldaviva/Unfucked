@@ -1,6 +1,8 @@
 // Sadly, this conflicts with any other package that declares this class, such as System.Text.Json for net462. This causes build failures when using ILRepack, and requires you to internalize types to allow ILRepack to deduplicate these classes.
 // If ILRepack complains about this class being a duplicate, see https://github.com/Aldaviva/Fail2Ban4Win/blob/91709d6a666f5f8977cb39c324bc5453ee5f3eec/Fail2Ban4Win/ILRepack.targets#L13
 
+// Do not enclose this in conditional compilation directives like #if: https://stackoverflow.com/questions/62648189/testing-c-sharp-9-0-in-vs2019-cs0518-isexternalinit-is-not-defined-or-imported/62656145#comment117181842_62656145
+
 // ReSharper disable All
 
 using System.ComponentModel;

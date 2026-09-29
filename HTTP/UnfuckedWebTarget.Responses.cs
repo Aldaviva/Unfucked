@@ -28,7 +28,9 @@ public partial class WebTarget {
     /// <exception cref="WebApplicationException">the response status code was not successful, and <see cref="PropertyKey.ThrowOnUnsuccessfulStatusCode"/> was left enabled</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled</exception>
     private async Task<T> ParseResponseBody<T>(HttpResponseMessage response, CancellationToken cancellationToken) {
-        if (!Property(PropertyKey.ThrowOnUnsuccessfulStatusCode, out bool value) || value) {
+        if (typeof(T) == typeof(HttpResponseMessage)) {
+            return (T) (object) response;
+        } else if (!Property(PropertyKey.ThrowOnUnsuccessfulStatusCode, out bool value) || value) {
             await ThrowIfUnsuccessful(response, cancellationToken).ConfigureAwait(false);
         }
 

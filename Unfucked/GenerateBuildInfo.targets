@@ -65,7 +65,7 @@
     <Target Name="GenerateBuildInfo" BeforeTargets="BeforeBuild">
         <MakeDir Directories="$(IntermediateOutputPath)" />
         <GenerateBuildInfo ProjectDir="$(MSBuildProjectDirectory)" OutputFile="$(IntermediateOutputPath)Unfucked.BuildInfo.g.cs" />
-        <Message Text="Wrote build info file $(IntermediateOutputPath)Unfucked.BuildInfo.g.cs" Importance="high" />
+        <Message Text="Wrote build info file $(IntermediateOutputPath)Unfucked.BuildInfo.g.cs" Importance="normal" />
 
         <ItemGroup>
             <Compile Include="$(IntermediateOutputPath)Unfucked.BuildInfo.g.cs" />

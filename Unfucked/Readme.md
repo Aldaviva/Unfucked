@@ -68,6 +68,15 @@ using Unfucked;
         ```cs
         bool colorable = ConsoleControl.EnableColorSupport();
         ```
+- Draw a textual progress bar in the console, including Windows Terminal support.
+    ```cs
+    double progress = 0.5;
+    Console.OutputEncoding = Encoding.UTF8;
+    Console.CursorVisible = false;
+    ConsoleControl.ProgressBarOptions opts = new() { TotalWidth = _ => Console.WindowWidth - 5 };
+    Console.Write($"{ConsoleControl.ClearLine}{ConsoleControl.RenderProgressBar(progress, opts)} {progress,4:P0}");
+    // ━━━━━━━━────────  50%
+    ```
 
 ### Cryptography
 - Random string generation

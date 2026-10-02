@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Unfucked;
 
@@ -43,7 +44,7 @@ public static partial class ConsoleControl {
     }
 
     /// <summary>
-    /// Clear the line and most to the leftmost position
+    /// Clear the line and move to the leftmost position
     /// </summary>
     [ExcludeFromCodeCoverage]
     public static void WriteClearLine() {
@@ -136,7 +137,7 @@ public static partial class ConsoleControl {
     /// <summary>
     /// Write this string to reset the foreground and background text colors to their default values.
     /// </summary>
-    public static readonly string ResetColor = Color(DefaultColor, DefaultColor);
+    public const string ResetColor = "\e[39;49m";
 
     /// <summary>
     /// <para>On Windows, you have to call a method to explicitly turn on ANSI escape sequence processing, otherwise you will see the raw escape codes printed as text.</para>
@@ -156,6 +157,95 @@ public static partial class ConsoleControl {
         }
 
         return virtualTerminalProcessingState == VirtualTerminalProcessing.Enabled;
+    }
+
+    /// <summary>Print a textual horizontal progress bar to a string, to be written in a console.</summary>
+    /// <param name="progress">Percentage of completion, in the range [0.0, 1.0].</param>
+    /// <param name="options">Customize the appearance of the progress bar, such as its width and colors.</param>
+    /// <returns>A string containing a textual progress bar, potentially including ANSI escape sequences for colors, ready to pass to <see cref="Console.Write(string)"/>.</returns>
+    public static string RenderProgressBar(double progress, ProgressBarOptions options) {
+        progress = progress.Clip(0, 1);
+        StringBuilder rendered      = new();
+        int           totalWidth    = options.TotalWidth(progress);
+        int           completeWidth = (int) Math.Round(totalWidth * progress);
+        int           column        = 0;
+
+        string? colorEscapeSequence = completeWidth != 0 ? ProgressBarOptions.RenderColor(options.CompleteColor, options.CompleteConsoleColor) : null;
+        if (colorEscapeSequence != null) {
+            rendered.Append(colorEscapeSequence);
+        }
+        for (; column < completeWidth; column++) {
+            rendered.Append(options.CompleteChar);
+        }
+        if (colorEscapeSequence != null) {
+            rendered.Append(ResetColor);
+        }
+
+        colorEscapeSequence = completeWidth != totalWidth ? ProgressBarOptions.RenderColor(options.IncompleteColor, options.IncompleteConsoleColor) : null;
+        if (colorEscapeSequence != null) {
+            rendered.Append(colorEscapeSequence);
+        }
+        for (; column < totalWidth; column++) {
+            rendered.Append(options.IncompleteChar);
+        }
+        if (colorEscapeSequence != null) {
+            rendered.Append(ResetColor);
+        }
+
+        // https://learn.microsoft.com/en-us/windows/terminal/tutorials/progress-bar-sequences
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT && EnableColorSupport()) {
+            rendered.Append("\e]9;4;")
+                .Append(progress < 1 ? 1 : 0)
+                .Append(';')
+                .Append((int) Math.Round(progress * 100))
+                .Append('\a');
+        }
+
+        return rendered.ToString();
+    }
+
+    /// <summary>Control the appearance of the progress bar in <see cref="RenderProgressBar"/>.</summary>
+    public readonly record struct ProgressBarOptions() {
+
+        /// <summary>How wide, in columns, the progress bar should be. To make it the full width of the console window, return <see cref="Console.WindowWidth"/>. The <see cref="double"/> argument is the current progress value.</summary>
+        public required Func<double, int> TotalWidth { get; init; } = null!;
+
+        /// <summary>Foreground and background colors used to render the left, completed side of the progress bar. Defaults to the console's regular text and background colors when null. Takes RGB values and overrides <see cref="CompleteConsoleColor"/> if both are provided.</summary>
+        public (Color? Foreground, Color? Background)? CompleteColor { get; init; } = null;
+
+        /// <summary>Foreground and background colors used to render the right, incomplete side of the progress bar. Defaults to the console's regular text and background colors when null. Takes RGB values and overrides <see cref="IncompleteConsoleColor"/> if both are provided.</summary>
+        public (Color? Foreground, Color? Background)? IncompleteColor { get; init; } = null;
+
+        /// <summary>Foreground and background colors used to render the left, completed side of the progress bar. Defaults to the console's regular text and background colors when null. Takes 4-bit user-customizable color presets, and is overridden <see cref="CompleteColor"/> if both are provided.</summary>
+        public (ConsoleColor? Foreground, ConsoleColor? Background)? CompleteConsoleColor { get; init; } = null;
+
+        /// <summary>Foreground and background colors used to render the right, incomplete side of the progress bar. Defaults to the console's regular text and background colors when null. Takes 4-bit user-customizable color presets, and is overridden <see cref="IncompleteColor"/> if both are provided.</summary>
+        public (ConsoleColor? Foreground, ConsoleColor? Background)? IncompleteConsoleColor { get; init; } = null;
+
+        /// <summary>The character that is printed on the left side of the progress bar to represent the completed portion. By default, this is ━ (U+2501 Box Drawings Heavy Horizontal). If non-ASCII characters like this render as ?, try setting <see cref="Console.OutputEncoding"/> to <see cref="Encoding.UTF8"/>.</summary>
+        public char CompleteChar { get; init; } = '\u2501';
+
+        /// <summary>The character that is printed on the right side of the progress bar to represent the incomplete portion. By default, this is ─ (U+2500 Box Drawings Light Horizontal). If non-ASCII characters like this render as ?, try setting <see cref="Console.OutputEncoding"/> to <see cref="Encoding.UTF8"/>.</summary>
+        public char IncompleteChar { get; init; } = '\u2500';
+
+        internal static string? RenderColor((Color? Foreground, Color? Background)? color, (ConsoleColor? Foreground, ConsoleColor? Background)? consoleColor) {
+            Color?        fg1 = color?.Foreground;
+            Color?        bg1 = color?.Background;
+            ConsoleColor? fg2 = consoleColor?.Foreground;
+            ConsoleColor? bg2 = consoleColor?.Background;
+
+            string? escapeSequence = null;
+            if ((fg1.HasValue || bg1.HasValue) && EnableColorSupport()) {
+                escapeSequence = Color(fg1, bg1);
+                if ((!fg1.HasValue && fg2.HasValue) || (!bg1.HasValue && bg2.HasValue)) {
+                    escapeSequence += Color(!fg1.HasValue ? fg2 : null, !bg1.HasValue ? bg2 : null);
+                }
+            } else if ((fg2.HasValue || bg2.HasValue) && EnableColorSupport()) {
+                escapeSequence = Color(fg2, bg2);
+            }
+            return escapeSequence;
+        }
+
     }
 
     private static int? ToAnsiEscapeCode(this ConsoleColor? color) => color switch {
@@ -181,9 +271,7 @@ public static partial class ConsoleControl {
 
     private enum VirtualTerminalProcessing {
 
-        Disabled,
-        Enabled,
-        Unavailable
+        Disabled, Enabled, Unavailable
 
     }
 

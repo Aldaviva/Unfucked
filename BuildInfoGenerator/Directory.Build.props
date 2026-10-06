@@ -1,0 +1,2 @@
+<!-- Disable inheritance from parent directory, because it adds lots of unwanted settings that cause problems since this project doesn't produce a package -->
+<Project />

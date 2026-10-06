@@ -183,15 +183,15 @@ public static class Versions {
     private static extern int MessageBoxW(IntPtr ownerWindow, string body, string title, uint type);
 
     /// <summary>Metadata about the program's build, automatically generated at compile time.</summary>
-    /// <param name="buildDate">When the program was built, in ISO 8601 ("O") format</param>
-    /// <param name="commitHash">Source Code Management commit identifier for the current commit when the program was built, or <c>null</c> if the project was not version controlled by Git</param>
+    /// <param name="buildDate">When the program was built, in ISO 8601 ("O") format, like <c>2026-10-05T22:50:53.5265278+00:00</c></param>
+    /// <param name="commitHash">Source Code Management identifier in lowercase for the commit when the program was built, like <c>69c08f95d44d4cd706ae2b1c1daabf45728d2878</c>, or <c>null</c> if the project was not version controlled by Git</param>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public sealed class BuildInfoAttribute(string buildDate, string? commitHash = null): Attribute {
 
-        /// <summary>When the program was built</summary>
+        /// <summary>When the program was built, in ISO 8601 ("O") format, like <c>2026-10-05T22:50:53.5265278+00:00</c></summary>
         public DateTimeOffset BuildDate { get; } = DateTimeOffset.ParseExact(buildDate, "O", CultureInfo.InvariantCulture);
 
-        /// <summary>Source Code Management commit identifier for the current commit when the program was built, or <c>null</c> if the project was not version controlled by Git</summary>
+        /// <summary>Source Code Management identifier in lowercase for the commit when the program was built, like <c>69c08f95d44d4cd706ae2b1c1daabf45728d2878</c>, or <c>null</c> if the project was not version controlled by Git</summary>
         public string? CommitHash { get; } = commitHash;
 
         /// <summary>Look up a build metadata instance.</summary>
@@ -203,50 +203,3 @@ public static class Versions {
     }
 
 }
-
-/*
-public class GenerateBuildInfo: Task {
-
-    // If this gets file sharing errors as multiple TFMs or RIDs in a build try to write the same file at the same time, change this to an OS-wide Semaphore instead of a process-wide Mutex
-    // private static readonly object FILE_LOCK = new();
-
-    // [Required]
-    public string ProjectDir { get; set; } = null!;
-
-    // [Required]
-    public string OutputFile { get; set; } = null!;
-
-    public override bool Execute() {
-        string? gitDirectory = null;
-        for (string? parentDirectory = ProjectDir; gitDirectory is null && !string.IsNullOrEmpty(parentDirectory); parentDirectory = Path.GetDirectoryName(parentDirectory)) {
-            string gitDir = Path.Combine(parentDirectory, ".git");
-            gitDirectory = Directory.Exists(gitDir) ? gitDir : null;
-        }
-
-        string? headCommit = null;
-        try {
-            if (gitDirectory is not null && File.ReadAllLines(Path.Combine(gitDirectory, "HEAD")).FirstOrDefault(line => line.StartsWith("ref: "))?.Substring(5) is {} branchName) {
-                headCommit = File.ReadAllLines(Path.Combine(gitDirectory, branchName))[0].Trim();
-                if (!Regex.IsMatch(headCommit, @"^[\da-f]{40}$", RegexOptions.IgnoreCase)) {
-                    headCommit = null;
-                }
-            }
-        } catch (FileNotFoundException) {}
-
-        string fileContents =
-            $"""[assembly:Unfucked.Versions.BuildInfo(buildDate: "{DateTimeOffset.UtcNow:O}", commitHash: {(headCommit is not null ? $"\"{headCommit}\"" : "null")})]""";
-
-        // lock (FILE_LOCK) {
-        try {
-            using FileStream   fileStream   = File.Open(OutputFile, FileMode.Create, FileAccess.Write, FileShare.Read);
-            using StreamWriter streamWriter = new(fileStream, new UTF8Encoding(false, true));
-            streamWriter.WriteLine(fileContents);
-        } catch (IOException e) when (e.HResult is unchecked((int) 0x80070020)) {
-            // file is in use by another concurrent build (like multitargeting), so we can skip it because it will already be up to date by the other build
-        }
-        // }
-
-        return true;
-    }
-
-}*/

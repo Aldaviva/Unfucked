@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.10.35122.118
+# Visual Studio Version 18
+VisualStudioVersion = 18.4.11612.150
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unfucked", "Unfucked\Unfucked.csproj", "{B9DBD2A9-9AB6-4521-BC43-D332CA961AE3}"
 EndProject
@@ -29,6 +29,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Caching", "Caching\Caching.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HTTP", "HTTP\HTTP.csproj", "{F209E81F-BAFA-4694-8B1D-283518162257}"
 EndProject
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildInfoGenerator", "BuildInfoGenerator\BuildInfoGenerator.csproj", "{D2D67B5F-6DEB-4B46-9349-AC1CEA157916}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -88,6 +90,10 @@ Global
 		{F209E81F-BAFA-4694-8B1D-283518162257}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F209E81F-BAFA-4694-8B1D-283518162257}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F209E81F-BAFA-4694-8B1D-283518162257}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2D67B5F-6DEB-4B46-9349-AC1CEA157916}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2D67B5F-6DEB-4B46-9349-AC1CEA157916}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2D67B5F-6DEB-4B46-9349-AC1CEA157916}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2D67B5F-6DEB-4B46-9349-AC1CEA157916}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

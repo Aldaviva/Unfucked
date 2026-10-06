@@ -6,7 +6,7 @@
         <AssemblyName>$(MSBuildProjectName)</AssemblyName>
         <RootNamespace>$(MSBuildProjectName)</RootNamespace>
         <Description>Fix egregiously broken or missing functionality in .NET libraries. Provide useful boilerplate, façades, and polyfills.</Description>
-        <NoWarn>$(NoWarn);SYSLIB1054</NoWarn>
+        <NoWarn>$(NoWarn);SYSLIB1054;NU5100</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -30,7 +30,11 @@
 
     <ItemGroup>
         <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" IncludeAssets="compile" />
-        <!--<PackageReference Include="Microsoft.Build.Utilities.Core" PrivateAssets="all" ExcludeAssets="runtime" />--> <!-- for GenerateBuildInfo -->
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\BuildInfoGenerator\BuildInfoGenerator.csproj" PrivateAssets="all" ExcludeAssets="all" />
+        <None Include="$(OutputPath)\netstandard2.0\Unfucked.BuildInfoGenerator.dll" Pack="true" PackagePath="tasks\netstandard2.0" Visible="false" />
     </ItemGroup>
 
 </Project>

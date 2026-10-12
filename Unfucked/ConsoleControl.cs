@@ -8,7 +8,8 @@ namespace Unfucked;
  * Reference: https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters
  */
 /// <summary>
-/// Methods that make it easier to control the text console.
+/// <para>Methods that make it easier to control the text console.</para>
+/// <para>Colored, interpolated strings can be made more terse with <c>using static Unfucked.ConsoleControl;</c></para>
 /// </summary>
 public static partial class ConsoleControl {
 
@@ -24,6 +25,11 @@ public static partial class ConsoleControl {
 
     private static VirtualTerminalProcessing virtualTerminalProcessingState =
         Environment.OSVersion.Platform == PlatformID.Win32NT ? VirtualTerminalProcessing.Disabled : VirtualTerminalProcessing.Enabled;
+
+    /// <summary>
+    /// Write this string to reset the foreground and background text colors to their default values.
+    /// </summary>
+    public const string ResetColor = "\e[39;49m";
 
     /// <inheritdoc cref="WriteClear" />
     public const string Clear = "\e[1J\e[1;1H";
@@ -133,11 +139,6 @@ public static partial class ConsoleControl {
     public static void WriteLine(string text, Color? foregroundColor, Color? backgroundColor = null) {
         Console.WriteLine(Color(text, foregroundColor, backgroundColor));
     }
-
-    /// <summary>
-    /// Write this string to reset the foreground and background text colors to their default values.
-    /// </summary>
-    public const string ResetColor = "\e[39;49m";
 
     /// <summary>
     /// <para>On Windows, you have to call a method to explicitly turn on ANSI escape sequence processing, otherwise you will see the raw escape codes printed as text.</para>

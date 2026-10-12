@@ -25,6 +25,7 @@ public sealed class JsonBodyReader: MessageBodyReader {
         }
     };
 
+    /// <inheritdoc />
     public bool CanRead<T>(string? mimeType, string? bodyPrefix) =>
         typeof(T) == typeof(JsonDocument) ||
         typeof(T) == typeof(JsonNode) ||
@@ -42,6 +43,7 @@ public sealed class JsonBodyReader: MessageBodyReader {
      * Don't parse using the convenience extension methods from System.Net.Http.Json because that closes the response body stream even when an exception is thrown, so we can't read the body to create the exception.
      * Instead, rely on UnfuckedWebTarget.DisposeIfNotStream<T> to close the stream when the entire response processing is done.
      */
+    /// <inheritdoc />
     /// <exception cref="JsonException"></exception>
     public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
         JsonSerializerOptions jsonOptions = (clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions)!;
@@ -63,6 +65,7 @@ public sealed class JsonBodyReader: MessageBodyReader {
 /// </summary>
 internal sealed class KernighanRitchieCEnumToLowerCamelCaseNamingPolicy: JsonNamingPolicy {
 
+    /// <inheritdoc />
     public override string ConvertName(string name) {
         if (!name.HasText) return name;
 

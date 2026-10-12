@@ -17,7 +17,7 @@ public class ProcessesTest {
     [Fact]
     public async Task ExecFileWithEnvironment() {
         ProcessResult gitResult =
-            await Process.ExecFile("git", ["--version"], new Dictionary<string, string?> { { "abc", "def" }, { "removeme", null } });
+            await Process.ExecFile("git", ["--version"], extraEnvironment: new Dictionary<string, string?> { { "abc", "def" }, { "removeme", null } });
 
         gitResult.Should().NotBeNull();
         gitResult.ExitCode.Should().Be(0);

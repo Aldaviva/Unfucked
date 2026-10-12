@@ -34,15 +34,15 @@ public sealed class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOp
     private static readonly char[] LEVEL_LABELS = ['t', 'd', 'i', 'W', 'E', 'C', ' '];
 
     private readonly UnfuckedConsoleFormatterOptions options  = options.Value;
-    private readonly bool                            useColor = options.Value.Color && ConsoleControl.EnableColorSupport();
+    private readonly bool                            useColor = options.Value.Color && Console.EnableColorSupport();
 
     private readonly string[] levelColors = [
-        ConsoleControl.Color(ConsoleColor.DarkGray),                         // trace
-        ConsoleControl.Color(ConsoleColor.Gray),                             // debug
-        string.Empty,                                                        // info
-        ConsoleControl.Color(Color.Black, Color.FromArgb(0xFF, 0xAA, 0x00)), // warn
-        ConsoleControl.Color(Color.White, Color.FromArgb(0xB0, 0x3A, 0x3A)), // error
-        ConsoleControl.Color(Color.White, Color.FromArgb(0xB0, 0x3A, 0x3A))  // critical
+        Console.Color(ConsoleColor.DarkGray),                         // trace
+        Console.Color(ConsoleColor.Gray),                             // debug
+        string.Empty,                                                 // info
+        Console.Color(Color.Black, Color.FromArgb(0xFF, 0xAA, 0x00)), // warn
+        Console.Color(Color.White, Color.FromArgb(0xB0, 0x3A, 0x3A)), // error
+        Console.Color(Color.White, Color.FromArgb(0xB0, 0x3A, 0x3A))  // critical
     ];
 
     private int maxCategoryLength;

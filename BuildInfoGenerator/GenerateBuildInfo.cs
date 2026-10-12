@@ -1,4 +1,5 @@
 using Microsoft.Build.Framework;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using MsBuildTask = Microsoft.Build.Utilities.Task;
@@ -12,9 +13,15 @@ public class GenerateBuildInfo: MsBuildTask {
 #if DEBUG
     static GenerateBuildInfo() {
         // During development, Workspace Resolution scans for this value to kill the hosting MSBuild process when it needs to install a new version of this package into the local package cache, if MSBuild holds a lock on this library file.
-        const string envVarName      = "MSBUILD_TASKS";
-        const string selfLibraryName = "Unfucked";
-        Environment.SetEnvironmentVariable(envVarName, Environment.GetEnvironmentVariable(envVarName) is {} old ? $"{old};{selfLibraryName}" : selfLibraryName);
+        const string envVarName      = "MSBUILD_TASKS"; // used by WorkspaceResolution.Services.MsBuildService
+        string       selfLibraryName = Path.GetFileName(typeof(GenerateBuildInfo).Assembly.Location);
+        ISet<string> taskFilenames   = new SortedSet<string>(Environment.GetEnvironmentVariable(envVarName)?.Split(';') ?? []);
+        if (taskFilenames.Add(selfLibraryName)) {
+            Environment.SetEnvironmentVariable(envVarName, string.Join(";", taskFilenames));
+        }
+
+        /*using Process currentProcess = Process.GetCurrentProcess();
+        MessageBoxW(currentProcess.MainWindowHandle, $"MSBuild custom task library loaded in {currentProcess.ProcessName}:{currentProcess.Id}", "Unfucked.BuildInfoGenerator", 0x40);*/
     }
 #endif
 
@@ -58,5 +65,8 @@ public class GenerateBuildInfo: MsBuildTask {
 
         return true;
     }
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+    private static extern int MessageBoxW(IntPtr ownerWindow, string body, string title, uint type);
 
 }

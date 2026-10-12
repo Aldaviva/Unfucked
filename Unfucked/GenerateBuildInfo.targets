@@ -10,7 +10,6 @@
     <Target Name="GenerateBuildInfo" BeforeTargets="BeforeBuild">
         <MakeDir Directories="$(IntermediateOutputPath)" />
         <GenerateBuildInfo ProjectDir="$(MSBuildProjectDirectory)" OutputFile="$(_BuildInfoFilePath)" />
-        <!--<Message Text="Wrote build info file $(_BuildInfoFilePath) using DLL" Importance="normal" />-->
 
         <ItemGroup>
             <Compile Include="$(_BuildInfoFilePath)" />

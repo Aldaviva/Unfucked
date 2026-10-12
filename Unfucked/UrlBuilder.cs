@@ -202,16 +202,18 @@ public sealed class UrlBuilder {
     #region Serialization
 
     /// <summary>
-    /// Build a URL from this builder's state.
+    /// <para>Build a URL from this builder's state.</para>
     /// </summary>
+    /// <param name="templateValues">If the builder has any template placeholders which have not been resolved by <see cref="ResolveTemplate(string,object?)"/>, you can pass their values here. Otherwise, don't pass this parameter. Any extra passed values will be ignored.</param>
     /// <returns>The URL representation of this builder instance.</returns>
     // ExceptionAdjustment: M:System.Uri.#ctor(System.String,System.UriKind) -T:System.UriFormatException
     [Pure]
-    public Uri ToUrl() {
-        StringBuilder built = new();
+    public Uri ToUrl(params IEnumerable<object> templateValues) {
+        Queue<object> buildTemplateValues = templateValues as Queue<object> ?? new Queue<object>(templateValues);
+        StringBuilder built               = new();
 
         if (_scheme != null) {
-            built.Append(ReplacePlaceholders(_scheme)).Append(':');
+            built.Append(ReplacePlaceholders(_scheme, buildTemplateValues)).Append(':');
         }
 
         if (_userInfo != null || _hostname != null || _port != null) {
@@ -219,11 +221,11 @@ public sealed class UrlBuilder {
         }
 
         if (_userInfo != null) {
-            built.Append(UrlEncoder.Encode(ReplacePlaceholders(_userInfo), UrlEncoder.Component.UserInfo)).Append('@');
+            built.Append(UrlEncoder.Encode(ReplacePlaceholders(_userInfo, buildTemplateValues), UrlEncoder.Component.UserInfo)).Append('@');
         }
 
         if (_hostname is {} hostname) {
-            hostname = ReplacePlaceholders(hostname);
+            hostname = ReplacePlaceholders(hostname, buildTemplateValues);
             if (IPAddress.TryParse(hostname, out IPAddress? ipAddress) && ipAddress.AddressFamily == AddressFamily.InterNetworkV6) {
                 built.Append('[').Append(hostname).Append(']');
             } else {
@@ -238,7 +240,7 @@ public sealed class UrlBuilder {
 
         if (!_path.IsEmpty) {
             built.Append('/').AppendJoin('/',
-                _path.Select(p => UrlEncoder.Encode(ReplacePlaceholders(p.Trim('/')), UrlEncoder.Component.PathSegment)));
+                _path.Select(p => UrlEncoder.Encode(ReplacePlaceholders(p.Trim('/'), buildTemplateValues), UrlEncoder.Component.PathSegment)));
 
 #pragma warning disable IDE0056 // Use index operator - not available when targeting .NET Standard 2
             if (_trailingSlash && built[built.Length - 1] != '/') {
@@ -252,19 +254,26 @@ public sealed class UrlBuilder {
         if (queryParameters.Count != 0) {
             built.Append('?').AppendJoin('&', queryParameters.Select(pair => ReferenceEquals(pair.Value, VALUELESS_QUERY_PARAM)
                 ? UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QueryParameter)
-                : $"{UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QueryParameter)}={UrlEncoder.Encode(ReplacePlaceholders(Stringify(pair.Value) ?? string.Empty), UrlEncoder.Component.QueryParameter)}"));
+                : $"{UrlEncoder.Encode(pair.Key, UrlEncoder.Component.QueryParameter)}={UrlEncoder.Encode(ReplacePlaceholders(Stringify(pair.Value) ?? string.Empty, buildTemplateValues), UrlEncoder.Component.QueryParameter)}"));
         }
 
         if (_fragment != null) {
-            built.Append('#').Append(UrlEncoder.Encode(ReplacePlaceholders(_fragment), UrlEncoder.Component.Fragment));
+            built.Append('#').Append(UrlEncoder.Encode(ReplacePlaceholders(_fragment, buildTemplateValues), UrlEncoder.Component.Fragment));
         }
 
         return new Uri(built.ToString(), UriKind.Absolute);
     }
 
+    /// <summary>
+    /// <para>Build a URL from this builder's state.</para>
+    /// </summary>
+    /// <returns>The URL representation of this builder instance.</returns>
+    [Pure]
+    public override string ToString() => ToString();
+
     /// <inheritdoc cref="ToUrl" />
     [Pure]
-    public override string ToString() => ToUrl().AbsoluteUri;
+    public string ToString(params IEnumerable<object> templateValues) => ToUrl(templateValues).AbsoluteUri;
 
     /// <summary>
     /// Implicitly cast a <see cref="UrlBuilder"/> to a <see cref="Uri"/> by building its URL.
@@ -458,7 +467,7 @@ public sealed class UrlBuilder {
     /// <returns>New immutable builder instance with the changed value.</returns>
     [Pure]
     public UrlBuilder ResolveTemplate(IEnumerable<KeyValuePair<string, object?>> values) {
-        values = values.ToList();
+        values = values as ICollection<KeyValuePair<string, object?>> ?? values.ToList();
         return new UrlBuilder(this) {
             _templateValues = _templateValues.SetItems(values),
             _unusedTemplateQueryParameterRealNames = _unusedTemplateQueryParameterRealNames != null ? _unusedTemplateQueryParameterRealNames.Except(values.ToImmutableDictionary().Keys)
@@ -476,10 +485,20 @@ public sealed class UrlBuilder {
     public UrlBuilder ResolveTemplate(object anonymousType) =>
         ResolveTemplate(anonymousType.GetType().GetProperties().Select(property => new KeyValuePair<string, object?>(property.Name, property.GetValue(anonymousType))));
 
-    private string ReplacePlaceholders(string inputWithPlaceholders) =>
-        _templateValues.IsEmpty || !_enableTemplates ? inputWithPlaceholders : PLACEHOLDER_PATTERN.Replace(inputWithPlaceholders, match => {
+    private string ReplacePlaceholders(string inputWithPlaceholders, Queue<object> buildTemplateValues) =>
+        (_templateValues.IsEmpty && buildTemplateValues.Count == 0) || !_enableTemplates ? inputWithPlaceholders : PLACEHOLDER_PATTERN.Replace(inputWithPlaceholders, match => {
             string key = match.Groups["key"].Value;
-            _templateValues.TryGetValue(key, out object? value);
+            if (!_templateValues.TryGetValue(key, out object? value)) {
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+                value = buildTemplateValues.TryDequeue(out object? popped) ? popped : null;
+#else
+                try {
+                    value = buildTemplateValues.Dequeue();
+                } catch (InvalidOperationException) {
+                    // leave value null
+                }
+#endif
+            }
             return Stringify(value) ?? string.Empty;
         });
 

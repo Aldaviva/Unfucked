@@ -20,6 +20,7 @@
     - [Enumerables](#enumerables)
     - [Events](#events)
     - [Exceptions](#exceptions)
+    - [Files](#files)
     - [Lazy](#lazy)
     - [Paths](#paths)
     - [Processes](#processes)
@@ -51,30 +52,30 @@ using Unfucked;
     ```
 
 ### Console
-- Colored text and background in strings, not tightly coupled to `Console.Write`.
+- Colored text and background in strings, not tightly coupled to the BCL `Console.Write`.
     ```cs
-    string colored = ConsoleControl.Color("Hello", Color.FromArgb(0xff, 0xaa, 0), Color.Black);
-    ConsoleControl.WriteLine("Hello", Color.FromArgb(0xff, 0xaa, 0), Color.Black);
-    ConsoleControl.Write("Hello", Color.FromArgb(0xff, 0xaa, 0), Color.Black);
+    string colored = Console.Color("Hello", Color.FromArgb(0xff, 0xaa, 0), Color.Black);
+    Console.WriteLine("Hello", Color.FromArgb(0xff, 0xaa, 0), Color.Black);
+    Console.Write("Hello", Color.FromArgb(0xff, 0xaa, 0), Color.Black);
     ```
 - Clear screen and move cursor.
     ```cs
-    ConsoleControl.WriteClear();     // clear screen and move to top-left corner
-    ConsoleControl.WriteClearLine(); // clear line and move to left side
+    Console.WriteClearAll();     // clear screen and move to top-left corner
+    Console.WriteClearLine(); // clear line and move to left side
     ```
 - Enable colored output on Windows 10 1511 and later.
-    - Called implicitly whenever you call the `ConsoleControl.Color`, `Write`, `WriteLine`, `WriteClear`, or `WriteClearLine` methods.
+    - Called implicitly whenever you call the `Console.Color`, `Write`, `WriteLine`, `WriteClearAll`, or `WriteClearLine` methods.
     - Can be manually checked and opportunistically enabled.
         ```cs
-        bool colorable = ConsoleControl.EnableColorSupport();
+        bool colorable = Console.EnableColorSupport();
         ```
 - Draw a textual progress bar in the console, including Windows Terminal support.
     ```cs
     double progress = 0.5;
     Console.OutputEncoding = Encoding.UTF8;
     Console.CursorVisible = false;
-    ConsoleControl.ProgressBarOptions opts = new() { TotalWidth = _ => Console.WindowWidth - 5 };
-    Console.Write($"{ConsoleControl.ClearLine}{ConsoleControl.RenderProgressBar(progress, opts)} {progress,4:P0}");
+    ConsoleExtensions.ProgressBarOptions opts = new() { TotalWidth = _ => Console.WindowWidth - 5 };
+    Console.Write($"{Console.ClearLine}{Console.RenderProgressBar(progress, opts)} {progress,4:P0}");
     // ━━━━━━━━────────  50%
     ```
 
@@ -338,6 +339,17 @@ using Unfucked;
     publisher.EventHappened += WeakSubscriber.Subscribe<EventHandler>((object? sender, EventArgs args) =>
         Console.WriteLine("Event happened"));
     ```
+- Allow event subscribers to be asynchronous, and publishers can await running their callbacks.
+    ```cs
+    public event AsyncEventHandler<string>? helloSent;
+
+    helloSent += async (object? sender, string message) => {
+        await Task.Delay(100);
+        Console.WriteLine($"Hello {message}!");
+    };
+
+    await helloSent?.Invoke(this, "world");
+    ```
 
 ### Exceptions
 - Get the chain of causes for an exception, which is a sequence of all of its inner exceptions, recursively. Excludes outermost exception.
@@ -361,6 +373,12 @@ using Unfucked;
     }
     ```
     - This case is undetectable on Linux and Mac OS, so it always returns `false` there.
+
+### Files
+- Delete a file, even if it is read-only.
+    ```cs
+    Files.Delete("filename");
+    ```
 
 ### Lazy
 - Easily dispose of lazy value without all the conditional and exception handling boilerplate
@@ -399,7 +417,7 @@ using Unfucked;
 - Run program and get output and exit code, like [Node.js' `child_process.execFile()`](https://nodejs.org/api/child_process.html#child_processexecfilefile-args-options-callback)
     ```cs
     (int exitCode, string stdout, string stderr) result = 
-        await Processes.ExecFile("path/to/program.exe", ["arg1", "arg2"], extraEnv, "workDir", hideWindow: false, ct);
+        await Processes.ExecFile("path/to/program.exe", ["arg1", "arg2"], "workDir", extraEnv, hideWindow: false, ct);
     ```
 - Determine whether the current program is a console or Windows GUI app.
     ```cs
@@ -546,15 +564,18 @@ using Unfucked;
     ```cs
     Console.WriteLine(Version.ProgramVersion);
     // prints output like the following to stdout and does not exit
-
-    5.0.1+e7a9d7252f1e8d0cdae7d47358039192fa5a4af4
+    ```
+    ```text
+    5.0.1
     ```
     ```cs
     // useful at the beginning of Main
     Version.PrintProgramVersionAndExitIfRequested();
-    // prints output like the following to stdout and exits with return code 0 if started with arguments -v, -version, or --version
-
-    Version: 5.0.1+e7a9d7252f1e8d0cdae7d47358039192fa5a4af4
+    // prints output like the following to stdout and exits with return code 0 if started with arguments -v, --version, or -version
+    ```
+    ```text
+    Version: 5.0.1
+    Commit:  e7a9d7252f1e8d0cdae7d47358039192fa5a4af4
     Built:   Monday, May 18, 2026 3:31:15 p (-07:00)
     ```
 

@@ -10,6 +10,8 @@ namespace Unfucked;
 /// </summary>
 public static class Processes {
 
+    public static EventHandler<ProcessStartInfo>? FileExecuted;
+
     extension(Process) {
 
         /// <summary>
@@ -76,8 +78,8 @@ public static class Processes {
         /// <remarks>Inspired by Node.js' <c>child_process.execFile()</c>: <see href="https://nodejs.org/api/child_process.html#child_processexecfilefile-args-options-callback"/></remarks>
         /// <param name="file">The name or path of the executable file to run</param>
         /// <param name="arguments">Arguments to pass to the child process</param>
-        /// <param name="extraEnvironment">Environment key-value pairs to be passed to the child process, in addition to the current process' environment. To prevent an environment variable from being inherited by the child, add its name to this dictionary with the value <c>null</c>. To make the child process inherit this process' environment with no changes, leave this argument set to <c>null</c>.</param>
         /// <param name="workingDirectory">The working directory that the child process should start executing in, or <c>null</c> to inherit the current working directory from this process.</param>
+        /// <param name="extraEnvironment">Environment key-value pairs to be passed to the child process, in addition to the current process' environment. To prevent an environment variable from being inherited by the child, add its name to this dictionary with the value <c>null</c>. To make the child process inherit this process' environment with no changes, leave this argument set to <c>null</c>.</param>
         /// <param name="hideWindow"><c>true</c> on Windows to attempt to hide the child process' window, useful for console applications that force a command prompt window to appear, or <c>false</c> to use the default behavior for the child process. Has no effect on other operating systems.</param>
         /// <param name="cancellationToken">Used to stop waiting if the process is taking too long to exit. Does not kill the process on cancellation.</param>
         /// <returns>Struct that contains the numeric exit code of the child process, the trimmed standard output text, and the trimmed standard error text, or <c>(-1, "", "")</c> if the child process failed to start.</returns>
@@ -85,47 +87,48 @@ public static class Processes {
         public static async Task<ProcessResult> ExecFile(
             string file,
             IEnumerable<string> arguments,
-            IDictionary<string, string?>? extraEnvironment = null,
             string workingDirectory = "",
+            IDictionary<string, string?>? extraEnvironment = null,
             bool hideWindow = false,
             CancellationToken cancellationToken = default) {
 
             Process? process;
-            try {
-                ProcessStartInfo processStartInfo = new(file) {
-                    UseShellExecute        = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError  = true,
-                    WorkingDirectory       = workingDirectory,
-                    CreateNoWindow         = hideWindow
-                };
-
-                if (extraEnvironment is not null) {
-                    IDictionary<string, string?> processEnvironment = processStartInfo.Environment;
-                    foreach (KeyValuePair<string, string?> envVar in extraEnvironment) {
-                        if (envVar.Value is null) {
-                            processEnvironment.Remove(envVar.Key);
-                        } else {
-                            processEnvironment.Add(envVar);
-                        }
-                    }
-                }
+            ProcessStartInfo processStartInfo = new(file) {
+                UseShellExecute        = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError  = true,
+                WorkingDirectory       = workingDirectory,
+                CreateNoWindow         = hideWindow
+            };
 
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1_OR_GREATER
-                processStartInfo.ArgumentList.AddAll(arguments);
+            processStartInfo.ArgumentList.AddAll(arguments);
 #else
-                processStartInfo.Arguments = Process.CommandLineToString(arguments);
+            processStartInfo.Arguments = Process.CommandLineToString(arguments);
 #endif
 
+            if (extraEnvironment is not null) {
+                IDictionary<string, string?> processEnvironment = processStartInfo.Environment;
+                foreach (KeyValuePair<string, string?> envVar in extraEnvironment) {
+                    if (envVar.Value is null) {
+                        processEnvironment.Remove(envVar.Key);
+                    } else {
+                        processEnvironment.Add(envVar);
+                    }
+                }
+            }
+
+            try {
+                FileExecuted?.Invoke(null, processStartInfo);
                 process = Process.Start(processStartInfo);
             } catch (Win32Exception) {
-                return new ProcessResult(-1, string.Empty, string.Empty);
+                return new ProcessResult(-1, string.Empty, string.Empty) { CommandLine = getCommandLine() };
             } catch (PlatformNotSupportedException) {
-                return new ProcessResult(-1, string.Empty, string.Empty);
+                return new ProcessResult(-1, string.Empty, string.Empty) { CommandLine = getCommandLine() };
             }
 
             if (process == null) {
-                return new ProcessResult(-1, string.Empty, string.Empty);
+                return new ProcessResult(-1, string.Empty, string.Empty) { CommandLine = getCommandLine() };
             }
 
             using (process) {
@@ -162,7 +165,16 @@ public static class Processes {
                 }
 
                 string[] std = await Task.WhenAll(stdout, stderr).ConfigureAwait(false);
-                return new ProcessResult(process.ExitCode, std[0].Trim(), std[1].Trim());
+                return new ProcessResult(process.ExitCode, std[0].Trim(), std[1].Trim()) { CommandLine = getCommandLine() };
+
+            }
+
+            string getCommandLine() {
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1_OR_GREATER
+                return Process.CommandLineToString(processStartInfo.ArgumentList);
+#else
+                return processStartInfo.Arguments;
+#endif
             }
         }
 
@@ -212,4 +224,43 @@ public static class Processes {
 /// <param name="ExitCode">Status code that the process returned when it exited, or <c>-</c> if the process failed to start.</param>
 /// <param name="StdOut">Trimmed text the process printed to its standard output stream.</param>
 /// <param name="StdErr">Trimmed text the process printed to its standard error stream.</param>
-public readonly record struct ProcessResult(int ExitCode, string StdOut, string StdErr);
+public readonly record struct ProcessResult(int ExitCode, string StdOut, string StdErr) {
+
+    public string? CommandLine { get; init; }
+
+    public ProcessResult EnsureSuccessful(string? message = null, bool appendDetails = true) =>
+        EnsureSuccessful(new ApplicationException(message ??
+            $"Process exited with {(appendDetails ? $"status {ExitCode}{(CommandLine != null ? $": {CommandLine}" : string.Empty)}" : "unsuccessful exit code")}"));
+
+    public ProcessResult EnsureSuccessful(Exception exception) {
+        if (ExitCode != 0) {
+            throw exception;
+        } else {
+            return this;
+        }
+    }
+
+    public ProcessResult EnsureSuccessful(Func<int, string?, Exception> exceptionGenerator) {
+        if (ExitCode != 0) {
+            throw exceptionGenerator(ExitCode, CommandLine);
+        } else {
+            return this;
+        }
+    }
+
+    public ProcessResult EnsureSuccessful<TException>(string? message = null, bool appendDetails = true) where TException: Exception =>
+        EnsureSuccessful<TException>((exitCode, cmdLine) => message + (appendDetails ? $" (exit code: {exitCode}, command: {cmdLine})" : string.Empty));
+
+    public ProcessResult EnsureSuccessful<TException>(Func<int, string?, string?> messageGenerator) where TException: Exception {
+        if (ExitCode != 0) {
+            throw constructException<TException>(messageGenerator(ExitCode, CommandLine));
+        } else {
+            return this;
+        }
+    }
+
+    private static TException constructException<TException>(string? message) where TException: Exception => (TException) (
+        typeof(TException).GetConstructor([typeof(string)])?.Invoke([message]) ??
+        typeof(TException).GetConstructor([typeof(string), typeof(Exception)])!.Invoke([message, null]));
+
+}

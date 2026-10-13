@@ -18,10 +18,10 @@ public sealed class ClientConfig: IClientConfig {
     private ImmutableDictionary<PropertyKey, object> Properties { get; init; }
 
     [Pure]
-    public IReadOnlyList<ClientRequestFilter> RequestFilters => ReqFilters.AsReadOnly();
+    public IReadOnlyList<ClientRequestFilter> RequestFilters => ReqFilters.AsReadOnlyList();
 
     [Pure]
-    public IReadOnlyList<ClientResponseFilter> ResponseFilters => ResFilters.AsReadOnly();
+    public IReadOnlyList<ClientResponseFilter> ResponseFilters => ResFilters.AsReadOnlyList();
 
     [Pure]
     public IEnumerable<MessageBodyReader> MessageBodyReaders => Readers.AsEnumerable();

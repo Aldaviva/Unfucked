@@ -210,7 +210,7 @@ namespace Unfucked.Dataflow {
 
             Input.Completion.ContinueWith(_ => {
                 if (items.Count != 0) {
-                    outputBuffer.Post(items.AsReadOnly());
+                    outputBuffer.Post(items.AsReadOnlyList());
                 }
                 Output.Complete();
             });

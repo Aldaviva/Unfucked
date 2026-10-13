@@ -204,7 +204,14 @@ public sealed class UrlBuilder {
     /// <summary>
     /// <para>Build a URL from this builder's state.</para>
     /// </summary>
-    /// <param name="templateValues">If the builder has any template placeholders which have not been resolved by <see cref="ResolveTemplate(string,object?)"/>, you can pass their values here. Otherwise, don't pass this parameter. Any extra passed values will be ignored.</param>
+    /// <returns>The URL representation of this builder instance.</returns>
+    [Pure]
+    public Uri ToUrl() => ToUrl([]);
+
+    /// <summary>
+    /// <para>Build a URL from this builder's state.</para>
+    /// </summary>
+    /// <param name="templateValues">If the builder has any template placeholders which have not been resolved by <see cref="ResolveTemplate(string,object?)"/>, you can pass their values here. Otherwise, don't pass this parameter. Any extra passed values will be ignored. These supplement rather than replace previous invocations of <c>ResolveTemplate</c>.</param>
     /// <returns>The URL representation of this builder instance.</returns>
     // ExceptionAdjustment: M:System.Uri.#ctor(System.String,System.UriKind) -T:System.UriFormatException
     [Pure]
@@ -271,7 +278,7 @@ public sealed class UrlBuilder {
     [Pure]
     public override string ToString() => ToString();
 
-    /// <inheritdoc cref="ToUrl" />
+    /// <inheritdoc cref="ToUrl(IEnumerable{object})" />
     [Pure]
     public string ToString(params IEnumerable<object> templateValues) => ToUrl(templateValues).AbsoluteUri;
 

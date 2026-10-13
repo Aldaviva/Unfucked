@@ -259,7 +259,7 @@ public static partial class Enumerables {
     /// <returns>a new set containing the result of <paramref name="source"/><c>−</c><paramref name="toSubtract"/></returns>
     public static ISet<T> Minus<T>(this IEnumerable<T> source, IEnumerable<T> toSubtract) {
         IEqualityComparer<T>? comparer   = getComparer(source) ?? getComparer(toSubtract);
-        HashSet<T>            difference = comparer != null ? new HashSet<T>(source, comparer) : [..source];
+        HashSet<T>            difference = comparer != null ? new HashSet<T>(source, comparer) : [.. source];
         difference.ExceptWith(toSubtract);
         return difference;
 
@@ -579,28 +579,76 @@ public static partial class Enumerables {
         return (created, updated, deleted, unmodified);
     }
 
-    /// <summary>Returns a read-only <see cref="ReadOnlyCollection{T}" /> wrapper for the specified list.</summary>
+    /// <summary>
+    /// <para>Returns a read-only <see cref="ReadOnlyCollection{T}" /> wrapper for the specified list.</para>
+    /// <para>This is a polyfill for <c>System.Collections.Generic.CollectionExtensions.AsReadOnly[T]</c>, which was added in .NET 7 and to which this method delegates to if available. The method names are different to avoid an ambiguous invocation error at compile time.</para>
+    /// </summary>
     /// <param name="writableList">The list to wrap.</param>
     /// <typeparam name="T">The type of elements in the collection.</typeparam>
     /// <returns>An object that acts as a read-only wrapper around the current <see cref="IList{T}" />.</returns>
     [System.Diagnostics.Contracts.Pure]
-    public static IReadOnlyList<T> AsReadOnly<T>(this IList<T> writableList) =>
-#if NET8_0_OR_GREATER
-        CollectionExtensions.AsReadOnly(writableList);
+    public static IReadOnlyList<T> AsReadOnlyList<T>(this IList<T> writableList) =>
+#if NET7_0_OR_GREATER
+        writableList.AsReadOnly();
 #else
-        new ReadOnlyCollection<T>(writableList);
+        writableList as IReadOnlyList<T> ?? new ReadOnlyCollection<T>(writableList);
 #endif
-    /// <summary>Returns a read-only <see cref="ReadOnlyDictionary{TKey,TValue}" /> wrapper for the current dictionary.</summary>
+
+    /// <summary>
+    /// <para>Returns a read-only <see cref="ReadOnlyDictionary{TKey,TValue}" /> wrapper for the current dictionary.</para>
+    /// <para>This is a polyfill for <c>System.Collections.Generic.CollectionExtensions.AsReadOnly[TKey, TValue]</c>, which was added in .NET 7 and to which this method delegates to if available. The method names are different to avoid an ambiguous invocation error at compile time.</para>
+    /// </summary>
     /// <param name="writableDict">The dictionary to wrap.</param>
     /// <typeparam name="TKey">The type of keys in the dictionary.</typeparam>
     /// <typeparam name="TValue">The type of values in the dictionary.</typeparam>
     /// <returns>An object that acts as a read-only wrapper around the current <see cref="IDictionary{TKey,TValue}" />.</returns>
     [System.Diagnostics.Contracts.Pure]
-    public static IReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> writableDict) where TKey: notnull =>
-#if NET8_0_OR_GREATER
-        CollectionExtensions.AsReadOnly(writableDict);
+    public static IReadOnlyDictionary<TKey, TValue> AsReadOnlyDictionary<TKey, TValue>(this IDictionary<TKey, TValue> writableDict) where TKey: notnull =>
+#if NET7_0_OR_GREATER
+        writableDict.AsReadOnly();
 #else
-        new ReadOnlyDictionary<TKey, TValue>(writableDict);
+        writableDict as IReadOnlyDictionary<TKey, TValue> ?? new ReadOnlyDictionary<TKey, TValue>(writableDict);
+#endif
+
+#if NET5_0_OR_GREATER
+    /*
+     * AsReadOnlySet disabled in .NET < 5 because IReadOnlySet is only public in .NET ≥ 5, so if we wanted to support this in .NET < 5 we would need to use a different return type like ISet<T>. If a consumer is multitargeting, the different return types are likely to cause either compilation errors or runtime errors, especially across transitive dependencies with different TFMs.
+     */
+    /// <summary>
+    /// <para>Returns a read-only <see cref="IReadOnlySet{T}" /> wrapper for the specified set.</para>
+    /// <para>This is a polyfill for <c>System.Collections.Generic.CollectionExtensions.AsReadOnly[T]</c>, which was added in .NET 10 and to which this method delegates to if available. The method names are different to avoid an ambiguous invocation error at compile time.</para>
+    /// </summary>
+    /// <param name="writableSet">The set to wrap.</param>
+    /// <typeparam name="T">The type of elements in the collection.</typeparam>
+    /// <returns>An object that acts as a read-only wrapper around the current <see cref="ISet{T}" />.</returns>
+    [System.Diagnostics.Contracts.Pure]
+    public static IReadOnlySet<T> AsReadOnlySet<T>(this ISet<T> writableSet) {
+#if NET10_0_OR_GREATER
+        return writableSet.AsReadOnly();
+#elif NET9_0_OR_GREATER
+        return writableSet as IReadOnlySet<T> ?? new ReadOnlySet<T>(writableSet);
+#else
+        return writableSet as IReadOnlySet<T> ?? new ReadOnlySetWrapper<T>(writableSet);
+#endif
+    }
+
+#if !NET9_0_OR_GREATER
+    private sealed class ReadOnlySetWrapper<T>(ISet<T> inner): IReadOnlySet<T> {
+
+        public int Count => inner.Count;
+
+        public IEnumerator<T> GetEnumerator() => inner.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable) inner).GetEnumerator();
+        public bool Contains(T item) => inner.Contains(item);
+        public bool IsProperSubsetOf(IEnumerable<T> other) => inner.IsProperSubsetOf(other);
+        public bool IsProperSupersetOf(IEnumerable<T> other) => inner.IsProperSupersetOf(other);
+        public bool IsSubsetOf(IEnumerable<T> other) => inner.IsSubsetOf(other);
+        public bool IsSupersetOf(IEnumerable<T> other) => inner.IsSupersetOf(other);
+        public bool Overlaps(IEnumerable<T> other) => inner.Overlaps(other);
+        public bool SetEquals(IEnumerable<T> other) => inner.SetEquals(other);
+
+    }
+#endif
 #endif
 
     /// <summary>
@@ -643,7 +691,7 @@ public static partial class Enumerables {
     [System.Diagnostics.Contracts.Pure]
     public static TValue? GetValueOrNull<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) where TValue: class where TKey: notnull =>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
-        dictionary.AsReadOnly().GetValueOrDefault(key);
+        dictionary.AsReadOnlyDictionary().GetValueOrDefault(key);
 #else
         dictionary.TryGetValue(key, out TValue? value) ? value : null;
 #endif

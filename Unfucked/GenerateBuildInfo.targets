@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-    <UsingTask TaskName="Unfucked.BuildInfoGenerator.GenerateBuildInfo" AssemblyFile="$(MSBuildThisFileDirectory)..\tasks\netstandard2.0\Unfucked.BuildInfoGenerator.dll" />
+    <UsingTask TaskName="Unfucked.BuildInfoGenerator.GenerateBuildInfo" AssemblyFile="$(MSBuildThisFileDirectory)..\tasks\netstandard2.0\Unfucked.BuildInfoGenerator.dll" Condition="'$(_IsExecutable)' == 'true'" />
     
-    <PropertyGroup>
+    <PropertyGroup Condition="'$(_IsExecutable)' == 'true'">
         <_BuildInfoFilePath>$(IntermediateOutputPath)Unfucked.BuildInfo.g.cs</_BuildInfoFilePath>
     </PropertyGroup>
     
-    <Target Name="GenerateBuildInfo" BeforeTargets="BeforeBuild">
+    <Target Name="GenerateBuildInfo" BeforeTargets="BeforeBuild" Condition="'$(_IsExecutable)' == 'true'">
         <MakeDir Directories="$(IntermediateOutputPath)" />
         <GenerateBuildInfo ProjectDir="$(MSBuildProjectDirectory)" OutputFile="$(_BuildInfoFilePath)" />
 
@@ -16,7 +16,7 @@
         </ItemGroup>
     </Target>
 
-    <Target Name="CleanBuildInfo" AfterTargets="AfterClean">
+    <Target Name="CleanBuildInfo" AfterTargets="AfterClean" Condition="'$(_IsExecutable)' == 'true'">
         <Delete Files="$(_BuildInfoFilePath)" />
     </Target>
     

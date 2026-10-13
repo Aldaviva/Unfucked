@@ -124,7 +124,7 @@ using Unfucked;
 
             Input.Completion.ContinueWith(_ => {
                 if (items.Count != 0) {
-                    outputBuffer.Post(items.AsReadOnly());
+                    outputBuffer.Post(items.AsReadOnlyList());
                 }
                 Output.Complete();
             });
@@ -328,9 +328,14 @@ using Unfucked;
     IEnumerable<Superclass> superclasses = a.OfTypeExactly<Superclass>();
     // superclasses does not contain any Subclass instances
     ```
-- Polyfill for [`IList<T>.AsReadOnly`](https://learn.microsoft.com/dotnet/api/system.collections.generic.collectionextensions.asreadonly#system-collections-generic-collectionextensions-asreadonly-1(system-collections-generic-ilist((-0)))) for .NET versions before 8, including .NET Standard
+- Polyfill for [`IList<T>.AsReadOnly`](https://learn.microsoft.com/dotnet/api/system.collections.generic.collectionextensions.asreadonly#system-collections-generic-collectionextensions-asreadonly-1(system-collections-generic-ilist((-0)))), [`IDictionary<K,V>.AsReadOnly`](https://learn.microsoft.com/dotnet/api/system.collections.generic.collectionextensions.asreadonly#system-collections-generic-collectionextensions-asreadonly-2(system-collections-generic-idictionary((-0-1)))), and [`ISet<T>.AsReadOnly`](https://learn.microsoft.com/dotnet/api/system.collections.generic.collectionextensions.asreadonly#system-collections-generic-collectionextensions-asreadonly-1(system-collections-generic-ilist((-0)))) for old .NET versions
     ```cs
-    IReadOnlyList<string> ro = new List<string> { "a", "b" }.AsReadOnly();
+    IReadOnlyList<string> roList = new List<string> { "a", "b" }.AsReadOnlyList();
+
+    IReadOnlyDictionary<int, int> roDict = new Dictionary<int, int> { {1, 2} }.AsReadOnlyDictionary();
+
+    IReadOnlySet<string> roSet = new HashSet<string> { "a" }.AsReadOnlySet();
+    // IReadOnlySet<T> is only public in .NET ≥ 5, so this method isn't available in older TFMs
     ```
 
 ### Events

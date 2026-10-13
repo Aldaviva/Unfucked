@@ -16,6 +16,7 @@ public static class Singletons {
         /// </summary>
         /// <param name="key">single key</param>
         /// <param name="value">single value</param>
+        /// <param name="keyComparer">compares keys' equality</param>
         /// <returns>A read-only dictionary with the one specified <paramref name="key"/> and <paramref name="value"/>.</returns>
         public static IReadOnlyDictionary<K, V> Singleton(K key, V value, IEqualityComparer<K>? keyComparer = null) => new ReadOnlySingletonDictionary<K, V>(key, value, keyComparer);
 
@@ -152,7 +153,7 @@ public static class Singletons {
                                 [MaybeNullWhen(false)]
 #endif
                                 out V value) {
-            bool isFound = keyComparer.Equals(key);
+            bool isFound = ContainsKey(key);
             value = isFound ? singletonValue : default!;
             return isFound;
         }
@@ -193,6 +194,7 @@ public static class Singletons2 {
         /// <typeparam name="V">value type</typeparam>
         /// <param name="key">single key</param>
         /// <param name="value">single value</param>
+        /// <param name="keyComparer">compares keys' equality</param>
         /// <returns>A read-only dictionary with the one specified <paramref name="key"/> and <paramref name="value"/>.</returns>
         public static IDictionary<K, V> Singleton<K, V>(K key, V value, IEqualityComparer<K>? keyComparer = null) where K: notnull =>
             new Singletons.ReadOnlySingletonDictionary<K, V>(key, value, keyComparer);

@@ -312,8 +312,8 @@ using Unfucked;
     ```
 - Factories for singleton Dictionaries, Sets, and enumerables of key-value pairs
     ```cs
-    IReadOnlyDictionary<string, int> dict = IDictionary.Singleton(key: "a", value: 1);
-    dict = IReadOnlyDictionary<string, int>.Singleton(key: "a", value: 1);
+    IDictionary<string, int> dict = IDictionary.Singleton(key: "a", value: 1);
+    IReadOnlyDictionary<string, int> rodict = IReadOnlyDictionary<string, int>.Singleton(key: "a", value: 1);
 
     IReadOnlySet<string> set = ISet<string>.Singleton(item: "a");
 
@@ -406,22 +406,27 @@ using Unfucked;
 
 ### Processes
 - Command line argument marshalling with correct escaping and quoting
-    - String to array (requires [`Unfucked.Windows`](#windows) package)
+    - String → array (requires [`Unfucked.Windows`](#windows) package)
         ```cs
         IEnumerable<string> argv = WindowsProcesses.CommandLineToEnumerable("arg1 arg2");
         ```
-    - Array to string
+    - Array → string
         ```cs
-        string args = Processes.CommandLineToString(["arg1", "'argument' \"2\""]);
+        string args = Process.CommandLineToString(["arg1", "'argument' \"2\""]);
         ```
 - Run program and get output and exit code, like [Node.js' `child_process.execFile()`](https://nodejs.org/api/child_process.html#child_processexecfilefile-args-options-callback)
     ```cs
-    (int exitCode, string stdout, string stderr) result = 
-        await Processes.ExecFile("path/to/program.exe", ["arg1", "arg2"], "workDir", extraEnv, hideWindow: false, ct);
+    (int exitCode, string stdout, string stderr) = 
+        await Process.ExecFile("path/to/program.exe", ["arg1", "arg2"], "workDir", extraEnv, hideWindow: false, ct);
+    ```
+- Easily throw an exception if the program was could not start or exited with a non-zero status code.
+    ```cs
+    ProcessResult result = (await Process.ExecFile("program.exe"))
+        .EnsureSuccessful<ApplicationException>("Process failed", ProcessResult.Details.All);
     ```
 - Determine whether the current program is a console or Windows GUI app.
     ```cs
-    bool isWindowsGuiProgram = Processes.IsWindowsGuiProgram;
+    bool isWindowsGuiProgram = Process.IsWindowsGuiProgram;
     ```
 
 ### Strings

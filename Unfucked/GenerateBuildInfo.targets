@@ -19,5 +19,9 @@
     <Target Name="CleanBuildInfo" AfterTargets="AfterClean">
         <Delete Files="$(_BuildInfoFilePath)" />
     </Target>
+    
+    <ItemGroup>
+        <Using Include="Unfucked" />
+    </ItemGroup>
 
 </Project>

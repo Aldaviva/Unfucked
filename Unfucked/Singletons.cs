@@ -194,7 +194,7 @@ public static class Singletons2 {
         /// <param name="key">single key</param>
         /// <param name="value">single value</param>
         /// <returns>A read-only dictionary with the one specified <paramref name="key"/> and <paramref name="value"/>.</returns>
-        public static IReadOnlyDictionary<K, V> Singleton<K, V>(K key, V value, IEqualityComparer<K>? keyComparer = null) where K: notnull =>
+        public static IDictionary<K, V> Singleton<K, V>(K key, V value, IEqualityComparer<K>? keyComparer = null) where K: notnull =>
             new Singletons.ReadOnlySingletonDictionary<K, V>(key, value, keyComparer);
 
     }

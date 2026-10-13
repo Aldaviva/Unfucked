@@ -44,7 +44,7 @@ internal sealed class WeakSubscriber<TDelegate> where TDelegate: Delegate {
     }
 
     /*
-     * https://learn.microsoft.com/en-us/dotnet/fundamentals/reflection/how-to-hook-up-a-delegate-using-reflection#generate-an-event-handler-at-runtime-by-using-a-dynamic-method
+     * https://learn.microsoft.com/dotnet/fundamentals/reflection/how-to-hook-up-a-delegate-using-reflection#generate-an-event-handler-at-runtime-by-using-a-dynamic-method
      */
     // ExceptionAdjustment: M:System.Type.GetMethod(System.String) -T:System.Reflection.AmbiguousMatchException
     // ExceptionAdjustment: M:System.Type.GetMethod(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Type[],System.Reflection.ParameterModifier[]) -T:System.Reflection.AmbiguousMatchException

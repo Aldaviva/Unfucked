@@ -31,8 +31,8 @@ public static class Cultures {
     }
 
     /// <summary>
-    /// <para><see href="https://learn.microsoft.com/en-us/windows/win32/intl/user-interface-language-management#system-ui-language"/></para>
-    /// <para><see href="https://learn.microsoft.com/en-us/windows/win32/api/winnls/nf-winnls-getsystempreferreduilanguages"/></para>
+    /// <para><see href="https://learn.microsoft.com/windows/win32/intl/user-interface-language-management#system-ui-language"/></para>
+    /// <para><see href="https://learn.microsoft.com/windows/win32/api/winnls/nf-winnls-getsystempreferreduilanguages"/></para>
     /// </summary>
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]

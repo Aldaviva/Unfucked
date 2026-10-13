@@ -60,7 +60,7 @@ using Unfucked.Windows;
 
 ### Console
 
-- Detach a console application from its console window if you want to prevent it from receiving <kbd>Ctrl</kbd>﻿+﻿<kbd>C</kbd>, because it's a child process of your console application, you're handling that signal in your parent process using [`Console.CancelKeyPress`](https://learn.microsoft.com/en-us/dotnet/api/system.console.cancelkeypress), and you don't want the console sidestepping your parent and killing your child.
+- Detach a console application from its console window if you want to prevent it from receiving <kbd>Ctrl</kbd>﻿+﻿<kbd>C</kbd>, because it's a child process of your console application, you're handling that signal in your parent process using [`Console.CancelKeyPress`](https://learn.microsoft.com/dotnet/api/system.console.cancelkeypress), and you don't want the console sidestepping your parent and killing your child.
    ```cs
    using Process child = Process.Start("child.exe", "args")!;
    child.DetachFromConsole();

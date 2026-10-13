@@ -29,7 +29,7 @@ using Unfucked.DI;
 
 ## Usage
 
-Create an application using [ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/) or a [.NET Generic Host](https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host):
+Create an application using [ASP.NET Core](https://learn.microsoft.com/aspnet/core/fundamentals/) or a [.NET Generic Host](https://learn.microsoft.com/dotnet/core/extensions/generic-host):
 
 ```cs
 HostApplicationBuilder appBuilder = new HostApplicationBuilder(args);

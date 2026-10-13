@@ -28,7 +28,7 @@ namespace Unfucked.OBS;
  * Note: in step 2, make sure you're extracting the interface from upstream ObsClient instead of its subclass, otherwise documentation comments will not be copied to the interface.
  *
  * If you want to tell which methods changed between versions, Telerik JustAssembly (free) is useful: https://www.telerik.com/justassembly
- * Also try ReSharper's new assembly diff tool, which was improved recently: https://www.jetbrains.com.cn/en-us/help/resharper/Compare_Assemblies.html
+ * Also try ReSharper's new assembly diff tool, which was improved recently: https://www.jetbrains.com/help/resharper/Compare_Assemblies.html
  */
 
 /// <inheritdoc cref="OBSStudioClient.ObsClient"/>

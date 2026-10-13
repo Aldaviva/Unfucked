@@ -437,7 +437,7 @@ public static class WindowsProcesses {
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr GetModuleHandle(string lpModuleName);
 
-#pragma warning disable CA2101 // the encoding is already literally specified as ANSI, with no Unicode alternative; it's documented as LPCSTR: https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getprocaddress
+#pragma warning disable CA2101 // the encoding is already literally specified as ANSI, with no Unicode alternative; it's documented as LPCSTR: https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-getprocaddress
 
     [DllImport("kernel32.dll", CharSet = CharSet.Ansi, SetLastError = true)]
     private static extern IntPtr GetProcAddress(IntPtr hModule, string procName);

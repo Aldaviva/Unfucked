@@ -138,7 +138,7 @@ namespace Unfucked.Dataflow {
     /// 
     /// <typeparam name="TInput">Type of item received by this block, acting as a target.</typeparam>
     /// <typeparam name="TOutput">Type of item being emitted by this block, acting as a source.</typeparam>
-    /// <seealso href="https://learn.microsoft.com/en-us/dotnet/standard/parallel-programming/walkthrough-creating-a-custom-dataflow-block-type#deriving-from-ipropagatorblock-to-define-the-sliding-window-dataflow-block"/>
+    /// <seealso href="https://learn.microsoft.com/dotnet/standard/parallel-programming/walkthrough-creating-a-custom-dataflow-block-type#deriving-from-ipropagatorblock-to-define-the-sliding-window-dataflow-block"/>
     public abstract class InputOutputBlock<TInput, TOutput>: IPropagatorBlock<TInput, TOutput>, IReceivableSourceBlock<TOutput> {
 
         /// <summary>Target that receives/consumes/subscribes to/listens for items going into this block.</summary>

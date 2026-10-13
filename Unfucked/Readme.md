@@ -84,7 +84,7 @@ using Unfucked;
     ```cs
     string randomString = Cryptography.GenerateRandomString(length: 20);
     ```
-    - *[Polyfill for .NET < 8](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.randomnumbergenerator.getstring)*
+    - *[Polyfill for .NET < 8](https://learn.microsoft.com/dotnet/api/system.security.cryptography.randomnumbergenerator.getstring)*
 - Is certificate temporally valid?
     ```cs
     X509Certificate2 myCert;
@@ -100,7 +100,7 @@ using Unfucked;
     ```
 
 ### Dataflow
-- Simple aggregating [Dataflow](https://learn.microsoft.com/en-us/dotnet/standard/parallel-programming/dataflow-task-parallel-library) block that consumes all the items it's provided with until its linked source completes, then emits all consumed items in one big list (instead of one at a time like `BufferBlock`). Useful for joining/aggregating/reducing the stream of items so they can all be analyzed together, like finding the minimum item. Like a `BatchBlock` of unbounded size, in case you don't know how many producers there are, or to insulate your code from that changes to that quantity.
+- Simple aggregating [Dataflow](https://learn.microsoft.com/dotnet/standard/parallel-programming/dataflow-task-parallel-library) block that consumes all the items it's provided with until its linked source completes, then emits all consumed items in one big list (instead of one at a time like `BufferBlock`). Useful for joining/aggregating/reducing the stream of items so they can all be analyzed together, like finding the minimum item. Like a `BatchBlock` of unbounded size, in case you don't know how many producers there are, or to insulate your code from that changes to that quantity.
     ```cs
     JoinAllBlock<int> joinAllBlock = new();
     joinAllBlock.Post(1);
@@ -319,7 +319,7 @@ using Unfucked;
 
     IEnumerable<KeyValuePair<string, int>> kvs = (key: "a", value: 1).KeyValues();
     ```
-- Filter by exact type instead of [by superclass](https://learn.microsoft.com/en-us/dotnet/api/system.linq.enumerable.oftype).
+- Filter by exact type instead of [by superclass](https://learn.microsoft.com/dotnet/api/system.linq.enumerable.oftype).
     ```cs
     public class Superclass;
     public class Subclass: Superclass;
@@ -328,7 +328,7 @@ using Unfucked;
     IEnumerable<Superclass> superclasses = a.OfTypeExactly<Superclass>();
     // superclasses does not contain any Subclass instances
     ```
-- Polyfill for [`IList<T>.AsReadOnly`](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.collectionextensions.asreadonly#system-collections-generic-collectionextensions-asreadonly-1(system-collections-generic-ilist((-0)))) for .NET versions before 8, including .NET Standard
+- Polyfill for [`IList<T>.AsReadOnly`](https://learn.microsoft.com/dotnet/api/system.collections.generic.collectionextensions.asreadonly#system-collections-generic-collectionextensions-asreadonly-1(system-collections-generic-ilist((-0)))) for .NET versions before 8, including .NET Standard
     ```cs
     IReadOnlyList<string> ro = new List<string> { "a", "b" }.AsReadOnly();
     ```
@@ -487,10 +487,10 @@ using Unfucked;
     ```cs
     SearchValues<string> searchValues = SearchValues.Create(["a", "b"], caseSensitive: true);
     ```
-- Polyfills for [`StringBuilder.AppendJoin`](https://learn.microsoft.com/en-us/dotnet/api/system.text.stringbuilder.appendjoin) in .NET Standard 2.0
-- Polyfills for [`string.StartsWith(char)`](https://learn.microsoft.com/en-us/dotnet/api/system.string.startswith#system-string-startswith(system-char)) and [`string.EndsWith(char)`](https://learn.microsoft.com/en-us/dotnet/api/system.string.endswith#system-string-endswith(system-char)) in .NET Standard 2.0
-- Polyfills for [`string.Contains(string, StringComparison)`](https://learn.microsoft.com/en-us/dotnet/api/system.string.contains#system-string-contains(system-string-system-stringcomparison)) in .NET Standard 2.0
-- Polyfills for [`string.Join`](https://learn.microsoft.com/en-us/dotnet/api/system.string.join?view=net-9.0#system-string-join(system-string-system-readonlyspan((system-string)))) overloads that take `ReadOnlySpan` in .NET Standard 2.0 and .NET Runtimes < 9
+- Polyfills for [`StringBuilder.AppendJoin`](https://learn.microsoft.com/dotnet/api/system.text.stringbuilder.appendjoin) in .NET Standard 2.0
+- Polyfills for [`string.StartsWith(char)`](https://learn.microsoft.com/dotnet/api/system.string.startswith#system-string-startswith(system-char)) and [`string.EndsWith(char)`](https://learn.microsoft.com/dotnet/api/system.string.endswith#system-string-endswith(system-char)) in .NET Standard 2.0
+- Polyfills for [`string.Contains(string, StringComparison)`](https://learn.microsoft.com/dotnet/api/system.string.contains#system-string-contains(system-string-system-stringcomparison)) in .NET Standard 2.0
+- Polyfills for [`string.Join`](https://learn.microsoft.com/dotnet/api/system.string.join?view=net-9.0#system-string-join(system-string-system-readonlyspan((system-string)))) overloads that take `ReadOnlySpan` in .NET Standard 2.0 and .NET Runtimes < 9
 
 ### Tasks
 - Unbounded delay time (.NET ≥ 6 tops out at 49.7 days, .NET < 6 tops out at 24.9 days)

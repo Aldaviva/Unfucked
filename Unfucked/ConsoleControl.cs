@@ -144,7 +144,7 @@ public static partial class ConsoleControl {
     /// <para>On Windows, you have to call a method to explicitly turn on ANSI escape sequence processing, otherwise you will see the raw escape codes printed as text.</para>
     /// <para>Requires Windows 10 1511 or later.</para>
     /// </summary>
-    /// <remarks><see href="https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences#example-of-enabling-virtual-terminal-processing"/></remarks>
+    /// <remarks><see href="https://learn.microsoft.com/windows/console/console-virtual-terminal-sequences#example-of-enabling-virtual-terminal-processing"/></remarks>
     /// <returns><c>true</c> if virtual terminal processing is enabled, or <c>false</c> if it is unavailable</returns>
     [ExcludeFromCodeCoverage]
     public static bool EnableColorSupport() {
@@ -193,7 +193,7 @@ public static partial class ConsoleControl {
             rendered.Append(ResetColor);
         }
 
-        // https://learn.microsoft.com/en-us/windows/terminal/tutorials/progress-bar-sequences
+        // https://learn.microsoft.com/windows/terminal/tutorials/progress-bar-sequences
         if (Environment.OSVersion.Platform == PlatformID.Win32NT && EnableColorSupport()) {
             rendered.Append("\e]9;4;")
                 .Append(progress < 1 ? 1 : 0)
@@ -279,11 +279,11 @@ public static partial class ConsoleControl {
     /// <summary>
     /// Retrieves a handle to the specified standard device (standard input, standard output, or standard error).
     /// </summary>
-    /// <remarks><see href="https://learn.microsoft.com/en-us/windows/console/getstdhandle"/></remarks>
+    /// <remarks><see href="https://learn.microsoft.com/windows/console/getstdhandle"/></remarks>
     /// <param name="handle">The standard device.</param>
     /// <returns>
-    /// <para>If the function succeeds, the return value is a handle to the specified device, or a redirected handle set by a previous call to <see href="https://learn.microsoft.com/en-us/windows/console/setstdhandle">SetStdHandle</see>. The handle has <c>GENERIC_READ</c> and <c>GENERIC_WRITE</c> access rights, unless the application has used <c>SetStdHandle</c> to set a standard handle with lesser access.</para>
-    /// <para>It is not required to dispose of this handle with <see href="https://learn.microsoft.com/en-us/windows/win32/api/handleapi/nf-handleapi-closehandle">CloseHandle</see> when done. See Remarks for more information.</para>
+    /// <para>If the function succeeds, the return value is a handle to the specified device, or a redirected handle set by a previous call to <see href="https://learn.microsoft.com/windows/console/setstdhandle">SetStdHandle</see>. The handle has <c>GENERIC_READ</c> and <c>GENERIC_WRITE</c> access rights, unless the application has used <c>SetStdHandle</c> to set a standard handle with lesser access.</para>
+    /// <para>It is not required to dispose of this handle with <see href="https://learn.microsoft.com/windows/win32/api/handleapi/nf-handleapi-closehandle">CloseHandle</see> when done. See Remarks for more information.</para>
     /// <para>If the function fails, the return value is <c>INVALID_HANDLE_VALUE</c>. To get extended error information, call <see cref="Marshal.GetLastWin32Error"/>.</para>
     /// <para>If an application does not have associated standard handles, such as a service running on an interactive desktop, and has not redirected them, the return value is <c>NULL</c>.</para>
     /// </returns>
@@ -312,8 +312,8 @@ public static partial class ConsoleControl {
     /// <summary>
     /// Retrieves the current input mode of a console's input buffer or the current output mode of a console screen buffer.
     /// </summary>
-    /// <remarks><see href="https://learn.microsoft.com/en-us/windows/console/getconsolemode"/></remarks>
-    /// <param name="consoleHandle">A handle to the console input buffer or the console screen buffer. The handle must have the <c>GENERIC_READ</c> access right. For more information, see <see href="https://learn.microsoft.com/en-us/windows/console/console-buffer-security-and-access-rights"/> Console Buffer Security and Access Rights.</param>
+    /// <remarks><see href="https://learn.microsoft.com/windows/console/getconsolemode"/></remarks>
+    /// <param name="consoleHandle">A handle to the console input buffer or the console screen buffer. The handle must have the <c>GENERIC_READ</c> access right. For more information, see <see href="https://learn.microsoft.com/windows/console/console-buffer-security-and-access-rights"/> Console Buffer Security and Access Rights.</param>
     /// <param name="mode">A pointer to a variable that receives the current mode of the specified buffer.</param>
     /// <returns>If the function succeeds, the return value is nonzero. If the function fails, the return value is zero. To get extended error information, call <see cref="Marshal.GetLastWin32Error"/>.</returns>
     [DllImport(KERNEL32, SetLastError = true)]
@@ -323,8 +323,8 @@ public static partial class ConsoleControl {
     /// <summary>
     /// Sets the input mode of a console's input buffer or the output mode of a console screen buffer.
     /// </summary>
-    /// <remarks><see href="https://learn.microsoft.com/en-us/windows/console/setconsolemode"/></remarks>
-    /// <param name="consoleHandle">A handle to the console input buffer or the console screen buffer. The handle must have the <c>GENERIC_READ</c> access right. For more information, see <see href="https://learn.microsoft.com/en-us/windows/console/console-buffer-security-and-access-rights"/> Console Buffer Security and Access Rights.</param>
+    /// <remarks><see href="https://learn.microsoft.com/windows/console/setconsolemode"/></remarks>
+    /// <param name="consoleHandle">A handle to the console input buffer or the console screen buffer. The handle must have the <c>GENERIC_READ</c> access right. For more information, see <see href="https://learn.microsoft.com/windows/console/console-buffer-security-and-access-rights"/> Console Buffer Security and Access Rights.</param>
     /// <param name="mode">The input or output mode to be set.</param>
     /// <returns>If the function succeeds, the return value is nonzero. If the function fails, the return value is zero. To get extended error information, call <see cref="Marshal.GetLastWin32Error"/>.</returns>
     [DllImport(KERNEL32, SetLastError = true)]
@@ -332,7 +332,7 @@ public static partial class ConsoleControl {
     private static extern bool SetConsoleMode(IntPtr consoleHandle, ConsoleMode mode);
 
     /// <summary>
-    /// <see href="https://learn.microsoft.com/en-us/windows/console/setconsolemode#parameters"/>
+    /// <see href="https://learn.microsoft.com/windows/console/setconsolemode#parameters"/>
     /// </summary>
     [Flags]
     private enum ConsoleMode: uint {

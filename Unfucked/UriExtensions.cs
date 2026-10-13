@@ -118,7 +118,7 @@ public static class UriExtensions {
     /// </summary>
     public enum Part {
 
-        /// <summary>The scheme, hostname, and port, like <c>https://aldaviva.com:443</c> (<see href="https://developer.mozilla.org/en-US/docs/Glossary/Origin"/>)</summary>
+        /// <summary>The scheme, hostname, and port, like <c>https://aldaviva.com:443</c> (<see href="https://developer.mozilla.org/docs/Glossary/Origin"/>)</summary>
         Origin,
 
         /// <summary>The scheme, user info, hostname, port, and the root path (<c>/</c>), like <c>https://user:pass@aldaviva.com:443/</c></summary>

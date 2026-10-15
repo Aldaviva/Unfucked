@@ -17,6 +17,10 @@
         <None Include="GenerateBuildInfo.targets" Pack="true" PackagePath="buildTransitive\$(PackageId).targets" />
     </ItemGroup>
 
+    <ItemGroup>
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" IncludeAssets="compile" />
+    </ItemGroup>
+    
     <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETStandard' or $([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">
         <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
         <PackageReference Include="System.Collections.Immutable" />
@@ -28,11 +32,7 @@
         <Reference Include="System.Web" />
     </ItemGroup>
 
-    <ItemGroup>
-        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" IncludeAssets="compile" />
-    </ItemGroup>
-
-    <ItemGroup>
+    <ItemGroup Label="BuildInfoGenerator">
         <ProjectReference Include="..\BuildInfoGenerator\BuildInfoGenerator.csproj" PrivateAssets="all" ExcludeAssets="all" />
         <None Include="$(OutputPath)\netstandard2.0\Unfucked.BuildInfoGenerator.dll" Pack="true" PackagePath="tasks\netstandard2.0" Visible="false" />
     </ItemGroup>

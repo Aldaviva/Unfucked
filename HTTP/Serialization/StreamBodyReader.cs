@@ -7,15 +7,15 @@ public sealed class StreamBodyReader: MessageBodyReader {
 
     public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(Stream);
 
-    public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+    public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
         Task<Stream> stream =
 #if NET6_0_OR_GREATER
-            responseBody.ReadAsStreamAsync(cancellationToken);
+            response.Content.ReadAsStreamAsync(cancellationToken);
 #else
-            responseBody.ReadAsStreamAsync();
+            response.Content.ReadAsStreamAsync();
 #endif
 
-        return (T) (object) new ResponseDisposingStream(await stream.ConfigureAwait(false), responseBody);
+        return (T) (object) new ResponseDisposingStream(await stream.ConfigureAwait(false), response);
     }
 
     internal sealed class ResponseDisposingStream(Stream actualStream, IDisposable alsoDispose): Stream {

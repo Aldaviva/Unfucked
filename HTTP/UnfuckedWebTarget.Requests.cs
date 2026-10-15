@@ -30,68 +30,36 @@ public partial class WebTarget {
     public Task<HttpResponseMessage> Delete(HttpContent? requestBody = null, CancellationToken cancellationToken = default) => Send(HttpMethod.Delete, requestBody, cancellationToken);
 
     /// <inheritdoc />
-    public async Task<T> Send<T>(HttpMethod verb, HttpContent? requestBody, CancellationToken cancellationToken = default) {
-        HttpResponseMessage response = await Send(verb, requestBody, cancellationToken).ConfigureAwait(false);
-        try {
-            return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
-        } finally {
-            DisposeUnlessStreamRequested<T>(response);
-        }
-    }
+    public async Task<T> Send<T>(HttpMethod verb, HttpContent? requestBody, CancellationToken cancellationToken = default) =>
+        await ParseAndDisposeResponseBody<T>(await Send(verb, requestBody, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc />
-    public async Task<T> Get<T>(CancellationToken cancellationToken = default) {
-        HttpResponseMessage response = await Get(cancellationToken).ConfigureAwait(false);
-        try {
-            return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
-        } finally {
-            DisposeUnlessStreamRequested<T>(response);
-        }
-    }
+    public async Task<T> Get<T>(CancellationToken cancellationToken = default) =>
+        await ParseAndDisposeResponseBody<T>(await Get(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc />
-    public async Task<T> Post<T>(HttpContent? requestBody, CancellationToken cancellationToken = default) {
-        HttpResponseMessage response = await Post(requestBody, cancellationToken).ConfigureAwait(false);
-        try {
-            return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
-        } finally {
-            DisposeUnlessStreamRequested<T>(response);
-        }
-    }
+    public async Task<T> Post<T>(HttpContent? requestBody, CancellationToken cancellationToken = default) =>
+        await ParseAndDisposeResponseBody<T>(await Post(requestBody, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc />
-    public async Task<T> Put<T>(HttpContent? requestBody, CancellationToken cancellationToken = default) {
-        HttpResponseMessage response = await Put(requestBody, cancellationToken).ConfigureAwait(false);
-        try {
-            return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
-        } finally {
-            DisposeUnlessStreamRequested<T>(response);
-        }
-    }
+    public async Task<T> Put<T>(HttpContent? requestBody, CancellationToken cancellationToken = default) =>
+        await ParseAndDisposeResponseBody<T>(await Put(requestBody, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc />
-    public async Task<T> Patch<T>(HttpContent? requestBody, CancellationToken cancellationToken = default) {
-        HttpResponseMessage response = await Patch(requestBody, cancellationToken).ConfigureAwait(false);
-        try {
-            return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
-        } finally {
-            DisposeUnlessStreamRequested<T>(response);
-        }
-    }
+    public async Task<T> Patch<T>(HttpContent? requestBody, CancellationToken cancellationToken = default) =>
+        await ParseAndDisposeResponseBody<T>(await Patch(requestBody, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc />
-    public async Task<T> Delete<T>(HttpContent? requestBody = null, CancellationToken cancellationToken = default) {
-        HttpResponseMessage response = await Delete(requestBody, cancellationToken).ConfigureAwait(false);
+    public async Task<T> Delete<T>(HttpContent? requestBody = null, CancellationToken cancellationToken = default) =>
+        await ParseAndDisposeResponseBody<T>(await Delete(requestBody, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+
+    private async Task<T> ParseAndDisposeResponseBody<T>(HttpResponseMessage response, CancellationToken cancellationToken) {
         try {
             return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);
         } finally {
-            DisposeUnlessStreamRequested<T>(response);
-        }
-    }
-
-    private static void DisposeUnlessStreamRequested<T>(HttpResponseMessage response) {
-        if (typeof(T) != typeof(Stream) && typeof(T) != typeof(HttpResponseMessage)) {
-            response.Dispose();
+            if (typeof(T) != typeof(Stream) && typeof(T) != typeof(HttpResponseMessage)) {
+                response.Dispose();
+            }
         }
     }
 

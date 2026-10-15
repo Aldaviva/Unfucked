@@ -27,8 +27,8 @@ public sealed class XmlBodyReader: MessageBodyReader {
             bodyPrefix.Contains("xmlns", StringComparison.OrdinalIgnoreCase) ||
             bodyPrefix.Contains("<!doctype", StringComparison.OrdinalIgnoreCase)));
 
-    public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
-        return await responseBody.ReadObjectFromXmlAsync<T>(responseEncoding, cancellationToken: cancellationToken).ConfigureAwait(false);
+    public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+        return await response.Content.ReadObjectFromXmlAsync<T>(responseEncoding, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     public sealed class XmlDocumentReader: MessageBodyReader {
@@ -36,8 +36,8 @@ public sealed class XmlBodyReader: MessageBodyReader {
         public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(XmlDocument);
 
         /// <exception cref="XmlException"></exception>
-        public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
-            return (T) (object) await responseBody.ReadDomFromXmlAsync(responseEncoding, cancellationToken).ConfigureAwait(false);
+        public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+            return (T) (object) await response.Content.ReadDomFromXmlAsync(responseEncoding, cancellationToken).ConfigureAwait(false);
         }
 
     }
@@ -46,8 +46,8 @@ public sealed class XmlBodyReader: MessageBodyReader {
 
         public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(XDocument);
 
-        public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
-            return (T) (object) await responseBody.ReadLinqFromXmlAsync(responseEncoding, cancellationToken: cancellationToken).ConfigureAwait(false);
+        public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+            return (T) (object) await response.Content.ReadLinqFromXmlAsync(responseEncoding, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
     }
@@ -57,8 +57,8 @@ public sealed class XmlBodyReader: MessageBodyReader {
         public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(XPathNavigator);
 
         /// <exception cref="XmlException"></exception>
-        public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
-            return (T) (object) await responseBody.ReadXPathFromXmlAsync(responseEncoding, cancellationToken).ConfigureAwait(false);
+        public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+            return (T) (object) await response.Content.ReadXPathFromXmlAsync(responseEncoding, cancellationToken).ConfigureAwait(false);
         }
 
     }

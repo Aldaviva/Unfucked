@@ -84,6 +84,30 @@ using Unfucked.HTTP;
     // automatically mapped from JSON or XML depending on response content type, falling back to content sniffing
     MyClass response = await http.Target(url).Get<MyClass>();
     ```
+    - `HttpResponseMessage` (or just don't pass a generic type parameter to the request method like `Get()` or `Post()`)
+    - `Stream`
+    - `ReadOnlyMemory<byte>`
+    - `Memory<byte>`
+    - `byte[]`
+    - `string`
+    - JSON (`System.Text.Json`)
+        - `JsonDocument`
+        - `JsonNode`
+        - `JsonObject`
+        - `JsonArray`
+        - `JsonValue`
+        - Any type that can be deserialized from JSON
+    - XML (`System.Xml`)
+        - `XmlDocument`
+        - `XDocument`
+        - `XPathNavigator`
+        - Any type that can be deserialized from XML
+    - HTML (`AngleSharp`, provided dependency, so must be declared explicitly in library consumer)
+        - `IDocument`
+- Automatic request serialization from types to XML or JSON, which mostly makes serializer options apply consistently
+    ```cs
+    await http.Target(url).Post(Entity.json(body));
+    ```
 - Rich exception class hierarchy
     ```cs
     try {

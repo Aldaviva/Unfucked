@@ -7,12 +7,12 @@ public sealed class StringBodyReader: MessageBodyReader {
 
     public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(string);
 
-    public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+    public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
         Task<string> readAsStringAsync =
 #if NET6_0_OR_GREATER
-            responseBody.ReadAsStringAsync(cancellationToken);
+            response.Content.ReadAsStringAsync(cancellationToken);
 #else
-            responseBody.ReadAsStringAsync();
+            response.Content.ReadAsStringAsync();
 #endif
 
         return (T) (object) await readAsStringAsync.ConfigureAwait(false);

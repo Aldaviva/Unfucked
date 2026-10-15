@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Threading.Tasks.Dataflow;
 using Unfucked.Dataflow;
 
@@ -134,7 +135,7 @@ namespace Unfucked.Dataflow {
     }
 
     /// <summary><para>Abstract base class for <see cref="IPropagatorBlock{TInput,TOutput}"/>. Like <see cref="DataflowBlock.Encapsulate"/> and <see cref="IPropagatorBlock{TInput,TOutput}"/> but with fewer annoyances, less boilerplate, and more reusability.</para>
-    /// <para>This class assumes two inner blocks, an input (target) and an output (source). Override and hook up their receiving and completion in the constructor. See <see cref="JoinAllBlock{T}"/> for an example.</para></summary>
+    /// <para>This class assumes two inner blocks, an input (target) and an output (source). Override and hook up their receiving and completion in the constructor. See <see cref="CollectBlock{T}"/> for an example.</para></summary>
     /// 
     /// <typeparam name="TInput">Type of item received by this block, acting as a target.</typeparam>
     /// <typeparam name="TOutput">Type of item being emitted by this block, acting as a source.</typeparam>
@@ -190,8 +191,8 @@ namespace Unfucked.Dataflow {
     }
 
     /// <summary><see cref="IDataflowBlock"/> that takes arbitrarily many items until its source completes, and then emits all the items together at once in one big list (not as multiple individual items like <see cref="BufferBlock{T}"/>) and then completes itself. Useful if you need to join/aggregate/reduce all emitted items that requires access to all items at once, for example, finding the minimum item.</summary>
-    /// <typeparam name="T">Type of items produced by <see cref="Input"/></typeparam>
-    public class JoinAllBlock<T>: InputOutputBlock<T, IReadOnlyCollection<T>> {
+    /// <typeparam name="T">Type of items consumed by this block</typeparam>
+    public class CollectBlock<T>: InputOutputBlock<T, IReadOnlyCollection<T>> {
 
         /// <inheritdoc />
         protected sealed override ITargetBlock<T> Input { get; }
@@ -199,18 +200,25 @@ namespace Unfucked.Dataflow {
         /// <inheritdoc />
         protected override IReceivableSourceBlock<IReadOnlyCollection<T>> Output { get; }
 
-        private readonly IList<T> items = [];
+        private readonly ConcurrentQueue<T> items = [];
 
-        /// <inheritdoc cref="JoinAllBlock{T}" />
-        public JoinAllBlock() {
-            Input = new ActionBlock<T>(items.Add);
+        /// <summary>If <c>false</c> (default), this block will not emit a collection at all if it completes without having received any inputs; otherwise, when <c>true</c>, it will emit a collection with 0 elements when completing in this case.</summary>
+        public bool CanProduceEmptyCollection { get; init; } = false;
 
-            BufferBlock<IReadOnlyCollection<T>> outputBuffer = new();
+        /// <inheritdoc cref="CollectBlock{T}" />
+        public CollectBlock(): this(new ExecutionDataflowBlockOptions()) {}
+
+        /// <inheritdoc cref="CollectBlock{T}" />
+        /// <param name="blockOptions">Options for this dataflow block.</param>
+        public CollectBlock(ExecutionDataflowBlockOptions blockOptions) {
+            Input = new ActionBlock<T>(items.Enqueue, blockOptions);
+
+            BufferBlock<IReadOnlyCollection<T>> outputBuffer = new(blockOptions);
             Output = outputBuffer;
 
             Input.Completion.ContinueWith(_ => {
-                if (items.Count != 0) {
-                    outputBuffer.Post(items.AsReadOnlyList());
+                if (!items.IsEmpty || CanProduceEmptyCollection) {
+                    outputBuffer.Post(items.ToList().AsReadOnly());
                 }
                 Output.Complete();
             });

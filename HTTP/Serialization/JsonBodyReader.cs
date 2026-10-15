@@ -45,14 +45,14 @@ public sealed class JsonBodyReader: MessageBodyReader {
      */
     /// <inheritdoc />
     /// <exception cref="JsonException"></exception>
-    public async Task<T> Read<T>(HttpContent responseBody, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+    public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
         JsonSerializerOptions jsonOptions = (clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions)!;
 
         Task<Stream> readAsStreamAsync =
 #if NET5_0_OR_GREATER
-            responseBody.ReadAsStreamAsync(cancellationToken);
+            response.Content.ReadAsStreamAsync(cancellationToken);
 #else
-            responseBody.ReadAsStreamAsync();
+            response.Content.ReadAsStreamAsync();
 #endif
 
         return (await JsonSerializer.DeserializeAsync<T>(await readAsStreamAsync.ConfigureAwait(false), jsonOptions, cancellationToken).ConfigureAwait(false))!;

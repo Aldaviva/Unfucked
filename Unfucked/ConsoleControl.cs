@@ -208,6 +208,12 @@ public static partial class ConsoleControl {
     /// <summary>Control the appearance of the progress bar in <see cref="RenderProgressBar"/>.</summary>
     public readonly record struct ProgressBarOptions() {
 
+        /// <summary>Create a new instance with the given color for the foreground text of the complete bar section.</summary>
+        /// <param name="completeForegroundColor">Color to render the foreground text of the complete bar in.</param>
+        public ProgressBarOptions(Color completeForegroundColor): this() {
+            CompleteColor = (completeForegroundColor, null);
+        }
+
         /// <summary>How wide, in columns, the progress bar should be. To make it the full width of the console window, return <see cref="Console.WindowWidth"/>. The <see cref="double"/> argument is the current progress value.</summary>
         public required Func<double, int> TotalWidth { get; init; } = null!;
 

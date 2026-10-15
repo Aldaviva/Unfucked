@@ -132,6 +132,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
         WireLogFilter.AsyncState.Value = new WireLogFilter.WireAsyncState();
 #endif
 
+        // req, and therefore req's Body too, are disposed in SendAsync(HttpClient, UnfuckedHttpRequestMessage, CancellationToken) below
         UnfuckedHttpRequestMessage req = new(request.Verb, request.Uri) {
             Content = request.Body,
             Config  = request.ClientConfig

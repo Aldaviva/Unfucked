@@ -11,18 +11,30 @@ namespace Unfucked.HTTP;
 
 public partial class WebTarget {
 
-    private static readonly IReadOnlyList<MessageBodyReader> DEFAULT_MESSAGE_BODY_READERS = [
-        new StreamBodyReader(),
-        new ByteArrayBodyReader(),
-        new ByteArrayBodyReader.MemoryBodyReader(),
-        new ByteArrayBodyReader.ReadOnlyMemoryBodyReader(),
-        new StringBodyReader(),
-        new JsonBodyReader(),
-        new XmlBodyReader.XDocumentReader(),
-        new XmlBodyReader.XmlDocumentReader(),
-        new XmlBodyReader.XPathReader(),
-        new XmlBodyReader()
-    ];
+    private static readonly IReadOnlyList<MessageBodyReader> DEFAULT_MESSAGE_BODY_READERS;
+
+    static WebTarget() {
+        List<MessageBodyReader> defaultMessageBodyReaders = [
+            new StreamBodyReader(),
+            new ByteArrayBodyReader.ReadOnlyMemoryBodyReader(),
+            new ByteArrayBodyReader.MemoryBodyReader(),
+            new ByteArrayBodyReader(),
+            new StringBodyReader(),
+            new JsonBodyReader(),
+            new XmlBodyReader.XDocumentReader(),
+            new XmlBodyReader.XmlDocumentReader(),
+            new XmlBodyReader.XPathReader(),
+            new XmlBodyReader()
+        ];
+
+        try {
+            defaultMessageBodyReaders.Add(new HtmlDocumentReader());
+        } catch (FileNotFoundException) {
+            // library consumer does not also depend on AngleSharp, so skip this reader
+        }
+
+        DEFAULT_MESSAGE_BODY_READERS = defaultMessageBodyReaders.AsReadOnlyList();
+    }
 
     /// <exception cref="ProcessingException">response parsing failed</exception>
     /// <exception cref="WebApplicationException">the response status code was not successful, and <see cref="PropertyKey.ThrowOnUnsuccessfulStatusCode"/> was left enabled</exception>
@@ -47,7 +59,7 @@ public partial class WebTarget {
             // not sure if the read stream needs to be rewound between attempts
             if (reader.CanRead<T>(responseContentType?.MediaType, null)) {
                 try {
-                    return await reader.Read<T>(response.Content, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
+                    return await reader.Read<T>(response, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
                 } catch (Exception e) when (e is not OutOfMemoryException) {
                     throw new ProcessingException(e, await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false));
                 }
@@ -58,7 +70,7 @@ public partial class WebTarget {
 
         /*
          * Don't dispose the bodyStream yet, because it's a buffered shared instance in the HttpContent at this point and must be read multiple times by message body readers below who each call
-         * ReadAsStreamAsync(). It will get disposed in Get<T>() and similar by DisposeIfNotStream().
+         * ReadAsStreamAsync(). It will get disposed in Get<T>() and similar by ParseAndDisposeResponseBody<T>().
          */
 #if NET5_0_OR_GREATER
         Stream bodyStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
@@ -85,7 +97,7 @@ public partial class WebTarget {
             cancellationToken.ThrowIfCancellationRequested();
             if (reader.CanRead<T>(responseContentType?.MediaType, bodyPrefix)) {
                 try {
-                    return await reader.Read<T>(response.Content, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
+                    return await reader.Read<T>(response, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
                 } catch (Exception e) when (e is not OutOfMemoryException) {
                     throw new ProcessingException(e, await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false));
                 }
@@ -93,8 +105,9 @@ public partial class WebTarget {
         }
 
         HttpExceptionParams p = await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false);
-        throw new ProcessingException(
-            new SerializationException($"Could not determine content type of response body to deserialize (URI: {p.RequestUrl}, Content-Type: {responseContentType}, .NET type: {typeof(T)})"), p);
+        throw new ProcessingException(new SerializationException(
+                $"Could not find deserializer for response body. You may need to implement and {nameof(Configurable<>.Register)} a new {nameof(MessageBodyReader)} to your {nameof(IHttpClient)}, {nameof(IClientConfig)}, {nameof(IWebTarget)}. (URI: {p.RequestUrl}, Content-Type: {responseContentType}, .NET type: {typeof(T)})"),
+            p);
     }
 
     /// <exception cref="WebApplicationException">the response status code was not successful</exception>

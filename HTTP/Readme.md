@@ -104,6 +104,10 @@ using Unfucked.HTTP;
         - Any type that can be deserialized from XML
     - HTML (`AngleSharp`, provided dependency, so must be declared explicitly in library consumer)
         - `IDocument`
+    - `IUtf8SpanParsable`
+    - `IParsable`
+    - Any type with a public constructor with a single `string` parameter
+    - Any type with a public static `Parse(string)` method
 - Automatic request serialization from types to XML or JSON, which mostly makes serializer options apply consistently
     ```cs
     await http.Target(url).Post(Entity.json(body));

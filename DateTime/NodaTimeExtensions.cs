@@ -7,16 +7,17 @@ using Unfucked.DateTime;
 namespace Unfucked;
 
 /// <summary>
-/// Methods that make it easier to work with NodaTime dates and times
+/// Methods that make it easier to work with Noda Time dates and times
 /// </summary>
 public static class NodaTimeExtensions {
 
     internal static ZonedClock localClock {
         get {
+            SystemClock systemClock = SystemClock.Instance;
             try {
-                return SystemClock.Instance.InTzdbSystemDefaultZone();
+                return systemClock.InTzdbSystemDefaultZone();
             } catch (DateTimeZoneNotFoundException) {
-                return SystemClock.Instance.InBclSystemDefaultZone();
+                return systemClock.InBclSystemDefaultZone();
             }
         }
     }
@@ -30,6 +31,11 @@ public static class NodaTimeExtensions {
         /// <returns>the nonnegative magnitude of <paramref name="input"/></returns>
         [Pure]
         public Duration Abs => input < Duration.Zero ? Duration.Negate(input) : input;
+
+        /// <summary>Convert a <see cref="Duration"/> to a standard <see cref="Period"/>, which assumes all days are 24 hours long.</summary>
+        /// <returns>A normalized <see cref="Period"/> with the same duration as the original <see cref="Duration"/>.</returns>
+        [Pure]
+        public Period StandardPeriod => new PeriodBuilder { Days = input.Days, Nanoseconds = input.NanosecondOfDay }.Build().Normalize();
 
     }
 
@@ -67,7 +73,7 @@ public static class NodaTimeExtensions {
         /// <summary>
         /// Convert a time zone's UTC offset to fractional hours
         /// </summary>
-        /// <returns>floating-point hours that <paramref name="offset"/> is ahead of UTC, which would be <c>-4.0</c> in the above example</returns>
+        /// <returns>floating-point hours that <paramref name="offset"/> is ahead of UTC, which would be <c>-4.0</c> for <c>America/New_York</c> during Eastern Daylight Time</returns>
         [Pure]
         public double Hours => offset.ToTimeSpan().TotalHours;
 
@@ -75,9 +81,21 @@ public static class NodaTimeExtensions {
 
     extension(DateTimeZone zone) {
 
-        /// <summary>Create a clock that can the current time in the given zone.</summary>
+        /// <summary>Get a clock that returns the current time in the given time zone.</summary>
         [Pure]
         public ZonedClock Clock => SystemClock.Instance.InZone(zone);
+
+        /// <summary>Get the IANA/Olsen tzdb time zone currently used by the local system, falling back to the BCL zone if the IANA zone is not mapped.</summary>
+        [Pure]
+        public static DateTimeZone Current {
+            get {
+                try {
+                    return DateTimeZoneProviders.Tzdb.GetSystemDefault();
+                } catch (DateTimeZoneNotFoundException) {
+                    return BclDateTimeZone.ForSystemDefault();
+                }
+            }
+        }
 
     }
 
@@ -228,6 +246,20 @@ public static class ZonedDateTimeExtensions {
         /// <returns>midnight on the same date, time zone, and calendar as <paramref name="time"/></returns>
         [Pure]
         public ZonedDateTime StartOfDay => time.Zone.AtStartOfDay(time.Date);
+
+        /// <summary>
+        /// Convert a <see cref="ZonedDateTime"/> to a <see cref="Period"/>, representing the hours, minutes, and seconds since midnight.
+        /// </summary>
+        /// <returns>normalized standard period of time between <paramref name="time"/> and midnight of the same date</returns>
+        [Pure]
+        public Period PeriodSinceStartOfDay => time.DurationSinceStartOfDay.StandardPeriod;
+
+        /// <summary>
+        /// Convert a <see cref="ZonedDateTime"/> to a <see cref="Duration"/>, representing the nanoseconds since midnight.
+        /// </summary>
+        /// <returns>duration of time between <paramref name="time"/> and midnight of the same date</returns>
+        [Pure]
+        public Duration DurationSinceStartOfDay => time - time.StartOfDay;
 
     }
 

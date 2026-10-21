@@ -2,7 +2,9 @@
 
     <PropertyGroup>
         <AssemblyName>$(MSBuildProjectName)</AssemblyName>
-        <TargetFrameworks>net10.0-windows;net4.8</TargetFrameworks>
+        <!-- <TargetFrameworks>net10.0-windows;net4.8</TargetFrameworks> -->
+        <TargetFrameworks>net10.0-windows</TargetFrameworks>
+        <TargetFrameworks>$(TargetFrameworks);net4.8</TargetFrameworks>
         <RootNamespace>Tests</RootNamespace>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>

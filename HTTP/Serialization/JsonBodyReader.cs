@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -26,14 +27,14 @@ public sealed class JsonBodyReader: MessageBodyReader {
     };
 
     /// <inheritdoc />
-    public bool CanRead<T>(string? mimeType, string? bodyPrefix) =>
+    public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) =>
         typeof(T) == typeof(JsonDocument) ||
         typeof(T) == typeof(JsonNode) ||
         typeof(T) == typeof(JsonObject) ||
         typeof(T) == typeof(JsonArray) ||
         typeof(T) == typeof(JsonValue) ||
-        mimeType == APPLICATION_JSON_MEDIA_TYPE ||
-        (mimeType?.EndsWith("+json") ?? false) ||
+        contentType?.MediaType == APPLICATION_JSON_MEDIA_TYPE ||
+        (contentType?.MediaType?.EndsWith("+json") ?? false) ||
         (bodyPrefix != null && (
             bodyPrefix.StartsWith('{') ||
             bodyPrefix.StartsWith('[') ||

@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Text;
 using Unfucked.HTTP.Config;
 
@@ -5,7 +6,7 @@ namespace Unfucked.HTTP.Serialization;
 
 public sealed class StreamBodyReader: MessageBodyReader {
 
-    public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(Stream);
+    public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) => typeof(T) == typeof(Stream);
 
     public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
         Task<Stream> stream =

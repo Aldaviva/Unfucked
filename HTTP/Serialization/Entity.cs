@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
@@ -15,7 +16,7 @@ namespace Unfucked.HTTP.Serialization;
 /// <para>JSON serialization is better than <see cref="JsonContent"/> because it respects the default <see cref="JsonSerializerOptions"/> from the <see cref="UnfuckedHttpClient"/>, which intelligently serializes enums and doesn't crash on comments.</para>
 /// <para>XML serialization handles converting various XML document types (DOM, LINQ, and mapped objects) to streams for you automatically.</para>
 /// </summary>
-public static class Entity {
+public static partial class Entity {
 
     internal static readonly UTF8Encoding Utf8 = new(false, true);
 
@@ -74,6 +75,10 @@ public static class Entity {
 
     internal static Encoding? ParseEncoding(string? encoding) {
         if (encoding is not null) {
+            encoding = CharsetNameNormalizer().Replace(
+                encoding.Length > 2 && encoding.StartsWith('\"') && encoding.EndsWith('\"')
+                    ? encoding.Substring(1, encoding.Length - 2) : encoding, "-");
+
             try {
                 return Encoding.GetEncoding(encoding);
             } catch (ArgumentException) {}
@@ -81,12 +86,32 @@ public static class Entity {
         return null;
     }
 
+#if NET7_0_OR_GREATER
+    [GeneratedRegex
+#else
+    [EditorBrowsable(EditorBrowsableState.Advanced)]
+    private static readonly Regex CHARSET_NAME_NORMALIZER = new
+#endif
+            (@"(?<=[a-z])(?=\d)", RegexOptions.IgnoreCase)
+#if NET7_0_OR_GREATER
+    ] internal static partial
+#else
+        ;
+
+    internal static
+#endif
+        Regex CharsetNameNormalizer()
+#if !NET7_0_OR_GREATER
+        => CHARSET_NAME_NORMALIZER
+#endif
+        ;
+
     internal sealed class JsonHttpContent: HttpContent {
 
-        private readonly Lazy<HttpContent?>     inner;
-        private readonly object?                json;
-        private readonly Type                   jsonType;
-        private readonly MediaTypeHeaderValue?  mediaType;
+        private readonly Lazy<HttpContent?>    inner;
+        private readonly object?               json;
+        private readonly Type                  jsonType;
+        private readonly MediaTypeHeaderValue? mediaType;
 
         public JsonSerializerOptions? JsonOptions { get; }
 
@@ -217,7 +242,7 @@ public static class Entity {
             }
 
             XmlWriter createWriter(Encoding? encodingFallback) => XmlWriter.Create(stream, new XmlWriterSettings {
-                Encoding = this.Encoding ?? encodingFallback ?? Utf8
+                Encoding = ParseEncoding(Headers.ContentType?.CharSet) ?? encodingFallback ?? Utf8
             });
         }
 
@@ -256,7 +281,7 @@ public static class Entity {
             }
 
             XmlWriter createWriter(Encoding? encodingFallback, bool isAsync) => XmlWriter.Create(stream, new XmlWriterSettings {
-                Encoding = this.Encoding ?? encodingFallback ?? Utf8,
+                Encoding = ParseEncoding(Headers.ContentType?.CharSet) ?? encodingFallback ?? Utf8,
                 Async    = isAsync
             });
         }

@@ -86,4 +86,18 @@ public class NodaTimeExtensionsTest {
         { ZONED_DATE_TIME, ZONED_DATE_TIME.StartOfDay, false, true }
     };
 
+    [Theory, MemberData(nameof(DurationToPeriodData))]
+    public void DurationToPeriod(Duration input, Period expected) {
+        input.StandardPeriod.Should().Be(expected);
+    }
+
+    public static TheoryData<Duration, Period> DurationToPeriodData => new() {
+        { Duration.Zero, Period.Zero },
+        { Duration.FromMinutes(1), Period.FromMinutes(1) },
+        { Duration.FromHours(1), Period.FromHours(1) },
+        { Duration.FromDays(1), Period.FromDays(1) },
+        { Duration.FromSeconds(-30), Period.FromSeconds(-30) },
+        { Duration.FromHours(-18), Period.FromHours(-18).Normalize() },
+    };
+
 }

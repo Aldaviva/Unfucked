@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Net.Mime;
 using System.Text;
 using System.Xml;
@@ -16,10 +17,10 @@ public sealed class XmlBodyReader: MessageBodyReader {
         "application/xml";
 #endif
 
-    public bool CanRead<T>(string? mimeType, string? bodyPrefix) =>
-        mimeType == MediaTypeNames.Text.Xml ||
-        mimeType == APPLICATION_XML_MEDIA_TYPE ||
-        (mimeType?.EndsWith("+xml") ?? false) ||
+    public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) =>
+        contentType?.MediaType == MediaTypeNames.Text.Xml ||
+        contentType?.MediaType == APPLICATION_XML_MEDIA_TYPE ||
+        (contentType?.MediaType?.EndsWith("+xml") ?? false) ||
         (bodyPrefix != null && (
             bodyPrefix.StartsWith('<') ||
             bodyPrefix.Contains("<?xml", StringComparison.OrdinalIgnoreCase) ||
@@ -33,7 +34,7 @@ public sealed class XmlBodyReader: MessageBodyReader {
 
     public sealed class XmlDocumentReader: MessageBodyReader {
 
-        public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(XmlDocument);
+        public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) => typeof(T) == typeof(XmlDocument);
 
         /// <exception cref="XmlException"></exception>
         public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
@@ -44,7 +45,7 @@ public sealed class XmlBodyReader: MessageBodyReader {
 
     public sealed class XDocumentReader: MessageBodyReader {
 
-        public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(XDocument);
+        public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) => typeof(T) == typeof(XDocument);
 
         public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
             return (T) (object) await response.Content.ReadLinqFromXmlAsync(responseEncoding, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -54,7 +55,7 @@ public sealed class XmlBodyReader: MessageBodyReader {
 
     public sealed class XPathReader: MessageBodyReader {
 
-        public bool CanRead<T>(string? mimeType, string? bodyPrefix) => typeof(T) == typeof(XPathNavigator);
+        public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) => typeof(T) == typeof(XPathNavigator);
 
         /// <exception cref="XmlException"></exception>
         public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {

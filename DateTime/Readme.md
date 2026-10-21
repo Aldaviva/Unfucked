@@ -29,17 +29,26 @@ using Unfucked;
     ZonedDateTime a, b;
     Duration abs = (a - b).Abs();
     ```
-- Get midnight from a `ZonedDateTime` as a `ZonedDateTime`, `Period`, or `Duration`
-    ```cs
-    ZonedDateTime now = SystemClock.Instance.InTzdbSystemDefaultZone().GetCurrentZonedDateTime();
-    ZonedDateTime midnight = now.StartOfDay;
-    Duration sinceMidnight = now.LocalDateTime.TimeOfDay.DurationSinceStartOfDay;
-    Period sinceMidnight2 = now.LocalDateTime.TimeOfDay.PeriodSinceStartOfDay;
-    ```
-- Convert time zone offset to hours
-    ```cs
-    double hours = DateTimeZoneProviders.Tzdb["America/Los_Angeles"].GetUtcOffset(SystemClock.Instance.GetCurrentInstant()).Hours;
-    ```
+- Conversions
+    - `ZonedDateTime` or `LocalTime` to midnight
+        ```cs
+        ZonedDateTime now      = SystemClock.Instance.InTzdbSystemDefaultZone().GetCurrentZonedDateTime();
+        ZonedDateTime midnight = now.StartOfDay;
+
+        Duration sinceMidnight = now.DurationSinceStartOfDay;
+        Period sinceMidnight2  = now.PeriodSinceStartOfDay;
+
+        sinceMidnight  = new LocalTime(11, 31).DurationSinceStartOfDay;
+        sinceMidnight2 = new LocalTime(11, 31).PeriodSinceStartOfDay;
+        ```
+    - Time zone offset to hours
+        ```cs
+        double hours = DateTimeZoneProviders.Tzdb["America/Los_Angeles"].GetUtcOffset(SystemClock.Instance.GetCurrentInstant()).Hours;
+        ```
+    - Duration to standard, normalized period
+        ```cs
+        Period period = Duration.FromHours(1).StandardPeriod;
+        ```
 - Compare two `OffsetDateTimes` to see which one happens first
     ```cs
     OffsetDateTime a, b;
@@ -51,12 +60,13 @@ using Unfucked;
     TimeSpan t = (Milliseconds) 3;
     TimeSpan t = (Seconds) 1;
     TimeSpan t = (Minutes) 4;
-    Period t   = (Hours) 1;
-    Duration t = (Days) 5;
+    Period   p = (Hours) 1;
+    Duration d = (Days) 5;
     ```
 - Convenience accessors to make Noda Time's confusing API more discoverable and understandable. If you somehow really need an alternative instance of `IClock` to write unit tests, you can do this the original way.
     ```cs
-    var clock = DateTimeZoneProviders.Tzdb["America/Los_Angeles"].Clock;
+    var zone  = DateTimeZone.Current;
+    var clock = zone.Clock;
 
     var now = ZonedDateTime.Now;
     var now = ZonedDateTime.NowUtc;

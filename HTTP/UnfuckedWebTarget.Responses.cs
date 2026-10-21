@@ -30,8 +30,10 @@ public partial class WebTarget {
         try {
             defaultMessageBodyReaders.Add(new HtmlDocumentReader());
         } catch (FileNotFoundException) {
-            // library consumer does not also depend on AngleSharp, so skip this reader
+            // library consumer doesn't depend on AngleSharp, so skip this reader
         }
+
+        defaultMessageBodyReaders.Add(new GenericBodyReader());
 
         DEFAULT_MESSAGE_BODY_READERS = defaultMessageBodyReaders.AsReadOnlyList();
     }
@@ -47,17 +49,14 @@ public partial class WebTarget {
         }
 
         MediaTypeHeaderValue? responseContentType = response.Content.Headers.ContentType;
-        Encoding?             responseEncoding    = null;
-        try {
-            responseEncoding = responseContentType?.CharSet is {} responseEncodingName ? Encoding.GetEncoding(responseEncodingName) : null;
-        } catch (ArgumentException) {}
+        Encoding?             responseEncoding    = Entity.ParseEncoding(responseContentType?.CharSet);
 
         IEnumerable<MessageBodyReader> messageBodyReaders = (clientConfig?.MessageBodyReaders ?? []).Concat(DEFAULT_MESSAGE_BODY_READERS).ToList();
 
         foreach (MessageBodyReader reader in messageBodyReaders) {
             cancellationToken.ThrowIfCancellationRequested();
             // not sure if the read stream needs to be rewound between attempts
-            if (reader.CanRead<T>(responseContentType?.MediaType, null)) {
+            if (reader.CanRead<T>(responseContentType, null)) {
                 try {
                     return await reader.Read<T>(response, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
                 } catch (Exception e) when (e is not OutOfMemoryException) {
@@ -95,7 +94,7 @@ public partial class WebTarget {
 
         foreach (MessageBodyReader reader in messageBodyReaders) {
             cancellationToken.ThrowIfCancellationRequested();
-            if (reader.CanRead<T>(responseContentType?.MediaType, bodyPrefix)) {
+            if (reader.CanRead<T>(responseContentType, bodyPrefix)) {
                 try {
                     return await reader.Read<T>(response, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
                 } catch (Exception e) when (e is not OutOfMemoryException) {
@@ -106,7 +105,7 @@ public partial class WebTarget {
 
         HttpExceptionParams p = await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false);
         throw new ProcessingException(new SerializationException(
-                $"Could not find deserializer for response body. You may need to implement and {nameof(Configurable<>.Register)} a new {nameof(MessageBodyReader)} to your {nameof(IHttpClient)}, {nameof(IClientConfig)}, {nameof(IWebTarget)}. (URI: {p.RequestUrl}, Content-Type: {responseContentType}, .NET type: {typeof(T)})"),
+                $"Could not find deserializer for response body. You may need to register a new {nameof(MessageBodyReader)} to your {nameof(IHttpClient)}, {nameof(IClientConfig)}, or {nameof(IWebTarget)}. (URI: {p.RequestUrl}, Content-Type: {responseContentType}, .NET type: {typeof(T)})"),
             p);
     }
 

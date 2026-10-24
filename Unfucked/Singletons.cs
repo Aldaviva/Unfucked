@@ -1,4 +1,5 @@
 using System.Collections;
+using System.ComponentModel;
 
 namespace Unfucked;
 
@@ -183,6 +184,7 @@ public static class Singletons {
 }
 
 /// <inheritdoc cref="Singletons" />
+[EditorBrowsable(EditorBrowsableState.Advanced)]
 public static class Singletons2 {
 
     extension(IDictionary) {

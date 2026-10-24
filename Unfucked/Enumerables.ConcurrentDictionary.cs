@@ -26,7 +26,7 @@ public static partial class Enumerables {
     [Pure]
     public static ConcurrentDictionary<TKey, ValueHolder<TValue>> CreateConcurrentDictionary<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>>? initialElements = null, int concurrency = -1,
                                                                                                            int? capacity = null, IEqualityComparer<TKey>? keyComparer = null) where TKey: notnull {
-#if NETSTANDARD
+#if NETSTANDARD || NETFRAMEWORK
         keyComparer ??= EqualityComparer<TKey>.Default;
 #endif
 #if !NET8_0_OR_GREATER
@@ -56,7 +56,7 @@ public static partial class Enumerables {
     public static ConcurrentDictionary<TKey, BooleanValueHolder> CreateConcurrentDictionary<TKey, TValue>(IEnumerable<KeyValuePair<TKey, bool>>? initialElements = null, int concurrency = -1,
                                                                                                           int? capacity = null, IEqualityComparer<TKey>? keyComparer = null)
         where TKey: notnull where TValue: IEquatable<bool> {
-#if NETSTANDARD
+#if NETSTANDARD || NETFRAMEWORK
         keyComparer ??= EqualityComparer<TKey>.Default;
 #endif
 #if !NET8_0_OR_GREATER
@@ -107,7 +107,7 @@ public static partial class Enumerables {
             throw new InvalidCastException(
                 $"The {nameof(TIntegralValue)} generic type parameter must be {expectedUnderlyingType.Name} based on the underlying type of {typeof(TEnumValue).Name}, but was {actualUnderlyingType.Name}");
         }
-#if NETSTANDARD
+#if NETSTANDARD || NETFRAMEWORK
         keyComparer ??= EqualityComparer<TKey>.Default;
 #endif
 #if !NET8_0_OR_GREATER

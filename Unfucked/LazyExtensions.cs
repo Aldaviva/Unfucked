@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace Unfucked;
 
 /// <summary>
@@ -30,6 +32,27 @@ public static class LazyExtensions {
             }
         } catch (MemberAccessException) {}
         return false;
+    }
+
+    extension<T>(Lazy<T> lazy) where T: class? {
+
+        /// <summary>Get the already-created value of the <see cref="Lazy{T}"/> instance, or <c>null</c> if no value has been created yet rather than creating the value on-demand.</summary>
+        /// <returns>Value of <paramref name="lazy"/>, or <c>null</c> if it was never created.</returns>
+        public T? ExistingValueOrNull => lazy.IsValueCreated ? lazy.Value : null;
+
+    }
+
+}
+
+/// <inheritdoc cref="LazyExtensions" />
+[EditorBrowsable(EditorBrowsableState.Advanced)]
+public static class LazyExtensions2 {
+
+    extension<T>(Lazy<T> lazy) where T: struct {
+
+        /// <inheritdoc cref="LazyExtensions.get_ExistingValueOrNull{T}" />
+        public T? ExistingValueOrNull => lazy.IsValueCreated ? lazy.Value : null;
+
     }
 
 }

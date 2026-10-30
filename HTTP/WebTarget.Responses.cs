@@ -30,7 +30,7 @@ public partial class WebTarget {
 
         try {
             defaultMessageBodyReaders.Add(new HtmlDocumentReader());
-        } catch (FileNotFoundException) {
+        } catch (TypeInitializationException) {
             // library consumer doesn't depend on AngleSharp, so skip this reader
         }
 

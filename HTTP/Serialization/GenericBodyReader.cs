@@ -15,7 +15,7 @@ using ConstructorMethod =
 namespace Unfucked.HTTP.Serialization;
 
 /// <summary>Can parse types like <see cref="Version"/> or <see cref="Uri"/> from strings</summary>
-public sealed class GenericBodyReader(StringBodyReader stringBodyReader): AbstractMessageBodyReader {
+public sealed class GenericBodyReader: AbstractMessageBodyReader {
 
     private static readonly Lazy<ConcurrentDictionary<Type, ConstructorMethod?>> CONSTRUCTOR_CACHE     = new(LazyThreadSafetyMode.PublicationOnly);
     private static readonly Lazy<ConcurrentDictionary<Type, object?>>            PARSE_METHOD_CACHE    = new(LazyThreadSafetyMode.PublicationOnly); // type of value is ParseString<T>?

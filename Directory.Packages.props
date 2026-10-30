@@ -8,25 +8,25 @@
             System.Text.Json
     -->
   <ItemGroup>
-    <PackageVersion Include="AngleSharp" Version="1.8.5" />
+    <PackageVersion Include="AngleSharp" Version="1.8.6" />
     <PackageVersion Include="Ical.Net" Version="5.2.3" />
     <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="17.0.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.113" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.114" />
     <PackageVersion Include="mwinapi" Version="0.3.0.6" />
     <PackageVersion Include="NodaTime" Version="3.3.5" />
     <PackageVersion Include="OBSClient" Version="3.0.1" />
-    <PackageVersion Include="PgpCore" Version="8.1.0" />
+    <PackageVersion Include="PgpCore" Version="8.1.1" />
     <PackageVersion Include="ReSharper.ExportAnnotations.Task" Version="1.4.0" />
     <PackageVersion Include="SharpCompress" Version="0.50.7" />
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
     <PackageVersion Include="System.Net.Http.Json" Version="8.0.1" />
     <PackageVersion Include="System.Text.Encodings.Web" Version="8.0.0" />
     <PackageVersion Include="System.Text.Json" Version="8.0.6" />
-    <PackageVersion Include="System.Threading.Tasks.Dataflow" Version="10.0.13" />
+    <PackageVersion Include="System.Threading.Tasks.Dataflow" Version="10.0.14" />
     <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
     <PackageVersion Include="ThrottleDebounce" Version="3.0.0" />
     <PackageVersion Include="TwitchApi.Net" Version="3.2.0" />

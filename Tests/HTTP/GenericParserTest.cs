@@ -1,12 +1,14 @@
 using System.Net.Http.Headers;
+using System.Net.Mime;
 using System.Net.NetworkInformation;
+using System.Text;
 using Unfucked.HTTP.Serialization;
 
 namespace Tests.HTTP;
 
 public class GenericParserTest {
 
-    private readonly GenericBodyReader reader = new();
+    private readonly GenericBodyReader reader = new(new StringBodyReader());
 
     [Fact]
     public async Task ParseVersion() {
@@ -17,7 +19,8 @@ public class GenericParserTest {
 
         reader.CanRead<Version>(null, null).Should().BeTrue();
 
-        Version actual = await reader.Read<Version>(httpResponseMessage, null, null, CancellationToken.None);
+        Version actual = await reader.Read<Version>(await httpResponseMessage.Content.ReadAsStreamAsync(), httpResponseMessage.StatusCode, httpResponseMessage.Headers,
+            httpResponseMessage.Content.Headers, httpResponseMessage.RequestMessage!, httpResponseMessage, null, null, CancellationToken.None);
         actual.Should().Be(new Version(2, 16, 2));
     }
 
@@ -29,7 +32,8 @@ public class GenericParserTest {
 
         reader.CanRead<bool>(null, null).Should().BeTrue();
 
-        bool actual = await reader.Read<bool>(httpResponseMessage, null, null, CancellationToken.None);
+        bool actual = await reader.Read<bool>(await httpResponseMessage.Content.ReadAsStreamAsync(), httpResponseMessage.StatusCode, httpResponseMessage.Headers, httpResponseMessage.Content.Headers,
+            httpResponseMessage.RequestMessage!, httpResponseMessage, null, null, CancellationToken.None);
         actual.Should().BeTrue();
     }
 
@@ -41,7 +45,8 @@ public class GenericParserTest {
 
         reader.CanRead<Uri>(null, null).Should().BeTrue();
 
-        Uri actual = await reader.Read<Uri>(httpResponseMessage, null, null, CancellationToken.None);
+        Uri actual = await reader.Read<Uri>(await httpResponseMessage.Content.ReadAsStreamAsync(), httpResponseMessage.StatusCode, httpResponseMessage.Headers, httpResponseMessage.Content.Headers,
+            httpResponseMessage.RequestMessage!, httpResponseMessage, null, null, CancellationToken.None);
         actual.Host.Should().Be("aldaviva.com");
     }
 
@@ -53,8 +58,22 @@ public class GenericParserTest {
 
         reader.CanRead<PhysicalAddress>(null, null).Should().BeTrue();
 
-        PhysicalAddress actual = await reader.Read<PhysicalAddress>(httpResponseMessage, null, null, CancellationToken.None);
+        PhysicalAddress actual = await reader.Read<PhysicalAddress>(await httpResponseMessage.Content.ReadAsStreamAsync(), httpResponseMessage.StatusCode, httpResponseMessage.Headers,
+            httpResponseMessage.Content.Headers, httpResponseMessage.RequestMessage!, httpResponseMessage, null, null, CancellationToken.None);
         actual.Should().Be(new PhysicalAddress([0x11, 0x22, 0x33, 0x44, 0x55, 0x66]));
     }
+
+    [Theory, MemberData(nameof(ReadStringNotUtf8Data))]
+    public async Task ReadStringNotUtf8(Encoding encoding, string input) {
+        var    body   = new ByteArrayContent(encoding.GetBytes(input)) { Headers = { ContentType = new MediaTypeHeaderValue(MediaTypeNames.Text.Plain, encoding.WebName) } };
+        string actual = await body.ReadAsStringAsync();
+        actual.Should().Be(input);
+    }
+
+    public static TheoryData<Encoding, string> ReadStringNotUtf8Data => new() {
+        { Encoding.Unicode, "hello" },
+        { Encoding.BigEndianUnicode, "hello" },
+        { Encoding.Latin1, "éü" }
+    };
 
 }

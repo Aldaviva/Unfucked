@@ -2,7 +2,7 @@ namespace Unfucked.HTTP;
 
 public partial class WebTarget {
 
-    private static readonly HttpMethod PATCH_VERB   = new("PATCH");
+    private static readonly HttpMethod PATCH_VERB = new("PATCH");
 
     /*
      * Must not be async so the AsyncLocal scope for wire logging is high enough in the async chain.

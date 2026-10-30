@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -46,17 +47,13 @@ public sealed class JsonBodyReader: MessageBodyReader {
      */
     /// <inheritdoc />
     /// <exception cref="JsonException"></exception>
-    public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+    public async Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
+                                 Encoding? responseEncoding,
+                                 Configurable? clientConfig,
+                                 CancellationToken cancellationToken) {
         JsonSerializerOptions jsonOptions = (clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions)!;
 
-        Task<Stream> readAsStreamAsync =
-#if NET5_0_OR_GREATER
-            response.Content.ReadAsStreamAsync(cancellationToken);
-#else
-            response.Content.ReadAsStreamAsync();
-#endif
-
-        return (await JsonSerializer.DeserializeAsync<T>(await readAsStreamAsync.ConfigureAwait(false), jsonOptions, cancellationToken).ConfigureAwait(false))!;
+        return (await JsonSerializer.DeserializeAsync<T>(responseBody, jsonOptions, cancellationToken).ConfigureAwait(false))!;
     }
 
 }

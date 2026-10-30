@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Mime;
 using System.Text;
@@ -28,8 +29,13 @@ public sealed class XmlBodyReader: MessageBodyReader {
             bodyPrefix.Contains("xmlns", StringComparison.OrdinalIgnoreCase) ||
             bodyPrefix.Contains("<!doctype", StringComparison.OrdinalIgnoreCase)));
 
-    public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
-        return await response.Content.ReadObjectFromXmlAsync<T>(responseEncoding, cancellationToken: cancellationToken).ConfigureAwait(false);
+    public Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
+                           Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+        try {
+            return Task.FromResult(XmlExtensions.ReadObjectFromXmlAsync<T>(responseBody, responseEncoding));
+        } catch (Exception exception) {
+            return Task.FromException<T>(exception);
+        }
     }
 
     public sealed class XmlDocumentReader: MessageBodyReader {
@@ -37,8 +43,13 @@ public sealed class XmlBodyReader: MessageBodyReader {
         public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) => typeof(T) == typeof(XmlDocument);
 
         /// <exception cref="XmlException"></exception>
-        public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
-            return (T) (object) await response.Content.ReadDomFromXmlAsync(responseEncoding, cancellationToken).ConfigureAwait(false);
+        public Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
+                               Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+            try {
+                return Task.FromResult((T) (object) XmlExtensions.ReadDomFromXmlAsync(responseBody, responseEncoding));
+            } catch (Exception exception) {
+                return Task.FromException<T>(exception);
+            }
         }
 
     }
@@ -47,8 +58,9 @@ public sealed class XmlBodyReader: MessageBodyReader {
 
         public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) => typeof(T) == typeof(XDocument);
 
-        public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
-            return (T) (object) await response.Content.ReadLinqFromXmlAsync(responseEncoding, cancellationToken: cancellationToken).ConfigureAwait(false);
+        public async Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
+                                     Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+            return (T) (object) await XmlExtensions.ReadLinqFromXmlAsync(responseBody, responseEncoding, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
     }
@@ -58,8 +70,15 @@ public sealed class XmlBodyReader: MessageBodyReader {
         public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) => typeof(T) == typeof(XPathNavigator);
 
         /// <exception cref="XmlException"></exception>
-        public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
-            return (T) (object) await response.Content.ReadXPathFromXmlAsync(responseEncoding, cancellationToken).ConfigureAwait(false);
+        public Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
+                               Encoding? responseEncoding,
+                               Configurable? clientConfig,
+                               CancellationToken cancellationToken) {
+            try {
+                return Task.FromResult((T) (object) XmlExtensions.ReadXPathFromXmlAsync(responseBody, responseEncoding));
+            } catch (Exception exception) {
+                return Task.FromException<T>(exception);
+            }
         }
 
     }

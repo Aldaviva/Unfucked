@@ -14,12 +14,13 @@ public partial class WebTarget {
     private static readonly IReadOnlyList<MessageBodyReader> DEFAULT_MESSAGE_BODY_READERS;
 
     static WebTarget() {
+        StringBodyReader stringBodyReader;
         List<MessageBodyReader> defaultMessageBodyReaders = [
             new StreamBodyReader(),
             new ByteArrayBodyReader.ReadOnlyMemoryBodyReader(),
             new ByteArrayBodyReader.MemoryBodyReader(),
             new ByteArrayBodyReader(),
-            new StringBodyReader(),
+            stringBodyReader = new StringBodyReader(),
             new JsonBodyReader(),
             new XmlBodyReader.XDocumentReader(),
             new XmlBodyReader.XmlDocumentReader(),
@@ -33,7 +34,7 @@ public partial class WebTarget {
             // library consumer doesn't depend on AngleSharp, so skip this reader
         }
 
-        defaultMessageBodyReaders.Add(new GenericBodyReader());
+        defaultMessageBodyReaders.Add(new GenericBodyReader(stringBodyReader));
 
         DEFAULT_MESSAGE_BODY_READERS = defaultMessageBodyReaders.AsReadOnlyList();
     }
@@ -55,48 +56,63 @@ public partial class WebTarget {
 
         foreach (MessageBodyReader reader in messageBodyReaders) {
             cancellationToken.ThrowIfCancellationRequested();
-            // not sure if the read stream needs to be rewound between attempts
             if (reader.CanRead<T>(responseContentType, null)) {
                 try {
-                    return await reader.Read<T>(response, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
+                    Task<Stream> responseBodyStream = response.Content
+#if NET5_0_OR_GREATER
+                        .ReadAsStreamAsync(cancellationToken);
+#else
+                        .ReadAsStreamAsync();
+#endif
+
+                    return await reader.Read<T>(await responseBodyStream.ConfigureAwait(false), response.StatusCode, response.Headers, response.Content.Headers, response.RequestMessage!, response,
+                        responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
                 } catch (Exception e) when (e is not OutOfMemoryException) {
                     throw new ProcessingException(e, await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false));
                 }
             }
         }
 
-        await response.Content.LoadIntoBufferAsync().ConfigureAwait(false);
+        // await response.Content.LoadIntoBufferAsync().ConfigureAwait(false);
 
-        /*
-         * Don't dispose the bodyStream yet, because it's a buffered shared instance in the HttpContent at this point and must be read multiple times by message body readers below who each call
-         * ReadAsStreamAsync(). It will get disposed in Get<T>() and similar by ParseAndDisposeResponseBody<T>().
-         */
 #if NET5_0_OR_GREATER
-        Stream bodyStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        await using Stream bodyStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
 #else
-        Stream bodyStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+        using Stream bodyStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
 #endif
-        using StreamReader bodyReader   = new(bodyStream, responseEncoding ?? Encoding.UTF8, true);
-        char[]             prefixBuffer = new char[32];
+        const int maxPrefixLengthChars = 32;
+        Encoding  encoding             = responseEncoding ?? Encoding.UTF8;
 
-        int prefixSize;
+#if NET5_0_OR_GREATER
+        await using
+#else
+        using
+#endif
+            PartiallyBufferedStream partialBufferedBodyStream = await PartiallyBufferedStream.CreateAndBuffer(bodyStream, encoding.GetMaxByteCount(maxPrefixLengthChars)).ConfigureAwait(false);
+        using StreamReader bodyReader = new(partialBufferedBodyStream, encoding, true);
+        // using StreamReader bodyReader = new(bodyStream, responseEncoding ?? Encoding.UTF8, true);
+
+        char[] prefixBuffer = new char[maxPrefixLengthChars];
+
+        int prefixLengthChars;
 #if NETCOREAPP2_1_OR_GREATER
         try {
-            prefixSize = await bodyReader.ReadAsync(prefixBuffer.AsMemory(), cancellationToken).ConfigureAwait(false);
+            prefixLengthChars = await bodyReader.ReadAsync(prefixBuffer.AsMemory(), cancellationToken).ConfigureAwait(false);
         } catch (OperationCanceledException e) {
             throw new ProcessingException(e, await HttpExceptionParams.FromResponse(response, CancellationToken.None).ConfigureAwait(false));
         }
 #else
-        prefixSize = await bodyReader.ReadAsync(prefixBuffer, 0, prefixBuffer.Length).ConfigureAwait(false);
+        prefixLengthChars = await bodyReader.ReadAsync(prefixBuffer, 0, prefixBuffer.Length).ConfigureAwait(false);
 #endif
-        string bodyPrefix = new string(prefixBuffer, 0, prefixSize).Trim();
-        bodyStream.Position = 0;
+        string bodyPrefix = new string(prefixBuffer, 0, prefixLengthChars).Trim();
+        partialBufferedBodyStream.Position = 0;
 
         foreach (MessageBodyReader reader in messageBodyReaders) {
             cancellationToken.ThrowIfCancellationRequested();
             if (reader.CanRead<T>(responseContentType, bodyPrefix)) {
                 try {
-                    return await reader.Read<T>(response, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
+                    return await reader.Read<T>(partialBufferedBodyStream, response.StatusCode, response.Headers, response.Content.Headers, response.RequestMessage!, response, responseEncoding,
+                        clientConfig, cancellationToken).ConfigureAwait(false);
                 } catch (Exception e) when (e is not OutOfMemoryException) {
                     throw new ProcessingException(e, await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false));
                 }

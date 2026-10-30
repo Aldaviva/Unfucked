@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.Serialization;
 using System.Text;
@@ -20,12 +21,18 @@ public interface MessageBodyReader: Registrable {
     /// <para>This method will only ever be called by <c>Unfucked.HTTP</c> iff <see cref="CanRead"/> returns <c>true</c>, so you don't have to check its condition again and you can assume it passed.</para>
     /// </summary>
     /// <typeparam name="T">Type to deserialize the body to.</typeparam>
-    /// <param name="response">Response body of an HTTP request.</param>
+    /// <param name="responseBody"></param>
+    /// <param name="status"></param>
+    /// <param name="headers"></param>
+    /// <param name="bodyHeaders"></param>
+    /// <param name="request"></param>
+    /// <param name="response"></param>
     /// <param name="responseEncoding">Character encoding of the body, extracted from the <see cref="HttpHeaders.ContentType"/> response header, or <c>null</c> if the response headers don't specify a character encoding.</param>
     /// <param name="clientConfig">Configuration options specified on the HTTP client.</param>
     /// <param name="cancellationToken">To cancel async operations early.</param>
     /// <returns>The parsed <typeparamref name="T"/> value.</returns>
     /// <exception cref="SerializationException">Deserialization failed.</exception>
-    public Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken);
+    public Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
+                           Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken);
 
 }

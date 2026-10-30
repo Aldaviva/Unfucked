@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net.Mime;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -193,32 +194,19 @@ public static partial class Entity {
         private XmlDocument?               xmlDocument;
         private (object value, Type type)? mappable;
 
-        public static XmlHttpContent Create(XDocument xDocument) {
-            XmlHttpContent result = new();
-            result.xDocument = xDocument;
-            return result;
-        }
+        public static XmlHttpContent Create(XDocument xDocument) => new() { xDocument       = xDocument };
+        public static XmlHttpContent Create(XmlDocument xmlDocument) => new() { xmlDocument = xmlDocument };
+        public static XmlHttpContent Create(object mappable, Type type) => new() { mappable = (mappable, type) };
+        public static XmlHttpContent Create<T>(T mappable) => new() { mappable              = (mappable!, typeof(T)) };
 
-        public static XmlHttpContent Create(XmlDocument xmlDocument) {
-            XmlHttpContent result = new();
-            result.xmlDocument = xmlDocument;
-            return result;
-        }
-
-        public static XmlHttpContent Create(object mappable, Type type) {
-            XmlHttpContent result = new();
-            result.mappable = (mappable, type);
-            return result;
-        }
-
-        public static XmlHttpContent Create<T>(T mappable) {
-            XmlHttpContent result = new();
-            result.mappable = (mappable!, typeof(T));
-            return result;
+        private XmlHttpContent() {
+            Headers.ContentType = new MediaTypeHeaderValue(MediaTypeNames.Text.Xml) {
+                CharSet = (ParseEncoding(xDocument?.Declaration?.Encoding) ?? ParseEncoding(xmlDocument?.ChildNodes.OfType<XmlDeclaration>().FirstOrDefault()?.Encoding) ?? Utf8).WebName
+            };
         }
 
         protected override bool TryComputeLength(out long length) {
-            length = 0;
+            length = -1;
             return false;
         }
 
@@ -256,17 +244,17 @@ public static partial class Entity {
             XmlWriter? xmlWriter = null;
             try {
                 if (xDocument is not null) {
-                    xmlWriter = createWriter(ParseEncoding(xDocument.Declaration?.Encoding), true);
+                    xmlWriter = createWriter(ParseEncoding(xDocument.Declaration?.Encoding));
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
                     await xDocument.SaveAsync(xmlWriter, cancellationToken).ConfigureAwait(false);
 #else
                     xDocument.Save(xmlWriter);
 #endif
                 } else if (xmlDocument is not null) {
-                    xmlWriter = createWriter(ParseEncoding(xmlDocument.ChildNodes.OfType<XmlDeclaration>().FirstOrDefault()?.Encoding), false);
+                    xmlWriter = createWriter(ParseEncoding(xmlDocument.ChildNodes.OfType<XmlDeclaration>().FirstOrDefault()?.Encoding));
                     xmlDocument.Save(xmlWriter);
                 } else if (mappable is not null) {
-                    xmlWriter = createWriter(null, false);
+                    xmlWriter = createWriter(null);
                     XmlSerializer serializer = new(mappable.Value.type);
                     serializer.Serialize(xmlWriter, mappable.Value.value);
                 }
@@ -280,9 +268,9 @@ public static partial class Entity {
 #endif
             }
 
-            XmlWriter createWriter(Encoding? encodingFallback, bool isAsync) => XmlWriter.Create(stream, new XmlWriterSettings {
+            XmlWriter createWriter(Encoding? encodingFallback) => XmlWriter.Create(stream, new XmlWriterSettings {
                 Encoding = ParseEncoding(Headers.ContentType?.CharSet) ?? encodingFallback ?? Utf8,
-                Async    = isAsync
+                Async    = true
             });
         }
 

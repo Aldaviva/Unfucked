@@ -52,37 +52,38 @@ public sealed class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOp
         DateTimeOffset now       = DateTimeOffset.Now;
         string?        message   = logEntry.State?.ToString(); // logEntry.Formatter?.Invoke(logEntry.State, logEntry.Exception)
         Exception?     exception = logEntry.Exception;
-        if (message is not null || exception is not null) {
-            if (useColor) {
-                textWriter.Write(levelColors[(int) logEntry.LogLevel]);
-            }
 
-            textWriter.Write(' ');
-            textWriter.Write(LEVEL_LABELS[(int) logEntry.LogLevel]);
-            textWriter.Write(options.ColumnSeparator);
-            textWriter.Write(FormatTime(now));
-            textWriter.Write(options.ColumnSeparator);
-            WriteCategory(logEntry, textWriter);
-            textWriter.Write(options.ColumnSeparator);
+        if (message is null && exception is null) return;
 
-            if (message is not null) {
-                textWriter.Write(message);
-            }
-
-            if (message is not null && exception is not null) {
-                textWriter.Write("\n   ");
-            }
-
-            if (exception is not null) {
-                textWriter.Write(exception.ToString().Replace("\n", "\n   "));
-            }
-
-            if (useColor) {
-                textWriter.Write(ANSI_RESET);
-            }
-
-            textWriter.WriteLine();
+        if (useColor) {
+            textWriter.Write(levelColors[(int) logEntry.LogLevel]);
         }
+
+        textWriter.Write(' ');
+        textWriter.Write(LEVEL_LABELS[(int) logEntry.LogLevel]);
+        textWriter.Write(options.ColumnSeparator);
+        textWriter.Write(FormatTime(now));
+        textWriter.Write(options.ColumnSeparator);
+        WriteCategory(logEntry, textWriter);
+        textWriter.Write(options.ColumnSeparator);
+
+        if (message is not null) {
+            textWriter.Write(message);
+        }
+
+        if (message is not null && exception is not null) {
+            textWriter.Write("\n   ");
+        }
+
+        if (exception is not null) {
+            textWriter.Write(exception.ToString().Replace("\n", "\n   "));
+        }
+
+        if (useColor) {
+            textWriter.Write(ANSI_RESET);
+        }
+
+        textWriter.WriteLine();
     }
 
     private void WriteCategory<TState>(LogEntry<TState> logEntry, TextWriter textWriter) {
@@ -90,13 +91,13 @@ public sealed class UnfuckedConsoleFormatter(IOptions<UnfuckedConsoleFormatterOp
 
         ReadOnlySpan<char> category = lastSeparatorPosition != -1 ? logEntry.Category.AsSpan(lastSeparatorPosition + 1) : logEntry.Category.AsSpan();
 
-        int categoryLength = category.Length;
 #if NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER
         textWriter.Write(category);
 #else
         textWriter.Write(category.ToString());
 #endif
 
+        int categoryLength = category.Length;
         if (categoryLength >= maxCategoryLength) {
             maxCategoryLength = categoryLength;
         } else {

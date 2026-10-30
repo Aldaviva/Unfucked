@@ -84,7 +84,7 @@ using Unfucked.HTTP;
     // automatically mapped from JSON or XML depending on response content type, falling back to content sniffing
     MyClass response = await http.Target(url).Get<MyClass>();
     ```
-    - `HttpResponseMessage` (or just don't pass a generic type parameter to the request method like `Get()` or `Post()`)
+    - `HttpResponseMessage` (or just don't pass a generic type parameter to the request method, like `Get()` or `Post()`)
     - `Stream`
     - `ReadOnlyMemory<byte>`
     - `Memory<byte>`
@@ -108,9 +108,15 @@ using Unfucked.HTTP;
     - `IParsable`
     - Any type with a public constructor with a single `string` parameter
     - Any type with a public static `Parse(string)` method
-- Automatic request serialization from types to XML or JSON, which mostly makes serializer options apply consistently
+- Automatic request serialization from types to XML or JSON, the main benefit of which is to consistently apply serializer options
     ```cs
     await http.Target(url).Post(Entity.json(body));
+    ```
+- Disable chunked transfer encoding if the server is incompatible
+    ```cs
+    using var http = new UnfuckedHttpClient {
+        DefaultRequestHeaders = { TransferEncodingChunked = false }
+    };
     ```
 - Rich exception class hierarchy
     ```cs

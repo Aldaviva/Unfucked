@@ -148,6 +148,15 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
             throw;
         }
 
+        if (request is { Headers.TransferEncodingChunked: false, Content: { Headers.ContentLength: null } requestBody }) {
+            /*
+             * The request body is an as-yet unbuffered stream with an unknown length (HttpContent.TryComputeLength returned false),
+             * but the user explicitly wants to not send chunked requests because they know the server rejects it,
+             * so force the client to buffer the request body before sending so it can have a valid Content-Length and no Transfer-Encoding: chunked.
+             */
+            await requestBody.LoadIntoBufferAsync().ConfigureAwait(false);
+        }
+
         HttpResponseMessage response = await TestableSendAsync(request, cancellationToken).ConfigureAwait(false);
 
         try {

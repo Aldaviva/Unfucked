@@ -15,7 +15,7 @@ using ConstructorMethod =
 namespace Unfucked.HTTP.Serialization;
 
 /// <summary>Can parse types like <see cref="Version"/> or <see cref="Uri"/> from strings</summary>
-public class GenericBodyReader: MessageBodyReader {
+public sealed class GenericBodyReader: MessageBodyReader {
 
     private static readonly Lazy<ConcurrentDictionary<Type, ConstructorMethod?>> CONSTRUCTOR_CACHE  = new(LazyThreadSafetyMode.PublicationOnly);
     private static readonly Lazy<ConcurrentDictionary<Type, object?>>            PARSE_METHOD_CACHE = new(LazyThreadSafetyMode.PublicationOnly); // type of value is ParseString<T>?
@@ -50,7 +50,8 @@ public class GenericBodyReader: MessageBodyReader {
     /// <exception cref="SerializationException"></exception>
     public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
 #if NET8_0_OR_GREATER
-        if ((responseEncoding?.Equals(Encoding.UTF8) ?? true) && UTF8_SPAN_PARSER_CACHE.Value.GetOrAdd(typeof(T), _ => FindUtf8SpanParser<T>()) is ParseUtf8Span<T> utf8SpanParser) {
+        if (((responseEncoding?.Equals(Encoding.UTF8) ?? true) || responseEncoding.Equals(Encoding.ASCII)) &&
+            UTF8_SPAN_PARSER_CACHE.Value.GetOrAdd(typeof(T), _ => FindUtf8SpanParser<T>()) is ParseUtf8Span<T> utf8SpanParser) {
             await using Stream stream     = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
             MemoryStream       bodyBuffer = new();
             await stream.CopyToAsync(bodyBuffer, int.MaxValue, cancellationToken).ConfigureAwait(false);
@@ -91,7 +92,7 @@ public class GenericBodyReader: MessageBodyReader {
             return parseMethod(stringBody);
         }
 
-        throw new SerializationException($"{typeof(T).FullName} can be deserialized neither with IUtf8SpanParsable.Parse, IParsable.Parse, new(string), nor static Parse(string)");
+        throw new SerializationException($"{typeof(T).FullName} can be deserialized with neither IUtf8SpanParsable.Parse nor IParsable.Parse nor new(string) nor static Parse(string)");
     }
 
 #if NET8_0_OR_GREATER

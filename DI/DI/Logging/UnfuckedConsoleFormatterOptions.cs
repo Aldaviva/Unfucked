@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Logging.Console;
-using System.Diagnostics.CodeAnalysis;
+
+// ReSharper disable PropertyCanBeMadeInitOnly.Global - users must be able to set these in a builder pattern call where the class instance has already been constructed for them
 
 namespace Unfucked.DI.Logging;
 
 /// <summary>
 /// Options to control the <see cref="UnfuckedConsoleFormatter"/>.
 /// </summary>
-[SuppressMessage("ReSharper", "PropertyCanBeMadeInitOnly.Global")] // users must be able to set these in a builder pattern call where the class instance has already been constructed for them
 public sealed class UnfuckedConsoleFormatterOptions: ConsoleFormatterOptions {
 
     /// <summary>
@@ -16,9 +16,9 @@ public sealed class UnfuckedConsoleFormatterOptions: ConsoleFormatterOptions {
     public bool IncludeNamespaces { get; set; }
 
     /// <summary>
-    /// String that is printed between each column in log lines, <c>" | "</c> by default.
+    /// String that is printed between each column in log lines, <c>" │ "</c> by default (U+2502 Box Drawings Light Vertical).
     /// </summary>
-    public string ColumnSeparator { get; set; } = " | ";
+    public string ColumnSeparator { get; set; } = " │ ";
 
     /// <summary>
     /// <para>By default, the console logger prints messages in color depending on the log level (errors are white text on a red background, for example).</para>

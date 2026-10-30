@@ -749,4 +749,76 @@ public static partial class Enumerables {
         return value;
     }
 
+    /// <summary>
+    /// <para>Union of <see cref="ICollection{T}"/> and <see cref="IReadOnlyCollection{T}"/> interfaces, useful when you want to ensure a <see cref="IEnumerable{T}"/> is not lazy.</para>
+    /// <para>Create a thin wrapper to guarantee that an <see cref="IEnumerable{T}"/> will not cause multiple enumerations by calling <see cref="get_AsEager"/>.</para>
+    /// </summary>
+    /// <typeparam name="T">Type of items in the collection.</typeparam>
+    public interface IReadMaybeCollection<T>: ICollection<T>, IReadOnlyCollection<T>;
+
+    private readonly struct ReadMaybeCollection<T>(IEnumerable<T> inner): IReadMaybeCollection<T> {
+
+        private readonly IEnumerable<T> inner = inner as IReadOnlyCollection<T> as IEnumerable<T> ?? inner as ICollection<T> ?? inner.ToList();
+
+        int IReadOnlyCollection<T>.Count => inner.Count();
+        int ICollection<T>.Count => inner.Count();
+
+        bool ICollection<T>.IsReadOnly => (inner as ICollection<T>)?.IsReadOnly ?? false;
+
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => inner.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable) inner).GetEnumerator();
+
+        bool ICollection<T>.Contains(T item) => inner.Contains(item);
+
+        bool ICollection<T>.Remove(T item) => inner is ICollection<T> c ? c.Remove(item) : throw readOnlyException();
+
+        void ICollection<T>.Add(T item) {
+            if (inner is ICollection<T> c) {
+                c.Add(item);
+            } else {
+                throw readOnlyException();
+            }
+        }
+
+        void ICollection<T>.Clear() {
+            if (inner is ICollection<T> c) {
+                c.Clear();
+            } else {
+                throw readOnlyException();
+            }
+        }
+
+        void ICollection<T>.CopyTo(T[] array, int arrayIndex) {
+            if (inner is ICollection<T> c) {
+                c.CopyTo(array, arrayIndex);
+            } else {
+                throw readOnlyException();
+            }
+        }
+
+        private static NotSupportedException readOnlyException() => new("Collection is read-only");
+
+    }
+
+    extension<T>(IEnumerable<T> source) {
+
+        /// <summary>
+        /// <para>Create a thin wrapper around an <see cref="IEnumerable{T}"/> to guarantee it will not cause multiple enumerations.</para>
+        /// <para>Example:</para>
+        /// </summary>
+        public IReadMaybeCollection<T> AsEager => new ReadMaybeCollection<T>(source);
+
+    }
+    /*extension<T>([NoEnumeration] IEnumerable<T> source) {
+
+        /// <summary>
+        /// <para>Ensure an <see cref="IEnumerable{T}"/> is buffered (such as an array or <see cref="List{T}"/>) and not lazily yielding from a generator, in case you need to iterate over it more than once.</para>
+        /// <para>More efficient than always calling <see cref="Enumerable.ToList"/> because this performs zero copies if <paramref name="source"/> is already buffered.</para>
+        /// <para>Otherwise, if it is lazy, this converts <paramref name="source"/> into a <see cref="List{T}"/>.</para>
+        /// </summary>
+        [System.Diagnostics.Contracts.Pure]
+        public IEnumerable<T> AsEager => source as ICollection<T> as IEnumerable<T> ?? source as IReadOnlyCollection<T> ?? source.ToList();
+
+    }*/
+
 }

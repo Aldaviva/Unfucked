@@ -69,7 +69,7 @@ using Unfucked;
         ```cs
         bool colorable = Console.EnableColorSupport();
         ```
-- Draw a textual progress bar in the console, including Windows Terminal support.
+- Draw a textual progress bar in the console, including Windows Terminal circular progress icon and taskbar progress bar support.
     ```cs
     double progress = 0.5;
     Console.OutputEncoding = Encoding.UTF8;
@@ -194,6 +194,9 @@ using Unfucked;
 
 ### Enumerables
 - Filter out `null` values.
+    - Easily the most useful and frequently-helpful method in all Unfucked libraries.
+    - The first method ever added to Unfucked libraries, and the inspiration to stop copying and pasting this boilerplate extension into every single project.
+    - Inspired by [`_.compact`](https://lodash.com/docs/3.10.1#compact).
     ```cs
     IEnumerable<string?> sparseList = new List<string?> { "a", "b", null };
     IEnumerable<string> list = withNulls.Compact(); // ["a", "b"]
@@ -327,6 +330,17 @@ using Unfucked;
     IEnumerable<object> a = [new Superclass(), new Subclass()];
     IEnumerable<Superclass> superclasses = a.OfTypeExactly<Superclass>();
     // superclasses does not contain any Subclass instances
+    ```
+- Ensure an `IEnumerable<T>` is not a lazy sequence produced by a generator, and is instead an in-memory buffered collection like an array or a `List<T>`, so you can safely iterate over it multiple times without causing multiple enumerations which might otherwise be expensive or have side effects.
+    - Uses a wrapper/facade/delegate/shim/proxy that implements both `ICollection<T>` and `IReadOnlyCollection<T>`, and which passes through calls to the existing enumerable if it's already an `ICollection<T>` or `IReadOnlyCollection<T>` or fully enumerates it to a list otherwise. By implementing both interfaces where unfortunately neither inherits from the other, it can handle both underlying type hierarchies. It's a struct so it's zero allocations and copying when the underlying enumerable is already eager.
+    - Superior to alternative of unconditionally calling [`ToList()`](https://learn.microsoft.com/en-us/dotnet/api/system.linq.enumerable.tolist), which is always O(n) even if the source enumerable was already a `List<T>`
+    - Superior to alternative of safely casting to `ICollection<T>` which does not inherit from `IReadOnlyCollection<T>` (and conversely), and if you try to handle both, [ReSharper's multiple enumeration static analysis heuristic](https://www.jetbrains.com/help/resharper/PossibleMultipleEnumeration.html) cannot handle all the conditions unless you put them in an `if` or `switch` statement which are each 7 lines long and can't go in expressions. And if you try to put that logic in a method, the static analysis will interpret the new return value as possibly lazy anyway.
+    ```cs
+    public void run(IEnumerable<int> items) {
+        items = items.AsEager;
+        Console.WriteLine(items.Count);
+        Console.WriteLine(items.Sum()); // no multiple enumerations warning
+    }
     ```
 - Polyfill for [`IList<T>.AsReadOnly`](https://learn.microsoft.com/dotnet/api/system.collections.generic.collectionextensions.asreadonly#system-collections-generic-collectionextensions-asreadonly-1(system-collections-generic-ilist((-0)))), [`IDictionary<K,V>.AsReadOnly`](https://learn.microsoft.com/dotnet/api/system.collections.generic.collectionextensions.asreadonly#system-collections-generic-collectionextensions-asreadonly-2(system-collections-generic-idictionary((-0-1)))), and [`ISet<T>.AsReadOnly`](https://learn.microsoft.com/dotnet/api/system.collections.generic.collectionextensions.asreadonly#system-collections-generic-collectionextensions-asreadonly-1(system-collections-generic-ilist((-0)))) for old .NET versions
     ```cs

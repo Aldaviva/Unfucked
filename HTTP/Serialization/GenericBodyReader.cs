@@ -18,8 +18,9 @@ namespace Unfucked.HTTP.Serialization;
 /// <summary>Can parse types like <see cref="Version"/> or <see cref="Uri"/> from strings</summary>
 public sealed class GenericBodyReader(StringBodyReader stringBodyReader): MessageBodyReader {
 
-    private static readonly Lazy<ConcurrentDictionary<Type, ConstructorMethod?>> CONSTRUCTOR_CACHE  = new(LazyThreadSafetyMode.PublicationOnly);
-    private static readonly Lazy<ConcurrentDictionary<Type, object?>>            PARSE_METHOD_CACHE = new(LazyThreadSafetyMode.PublicationOnly); // type of value is ParseString<T>?
+    private static readonly Lazy<ConcurrentDictionary<Type, ConstructorMethod?>> CONSTRUCTOR_CACHE     = new(LazyThreadSafetyMode.PublicationOnly);
+    private static readonly Lazy<ConcurrentDictionary<Type, object?>>            PARSE_METHOD_CACHE    = new(LazyThreadSafetyMode.PublicationOnly); // type of value is ParseString<T>?
+    private static readonly Lazy<ConcurrentDictionary<Type, object?>>            TRYPARSE_METHOD_CACHE = new(LazyThreadSafetyMode.PublicationOnly); // type of value is TryParseString<T>?
 
 #if NET8_0_OR_GREATER
     private delegate T ParseUtf8Span<out T>(ReadOnlySpan<byte> serialized, IFormatProvider? formatProvider);
@@ -35,6 +36,8 @@ public sealed class GenericBodyReader(StringBodyReader stringBodyReader): Messag
 
     private delegate T ParseString<out T>(string serialized);
 
+    private delegate bool TryParseString<T>(string serialized, out T? parsed);
+
     /// <inheritdoc />
     public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) =>
 #if NET8_0_OR_GREATER
@@ -45,18 +48,17 @@ public sealed class GenericBodyReader(StringBodyReader stringBodyReader): Messag
         STRING_PARSER_CACHE.Value.GetOrAdd(typeof(T), _ => FindStringParser<T>()) != null ||
 #endif
         CONSTRUCTOR_CACHE.Value.GetOrAdd(typeof(T), FindConstructor) != null ||
-        PARSE_METHOD_CACHE.Value.GetOrAdd(typeof(T), _ => FindParseMethod<T>()) != null;
+        PARSE_METHOD_CACHE.Value.GetOrAdd(typeof(T), _ => FindParseMethod<T>()) != null ||
+        TRYPARSE_METHOD_CACHE.Value.GetOrAdd(typeof(T), _ => FindTryParseMethod<T>()) != null;
 
     /// <inheritdoc />
     /// <exception cref="SerializationException"></exception>
     public async Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
-                                 Encoding? responseEncoding,
-                                 Configurable? clientConfig,
-                                 CancellationToken cancellationToken) {
+                                 Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
 #if NET8_0_OR_GREATER
         if (((responseEncoding?.Equals(Encoding.UTF8) ?? true) || responseEncoding.Equals(Encoding.ASCII)) &&
             UTF8_SPAN_PARSER_CACHE.Value.GetOrAdd(typeof(T), _ => FindUtf8SpanParser<T>()) is ParseUtf8Span<T> utf8SpanParser) {
-            MemoryStream       bodyBuffer = new();
+            MemoryStream bodyBuffer = new();
             await responseBody.CopyToAsync(bodyBuffer, int.MaxValue, cancellationToken).ConfigureAwait(false);
             ReadOnlySpan<byte> bodySpan = bodyBuffer.GetBuffer().AsSpan(0, (int) bodyBuffer.Length);
             return utf8SpanParser(bodySpan, null);
@@ -81,6 +83,11 @@ public sealed class GenericBodyReader(StringBodyReader stringBodyReader): Messag
 
         if (PARSE_METHOD_CACHE.Value.GetOrAdd(typeof(T), _ => FindParseMethod<T>()) is ParseString<T> parseMethod) {
             return parseMethod(await readBodyAsString().ConfigureAwait(false));
+        }
+
+        if (TRYPARSE_METHOD_CACHE.Value.GetOrAdd(typeof(T), _ => FindTryParseMethod<T>()) is TryParseString<T> tryParseMethod) {
+            string raw = await readBodyAsString().ConfigureAwait(false);
+            return tryParseMethod(raw, out T? parsed) ? parsed! : throw new SerializationException($"{typeof(T).FullName}.TryParse failed to deserialize '{raw}'");
         }
 
         throw new SerializationException($"{typeof(T).FullName} can be deserialized with neither IUtf8SpanParsable.Parse nor IParsable.Parse nor new(string) nor static Parse(string)");
@@ -137,6 +144,14 @@ public sealed class GenericBodyReader(StringBodyReader stringBodyReader): Messag
             <ParseString<T>>();
 #else
             (typeof(ParseString<T>)) as ParseString<T>;
+#endif
+
+    private static TryParseString<T>? FindTryParseMethod<T>() =>
+        typeof(T).GetMethod("TryParse", BindingFlags.Static | BindingFlags.Public, null, [typeof(string), typeof(T).MakeByRefType()], null)?.CreateDelegate
+#if NET5_0_OR_GREATER
+            <TryParseString<T>>();
+#else
+            (typeof(TryParseString<T>)) as TryParseString<T>;
 #endif
 
 }

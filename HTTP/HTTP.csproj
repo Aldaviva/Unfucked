@@ -20,10 +20,12 @@
         <When Condition="'$(Configuration)' != 'Debug'">
             <ItemGroup>
                 <PackageReference Include="Unfucked" />
+                <PackageReference Include="Unfucked.Caching" />
             </ItemGroup>
         </When>
         <Otherwise>
             <ItemGroup>
+                <ProjectReference Include="..\Caching\Caching.csproj" />
                 <ProjectReference Include="..\Unfucked\Unfucked.csproj" />
             </ItemGroup>
         </Otherwise>

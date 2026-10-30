@@ -10,13 +10,16 @@ public class PartiallyBufferedStreamTest(PartiallyBufferedStreamTest.WebServerFi
 
     private readonly UnfuckedHttpClient client = new();
 
-    [Fact]
-    public async Task Works() {
+    [Theory]
+    [InlineData(1)]
+    [InlineData(8192)]
+    public async Task Works(int extraStringLength) {
+        string longString = Enumerable.Repeat('a', extraStringLength).Join();
         Uri baseUrl = webServerFixture.ListenOnRandomPort(server =>
-            server.WithAction("/test.json", HttpVerbs.Get, async ctx => { await ctx.SendStringAsync("""{ "Hello": "World" }""", MediaTypeNames.Application.Octet, Encoding.UTF8); }));
+            server.WithAction("/test.json", HttpVerbs.Get,
+                async ctx => { await ctx.SendStringAsync($$"""{ "Hello": "World", "ExtraString":"{{longString}}" }""", MediaTypeNames.Application.Octet, Encoding.UTF8); }));
 
-        IWebTarget webTarget = client.Target(baseUrl)
-            .Path("test.json");
+        IWebTarget webTarget = client.Target(baseUrl).Path("test.json");
 
         HelloDto actual = await webTarget.Get<HelloDto>();
         actual.Hello.Should().Be("World");
@@ -26,6 +29,25 @@ public class PartiallyBufferedStreamTest(PartiallyBufferedStreamTest.WebServerFi
 
         public required string Hello { get; init; }
 
+    }
+
+    [Fact]
+    public async Task ByteArrayLength() {
+        byte[] expectedResponseBody = "Hello world"u8.ToArray();
+        Uri baseUrl = webServerFixture.ListenOnRandomPort(server => server.WithAction("/test.bin", HttpVerbs.Get, async ctx => {
+            ctx.Response.ContentType = MediaTypeNames.Application.Octet;
+            await using Stream openResponseStream = ctx.OpenResponseStream(true, false);
+            await openResponseStream.WriteAsync(expectedResponseBody, ctx.CancellationToken);
+        }));
+
+        IWebTarget webTarget = client.Target(baseUrl).Path("test.bin");
+
+        using (HttpResponseMessage res = await webTarget.Get()) {
+            res.Content.Headers.ContentLength.Should().NotBeNull();
+        }
+
+        byte[] actual = await webTarget.Get<byte[]>();
+        actual.Should().BeEquivalentTo(expectedResponseBody);
     }
 
     public class WebServerFixture: IAsyncDisposable {

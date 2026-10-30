@@ -10,9 +10,7 @@ public sealed class ByteArrayBodyReader: MessageBodyReader {
     public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) => typeof(T) == typeof(byte[]);
 
     public async Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
-                                 Encoding? responseEncoding,
-                                 Configurable? clientConfig,
-                                 CancellationToken cancellationToken) =>
+                                 Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) =>
         (T) (object) await ReadByteArray(responseBody, cancellationToken).ConfigureAwait(false);
 
     public sealed class MemoryBodyReader: MessageBodyReader {
@@ -36,13 +34,7 @@ public sealed class ByteArrayBodyReader: MessageBodyReader {
     }
 
     private static async Task<byte[]> ReadByteArray(Stream responseBody, CancellationToken cancellationToken) {
-        MemoryStream buffer;
-        try {
-            long responseBodyLength = responseBody.Length;
-            buffer = new MemoryStream((int) responseBodyLength);
-        } catch (NotSupportedException) {
-            buffer = new MemoryStream();
-        }
+        MemoryStream buffer = new();
 
         Task copyToAsync = responseBody
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1_OR_GREATER
@@ -50,6 +42,7 @@ public sealed class ByteArrayBodyReader: MessageBodyReader {
 #else
             .CopyToAsync(buffer);
 #endif
+
         await copyToAsync.ConfigureAwait(false);
 
         return buffer.ToArray();

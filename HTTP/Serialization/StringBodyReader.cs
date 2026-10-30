@@ -11,7 +11,7 @@ public sealed class StringBodyReader: MessageBodyReader {
 
     public async Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
                                  Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
-        using StreamReader streamReader = new(responseBody, responseEncoding ?? Entity.Utf8, true);
+        using StreamReader streamReader = new(responseBody, responseEncoding ?? Encoding.UTF8, true);
         Task<string> readToEndAsync = streamReader
 #if NET7_0_OR_GREATER
             .ReadToEndAsync(cancellationToken);

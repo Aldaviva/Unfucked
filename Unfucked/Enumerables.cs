@@ -500,7 +500,7 @@ public static partial class Enumerables {
         return (head: enumerator.MoveNext() ? enumerator.Current : null, tail: new Enumerable<T?>(enumerator));
     }
 
-    private sealed class Enumerable<T>(IEnumerator<T> enumerator): IEnumerable<T> {
+    private readonly struct Enumerable<T>(IEnumerator<T> enumerator): IEnumerable<T> {
 
         public IEnumerator<T> GetEnumerator() => enumerator;
 
@@ -754,6 +754,7 @@ public static partial class Enumerables {
     /// <para>Create a thin wrapper to guarantee that an <see cref="IEnumerable{T}"/> will not cause multiple enumerations by calling <see cref="get_AsEager"/>.</para>
     /// </summary>
     /// <typeparam name="T">Type of items in the collection.</typeparam>
+    // ReSharper disable once PossibleInterfaceMemberAmbiguity - they both have the same code path, also it's not ambiguous because they're both explicit interface implementations
     public interface IReadMaybeCollection<T>: ICollection<T>, IReadOnlyCollection<T>;
 
     private readonly struct ReadMaybeCollection<T>(IEnumerable<T> inner): IReadMaybeCollection<T> {
@@ -800,16 +801,8 @@ public static partial class Enumerables {
 
     }
 
+    /// <typeparam name="T">Type of items in <paramref name="source"/>.</typeparam>
     extension<T>(IEnumerable<T> source) {
-
-        /// <summary>
-        /// <para>Create a thin wrapper around an <see cref="IEnumerable{T}"/> to guarantee it will not cause multiple enumerations.</para>
-        /// <para>Example:</para>
-        /// </summary>
-        public IReadMaybeCollection<T> AsEager => new ReadMaybeCollection<T>(source);
-
-    }
-    /*extension<T>([NoEnumeration] IEnumerable<T> source) {
 
         /// <summary>
         /// <para>Ensure an <see cref="IEnumerable{T}"/> is buffered (such as an array or <see cref="List{T}"/>) and not lazily yielding from a generator, in case you need to iterate over it more than once.</para>
@@ -817,8 +810,27 @@ public static partial class Enumerables {
         /// <para>Otherwise, if it is lazy, this converts <paramref name="source"/> into a <see cref="List{T}"/>.</para>
         /// </summary>
         [System.Diagnostics.Contracts.Pure]
-        public IEnumerable<T> AsEager => source as ICollection<T> as IEnumerable<T> ?? source as IReadOnlyCollection<T> ?? source.ToList();
+        public IReadMaybeCollection<T> AsEager => new ReadMaybeCollection<T>(source);
 
-    }*/
+        /// <summary>Returns the input enumerable, or <c>null</c> if it was empty.</summary>
+        /// <returns><paramref name="source"/>, or <c>null</c> if it was empty.</returns>
+        [System.Diagnostics.Contracts.Pure]
+        public IEnumerable<T>? EmptyToNull {
+            get {
+#if NET6_0_OR_GREATER
+                if (source.TryGetNonEnumeratedCount(out int count)) return count == 0 ? null : source;
+#endif
+                using IEnumerator<T> enumerator = source.GetEnumerator();
+                IEnumerable<T>       tail       = new Enumerable<T>(enumerator);
+                return !enumerator.MoveNext() ? null :
+#if NETSTANDARD1_6_OR_GREATER || NETCOREAPP1_0_OR_GREATER || NET471_OR_GREATER
+                    tail.Prepend(enumerator.Current);
+#else
+                    ((IEnumerable<T>) [enumerator.Current]).Concat(tail);
+#endif
+            }
+        }
+
+    }
 
 }

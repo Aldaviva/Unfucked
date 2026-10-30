@@ -14,13 +14,13 @@ public partial class WebTarget {
     private static readonly IReadOnlyList<MessageBodyReader> DEFAULT_MESSAGE_BODY_READERS;
 
     static WebTarget() {
-        StringBodyReader stringBodyReader;
+        StringBodyReader stringBodyReader = new();
         List<MessageBodyReader> defaultMessageBodyReaders = [
             new StreamBodyReader(),
             new ByteArrayBodyReader.ReadOnlyMemoryBodyReader(),
             new ByteArrayBodyReader.MemoryBodyReader(),
             new ByteArrayBodyReader(),
-            stringBodyReader = new StringBodyReader(),
+            stringBodyReader,
             new JsonBodyReader(),
             new XmlBodyReader.XDocumentReader(),
             new XmlBodyReader.XmlDocumentReader(),
@@ -52,7 +52,7 @@ public partial class WebTarget {
         MediaTypeHeaderValue? responseContentType = response.Content.Headers.ContentType;
         Encoding?             responseEncoding    = Entity.ParseEncoding(responseContentType?.CharSet);
 
-        IEnumerable<MessageBodyReader> messageBodyReaders = (clientConfig?.MessageBodyReaders ?? []).Concat(DEFAULT_MESSAGE_BODY_READERS).ToList();
+        IEnumerable<MessageBodyReader> messageBodyReaders = clientConfig?.MessageBodyReaders.EmptyToNull?.Concat(DEFAULT_MESSAGE_BODY_READERS).ToList() ?? DEFAULT_MESSAGE_BODY_READERS;
 
         foreach (MessageBodyReader reader in messageBodyReaders) {
             cancellationToken.ThrowIfCancellationRequested();
@@ -73,7 +73,7 @@ public partial class WebTarget {
             }
         }
 
-        // await response.Content.LoadIntoBufferAsync().ConfigureAwait(false);
+        // None of the message body readers matched the response based on Content-Type or C# type, so read the first several characters of the response body and let the readers try again with magic header matching (like <?xml or <!doctype)
 
 #if NET5_0_OR_GREATER
         await using Stream bodyStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
@@ -88,9 +88,9 @@ public partial class WebTarget {
 #else
         using
 #endif
-            PartiallyBufferedStream partialBufferedBodyStream = await PartiallyBufferedStream.CreateAndBuffer(bodyStream, encoding.GetMaxByteCount(maxPrefixLengthChars)).ConfigureAwait(false);
-        using StreamReader bodyReader = new(partialBufferedBodyStream, encoding, true);
-        // using StreamReader bodyReader = new(bodyStream, responseEncoding ?? Encoding.UTF8, true);
+            PartiallyBufferedStream partiallyBufferedBodyStream =
+                await PartiallyBufferedStream.CreateAndBuffer(bodyStream, encoding.GetMaxByteCount(maxPrefixLengthChars), cancellationToken).ConfigureAwait(false);
+        using StreamReader bodyReader = new(partiallyBufferedBodyStream, encoding, true);
 
         char[] prefixBuffer = new char[maxPrefixLengthChars];
 
@@ -105,13 +105,13 @@ public partial class WebTarget {
         prefixLengthChars = await bodyReader.ReadAsync(prefixBuffer, 0, prefixBuffer.Length).ConfigureAwait(false);
 #endif
         string bodyPrefix = new string(prefixBuffer, 0, prefixLengthChars).Trim();
-        partialBufferedBodyStream.Position = 0;
+        partiallyBufferedBodyStream.Position = 0;
 
         foreach (MessageBodyReader reader in messageBodyReaders) {
             cancellationToken.ThrowIfCancellationRequested();
             if (reader.CanRead<T>(responseContentType, bodyPrefix)) {
                 try {
-                    return await reader.Read<T>(partialBufferedBodyStream, response.StatusCode, response.Headers, response.Content.Headers, response.RequestMessage!, response, responseEncoding,
+                    return await reader.Read<T>(partiallyBufferedBodyStream, response.StatusCode, response.Headers, response.Content.Headers, response.RequestMessage!, response, responseEncoding,
                         clientConfig, cancellationToken).ConfigureAwait(false);
                 } catch (Exception e) when (e is not OutOfMemoryException) {
                     throw new ProcessingException(e, await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false));
@@ -119,10 +119,10 @@ public partial class WebTarget {
             }
         }
 
-        HttpExceptionParams p = await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false);
+        HttpExceptionParams httpExceptionParams = await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false);
         throw new ProcessingException(new SerializationException(
-                $"Could not find deserializer for response body. You may need to register a new {nameof(MessageBodyReader)} to your {nameof(IHttpClient)}, {nameof(IClientConfig)}, or {nameof(IWebTarget)}. (URI: {p.RequestUrl}, Content-Type: {responseContentType}, .NET type: {typeof(T)})"),
-            p);
+                $"Could not find deserializer for response body. You may need to register a new {nameof(MessageBodyReader)} to your {nameof(IHttpClient)}, {nameof(IClientConfig)}, or {nameof(IWebTarget)}. (URI: {httpExceptionParams.RequestUrl}, Content-Type: {responseContentType}, .NET type: {typeof(T)})"),
+            httpExceptionParams);
     }
 
     /// <exception cref="WebApplicationException">the response status code was not successful</exception>

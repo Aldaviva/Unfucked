@@ -342,6 +342,11 @@ using Unfucked;
         Console.WriteLine(items.Sum()); // no multiple enumerations warning
     }
     ```
+- Convert empty `IEnumerable<T>` to `null` so you can chain them to fallback values or other behavior without multiple enumerations. For example, if you would have concatenated it to another list and copied that to a new list if it were non-empty, you can skip the copy to save time and memory with null coalescing.
+    ```cs
+    ICollection<T> maybeEmpty, defaults;
+    IEnumerable<T> combined = maybeEmpty.EmptyToNull?.Concat(defaults).ToList() ?? defaults;
+    ```
 - Polyfill for [`IList<T>.AsReadOnly`](https://learn.microsoft.com/dotnet/api/system.collections.generic.collectionextensions.asreadonly#system-collections-generic-collectionextensions-asreadonly-1(system-collections-generic-ilist((-0)))), [`IDictionary<K,V>.AsReadOnly`](https://learn.microsoft.com/dotnet/api/system.collections.generic.collectionextensions.asreadonly#system-collections-generic-collectionextensions-asreadonly-2(system-collections-generic-idictionary((-0-1)))), and [`ISet<T>.AsReadOnly`](https://learn.microsoft.com/dotnet/api/system.collections.generic.collectionextensions.asreadonly#system-collections-generic-collectionextensions-asreadonly-1(system-collections-generic-ilist((-0)))) for old .NET versions
     ```cs
     IReadOnlyList<string> roList = new List<string> { "a", "b" }.AsReadOnlyList();
@@ -584,7 +589,7 @@ using Unfucked;
     Version.Parse("1.0.0.0").ToString(1, 4) → "1"       // trims trailing zeros to have [1,4] components
     Version.Parse("1.2.3.4").ToString(1, 4) → "1.2.3.4" // trims trailing zeros to have [1,4] components
     ```
-- Get the program's version number, or print it to stdout and exit with status code 0.
+- Get the program's version number, or both show it in stdout or a message box and exit with status code 0.
     ```cs
     Console.WriteLine(Version.ProgramVersion);
     // prints output like the following to stdout and does not exit
@@ -596,6 +601,7 @@ using Unfucked;
     // useful at the beginning of Main
     Version.PrintProgramVersionAndExitIfRequested();
     // prints output like the following to stdout and exits with return code 0 if started with arguments -v, --version, or -version
+    // if the program is a non-console Windows executable, this is shown in a message box instead
     ```
     ```text
     Version: 5.0.1
@@ -604,13 +610,19 @@ using Unfucked;
     ```
 
 ### XML
-- Fluent methods to read an XML document from an HTTP response body as a mapped object, DOM, LINQ, or XPath
+- Fluent methods to read an XML document from a stream or an HTTP response body as a mapped object, DOM, LINQ, or XPath
     ```cs
     using HttpResponseMessage response = await new HttpClient().GetAsync(url);
     MyClass        obj   = await response.Content.ReadObjectFromXmlAsync<MyClass>();
     XmlDocument    dom   = await response.Content.ReadDomFromXmlAsync();
     XDocument      linq  = await response.Content.ReadLinqFromXmlAsync();
     XPathNavigator xpath = await response.Content.ReadXPathFromXmlAsync();
+
+    using Stream stream = await response.Content.ReadAsStreamAsync();
+    obj   = await XmlExtensions.ReadObjectFromXmlAsync<MyClass>(stream);
+    dom   = await XmlExtensions.ReadDomFromXmlAsync(stream);
+    linq  = await XmlExtensions.ReadLinqFromXmlAsync(stream);
+    xpath = await XmlExtensions.ReadXPathFromXmlAsync(stream);
     ```
 - Find all descendant elements of a parent node which have a given tag name.
     ```cs

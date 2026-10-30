@@ -81,7 +81,7 @@ using Unfucked.HTTP;
     ```
 - Automatic response deserialization to given types from XML, JSON, and pluggable custom representations
     ```cs
-    // automatically mapped from JSON or XML depending on response content type, falling back to content sniffing
+    // automatically mapped from JSON or XML depending on response content type and generic type, falling back to content sniffing response prefix without buffering the entire response into memory
     MyClass response = await http.Target(url).Get<MyClass>();
     ```
     - `HttpResponseMessage` (or just don't pass a generic type parameter to the request method, like `Get()` or `Post()`)
@@ -102,13 +102,14 @@ using Unfucked.HTTP;
         - `XDocument`
         - `XPathNavigator`
         - Any type that can be deserialized from XML
-    - HTML (`AngleSharp`, provided dependency, so must be declared explicitly in library consumer)
+    - HTML ([AngleSharp](https://www.nuget.org/packages/AngleSharp/), provided dependency, so must be declared explicitly in library consumer)
         - `IDocument`
     - `IUtf8SpanParsable`
     - `IParsable`
-    - Any type with a public constructor with a single `string` parameter
-    - Any type with a public static `Parse(string)` method
-- Automatic request serialization from types to XML or JSON, the main benefit of which is to consistently apply serializer options
+    - Any type with a public constructor that takes a single `string` parameter
+    - Any type `T` with a public static `T Parse(string)` method
+    - Any type `T` with a public static `bool TryParse(string, out T?)` method
+- Automatic request serialization from types to XML or JSON, the main benefit of which is to consistently apply serializer options, instead of always forgetting to expose and pass around a shared `JsonSerializerOptions` instance
     ```cs
     await http.Target(url).Post(Entity.json(body));
     ```

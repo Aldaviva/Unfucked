@@ -9,15 +9,16 @@ public sealed class StreamBodyReader: MessageBodyReader {
 
     public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) => typeof(T) == typeof(Stream);
 
-    public async Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
-                                 Encoding? responseEncoding,
-                                 Configurable? clientConfig,
-                                 CancellationToken cancellationToken) {
-
-        return (T) (object) new ResponseDisposingStream(responseBody, response);
+    public Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
+                           Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+        try {
+            return Task.FromResult((T) (object) new ResponseDisposingStream(responseBody, response));
+        } catch (Exception exception) {
+            return Task.FromException<T>(exception);
+        }
     }
 
-    internal sealed class ResponseDisposingStream(Stream actualStream, IDisposable alsoDispose): Stream {
+    private sealed class ResponseDisposingStream(Stream actualStream, IDisposable alsoDispose): Stream {
 
         public override bool CanRead => actualStream.CanRead;
         public override bool CanSeek => actualStream.CanSeek;

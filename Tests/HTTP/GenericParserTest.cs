@@ -8,7 +8,7 @@ namespace Tests.HTTP;
 
 public class GenericParserTest {
 
-    private readonly GenericBodyReader reader = new(new StringBodyReader());
+    private readonly GenericBodyReader reader = new();
 
     [Fact]
     public async Task ParseVersion() {

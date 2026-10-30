@@ -14,13 +14,12 @@ public partial class WebTarget {
     private static readonly IReadOnlyList<MessageBodyReader> DEFAULT_MESSAGE_BODY_READERS;
 
     static WebTarget() {
-        StringBodyReader stringBodyReader = new();
         List<MessageBodyReader> defaultMessageBodyReaders = [
             new StreamBodyReader(),
             new ByteArrayBodyReader.ReadOnlyMemoryBodyReader(),
             new ByteArrayBodyReader.MemoryBodyReader(),
             new ByteArrayBodyReader(),
-            stringBodyReader,
+            new StringBodyReader(),
             new JsonBodyReader(),
             new XmlBodyReader.XDocumentReader(),
             new XmlBodyReader.XmlDocumentReader(),
@@ -34,7 +33,7 @@ public partial class WebTarget {
             // library consumer doesn't depend on AngleSharp, so skip this reader
         }
 
-        defaultMessageBodyReaders.Add(new GenericBodyReader(stringBodyReader));
+        defaultMessageBodyReaders.Add(new GenericBodyReader());
 
         DEFAULT_MESSAGE_BODY_READERS = defaultMessageBodyReaders.AsReadOnlyList();
     }

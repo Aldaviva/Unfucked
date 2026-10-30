@@ -11,7 +11,7 @@ using System.Net.Mime;
 
 namespace Unfucked.HTTP.Serialization;
 
-public sealed class JsonBodyReader: MessageBodyReader {
+public sealed class JsonBodyReader: PrefixDetectingMessageBodyReader {
 
     private const string APPLICATION_JSON_MEDIA_TYPE =
 #if NET6_0_OR_GREATER
@@ -28,7 +28,7 @@ public sealed class JsonBodyReader: MessageBodyReader {
     };
 
     /// <inheritdoc />
-    public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) =>
+    public override bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) =>
         typeof(T) == typeof(JsonDocument) ||
         typeof(T) == typeof(JsonNode) ||
         typeof(T) == typeof(JsonObject) ||
@@ -47,8 +47,8 @@ public sealed class JsonBodyReader: MessageBodyReader {
      */
     /// <inheritdoc />
     /// <exception cref="JsonException"></exception>
-    public async Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
-                                 Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+    public override async Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
+                                          Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
         JsonSerializerOptions jsonOptions = (clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions)!;
 
         return (await JsonSerializer.DeserializeAsync<T>(responseBody, jsonOptions, cancellationToken).ConfigureAwait(false))!;

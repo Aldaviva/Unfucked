@@ -1,7 +1,6 @@
 using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Io;
-using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using Unfucked.Caching;
@@ -9,7 +8,7 @@ using Unfucked.HTTP.Config;
 
 namespace Unfucked.HTTP.Serialization;
 
-public sealed class HtmlDocumentReader: MessageBodyReader {
+public sealed class HtmlDocumentReader: AbstractMessageBodyReader {
 
     private static readonly InMemoryCache<string, IBrowsingContext> BROWSERS_BY_USER_AGENT = new(new CacheOptions { ExpireAfterRead = new TimeSpan(15) }, (userAgent, _) =>
         new ValueTask<IBrowsingContext>(BrowsingContext.New(Configuration.Default.With(new DefaultHttpRequester(userAgent)).WithDefaultLoader())));
@@ -18,21 +17,22 @@ public sealed class HtmlDocumentReader: MessageBodyReader {
         BROWSERS_BY_USER_AGENT.Removal += (_, _, value, _) => value.Dispose();
     }
 
-    public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) => typeof(T) == typeof(IDocument);
+    public override bool CanRead<T>(MediaTypeHeaderValue? contentType) => typeof(T) == typeof(IDocument);
 
-    public async Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
-                                 Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
-        IBrowsingContext browser = await BROWSERS_BY_USER_AGENT.Get(request.Headers.UserAgent.ToString(), cancellationToken: cancellationToken).ConfigureAwait(false);
+    public override async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+        IBrowsingContext browser = await BROWSERS_BY_USER_AGENT.Get(response.RequestMessage?.Headers.UserAgent.ToString() ?? string.Empty, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        Stream bodyStream = await GetBodyStream(response, cancellationToken);
 
         return (T) await browser.OpenAsync(virtualResponse => {
-            if (request.RequestUri is {} uri) {
+            if (response.RequestMessage?.RequestUri is {} uri) {
                 virtualResponse.Address(uri);
             }
 
             virtualResponse
-                .Status(status)
-                .Headers(headers.Concat(bodyHeaders).ToDictionary(pair => pair.Key, pair => pair.Value.Join(", ")))
-                .Content(responseBody, true);
+                .Status(response.StatusCode)
+                .Headers(response.Headers.Concat(response.Content.Headers).ToDictionary(pair => pair.Key, pair => pair.Value.Join(", ")))
+                .Content(bodyStream, true);
         }, cancellationToken).ConfigureAwait(false);
     }
 

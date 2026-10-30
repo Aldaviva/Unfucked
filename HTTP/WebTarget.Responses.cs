@@ -56,17 +56,9 @@ public partial class WebTarget {
 
         foreach (MessageBodyReader reader in messageBodyReaders) {
             cancellationToken.ThrowIfCancellationRequested();
-            if (reader.CanRead<T>(responseContentType, null)) {
+            if (reader.CanRead<T>(responseContentType)) {
                 try {
-                    Task<Stream> responseBodyStream = response.Content
-#if NET5_0_OR_GREATER
-                        .ReadAsStreamAsync(cancellationToken);
-#else
-                        .ReadAsStreamAsync();
-#endif
-
-                    return await reader.Read<T>(await responseBodyStream.ConfigureAwait(false), response.StatusCode, response.Headers, response.Content.Headers, response.RequestMessage!, response,
-                        responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
+                    return await reader.Read<T>(response, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
                 } catch (Exception e) when (e is not OutOfMemoryException) {
                     throw new ProcessingException(e, await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false));
                 }
@@ -107,7 +99,7 @@ public partial class WebTarget {
         string bodyPrefix = new string(prefixBuffer, 0, prefixLengthChars).Trim();
         partiallyBufferedBodyStream.Position = 0;
 
-        foreach (MessageBodyReader reader in messageBodyReaders) {
+        foreach (PrefixDetectingMessageBodyReader reader in messageBodyReaders.OfType<PrefixDetectingMessageBodyReader>()) {
             cancellationToken.ThrowIfCancellationRequested();
             if (reader.CanRead<T>(responseContentType, bodyPrefix)) {
                 try {

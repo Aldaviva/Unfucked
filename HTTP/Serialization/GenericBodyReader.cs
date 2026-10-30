@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Net;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -16,7 +15,7 @@ using ConstructorMethod =
 namespace Unfucked.HTTP.Serialization;
 
 /// <summary>Can parse types like <see cref="Version"/> or <see cref="Uri"/> from strings</summary>
-public sealed class GenericBodyReader(StringBodyReader stringBodyReader): MessageBodyReader {
+public sealed class GenericBodyReader(StringBodyReader stringBodyReader): AbstractMessageBodyReader {
 
     private static readonly Lazy<ConcurrentDictionary<Type, ConstructorMethod?>> CONSTRUCTOR_CACHE     = new(LazyThreadSafetyMode.PublicationOnly);
     private static readonly Lazy<ConcurrentDictionary<Type, object?>>            PARSE_METHOD_CACHE    = new(LazyThreadSafetyMode.PublicationOnly); // type of value is ParseString<T>?
@@ -39,7 +38,7 @@ public sealed class GenericBodyReader(StringBodyReader stringBodyReader): Messag
     private delegate bool TryParseString<T>(string serialized, out T? parsed);
 
     /// <inheritdoc />
-    public bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) =>
+    public override bool CanRead<T>(MediaTypeHeaderValue? contentType) =>
 #if NET8_0_OR_GREATER
         ((contentType?.CharSet?.Replace("-", string.Empty).Equals(Encoding.UTF8.BodyName, StringComparison.OrdinalIgnoreCase) ?? true) &&
             UTF8_SPAN_PARSER_CACHE.Value.GetOrAdd(typeof(T), _ => FindUtf8SpanParser<T>()) != null) ||
@@ -53,13 +52,13 @@ public sealed class GenericBodyReader(StringBodyReader stringBodyReader): Messag
 
     /// <inheritdoc />
     /// <exception cref="SerializationException"></exception>
-    public async Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
-                                 Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
+    public override async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
 #if NET8_0_OR_GREATER
         if (((responseEncoding?.Equals(Encoding.UTF8) ?? true) || responseEncoding.Equals(Encoding.ASCII)) &&
             UTF8_SPAN_PARSER_CACHE.Value.GetOrAdd(typeof(T), _ => FindUtf8SpanParser<T>()) is ParseUtf8Span<T> utf8SpanParser) {
+            Stream       bodyStream = await GetBodyStream(response, cancellationToken);
             MemoryStream bodyBuffer = new();
-            await responseBody.CopyToAsync(bodyBuffer, int.MaxValue, cancellationToken).ConfigureAwait(false);
+            await bodyStream.CopyToAsync(bodyBuffer, int.MaxValue, cancellationToken).ConfigureAwait(false);
             ReadOnlySpan<byte> bodySpan = bodyBuffer.GetBuffer().AsSpan(0, (int) bodyBuffer.Length);
             return utf8SpanParser(bodySpan, null);
         }
@@ -67,12 +66,18 @@ public sealed class GenericBodyReader(StringBodyReader stringBodyReader): Messag
 
 #if NET7_0_OR_GREATER
         if (STRING_PARSER_CACHE.Value.GetOrAdd(typeof(T), _ => FindStringParser<T>()) is ParseStringWithFormat<T> stringParser) {
-            return stringParser(await readBodyAsString().ConfigureAwait(false), null);
+            string stringBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            return stringParser(stringBody, null);
         }
 #endif
 
         if (CONSTRUCTOR_CACHE.Value.GetOrAdd(typeof(T), FindConstructor) is {} constructor) {
-            string stringBody = await readBodyAsString().ConfigureAwait(false);
+            string stringBody = await response.Content.ReadAsStringAsync(
+#if NET5_0_OR_GREATER
+                cancellationToken
+#endif
+            ).ConfigureAwait(false);
+
             return (T)
 #if NET8_0_OR_GREATER
                 constructor.Invoke(stringBody);
@@ -82,19 +87,26 @@ public sealed class GenericBodyReader(StringBodyReader stringBodyReader): Messag
         }
 
         if (PARSE_METHOD_CACHE.Value.GetOrAdd(typeof(T), _ => FindParseMethod<T>()) is ParseString<T> parseMethod) {
-            return parseMethod(await readBodyAsString().ConfigureAwait(false));
+            string stringBody = await response.Content.ReadAsStringAsync(
+#if NET5_0_OR_GREATER
+                cancellationToken
+#endif
+            ).ConfigureAwait(false);
+
+            return parseMethod(stringBody);
         }
 
         if (TRYPARSE_METHOD_CACHE.Value.GetOrAdd(typeof(T), _ => FindTryParseMethod<T>()) is TryParseString<T> tryParseMethod) {
-            string raw = await readBodyAsString().ConfigureAwait(false);
-            return tryParseMethod(raw, out T? parsed) ? parsed! : throw new SerializationException($"{typeof(T).FullName}.TryParse failed to deserialize '{raw}'");
+            string stringBody = await response.Content.ReadAsStringAsync(
+#if NET5_0_OR_GREATER
+                cancellationToken
+#endif
+            ).ConfigureAwait(false);
+
+            return tryParseMethod(stringBody, out T? parsed) ? parsed! : throw new SerializationException($"{typeof(T).FullName}.TryParse failed to deserialize '{stringBody}'");
         }
 
         throw new SerializationException($"{typeof(T).FullName} can be deserialized with neither IUtf8SpanParsable.Parse nor IParsable.Parse nor new(string) nor static Parse(string)");
-
-        async Task<string> readBodyAsString() {
-            return await stringBodyReader.Read<string>(responseBody, status, headers, bodyHeaders, request, response, responseEncoding, clientConfig, cancellationToken).ConfigureAwait(false);
-        }
     }
 
 #if NET8_0_OR_GREATER

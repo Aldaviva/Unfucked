@@ -17,10 +17,9 @@ public class GenericParserTest {
         using HttpResponseMessage httpResponseMessage = new()
             { Content = new ByteArrayContent(httpResponseBody) { Headers = { ContentType = MediaTypeHeaderValue.Parse("text/plain; charset=UTF-8") } } };
 
-        reader.CanRead<Version>(null, null).Should().BeTrue();
+        reader.CanRead<Version>(null).Should().BeTrue();
 
-        Version actual = await reader.Read<Version>(await httpResponseMessage.Content.ReadAsStreamAsync(), httpResponseMessage.StatusCode, httpResponseMessage.Headers,
-            httpResponseMessage.Content.Headers, httpResponseMessage.RequestMessage!, httpResponseMessage, null, null, CancellationToken.None);
+        Version actual = await reader.Read<Version>(httpResponseMessage, null, null, CancellationToken.None);
         actual.Should().Be(new Version(2, 16, 2));
     }
 
@@ -30,10 +29,9 @@ public class GenericParserTest {
 
         using HttpResponseMessage httpResponseMessage = new() { Content = new StringContent(responseBody) };
 
-        reader.CanRead<bool>(null, null).Should().BeTrue();
+        reader.CanRead<bool>(null).Should().BeTrue();
 
-        bool actual = await reader.Read<bool>(await httpResponseMessage.Content.ReadAsStreamAsync(), httpResponseMessage.StatusCode, httpResponseMessage.Headers, httpResponseMessage.Content.Headers,
-            httpResponseMessage.RequestMessage!, httpResponseMessage, null, null, CancellationToken.None);
+        bool actual = await reader.Read<bool>(httpResponseMessage, null, null, CancellationToken.None);
         actual.Should().BeTrue();
     }
 
@@ -43,10 +41,9 @@ public class GenericParserTest {
 
         using HttpResponseMessage httpResponseMessage = new() { Content = new StringContent(responseBody) };
 
-        reader.CanRead<Uri>(null, null).Should().BeTrue();
+        reader.CanRead<Uri>(null).Should().BeTrue();
 
-        Uri actual = await reader.Read<Uri>(await httpResponseMessage.Content.ReadAsStreamAsync(), httpResponseMessage.StatusCode, httpResponseMessage.Headers, httpResponseMessage.Content.Headers,
-            httpResponseMessage.RequestMessage!, httpResponseMessage, null, null, CancellationToken.None);
+        Uri actual = await reader.Read<Uri>(httpResponseMessage, null, null, CancellationToken.None);
         actual.Host.Should().Be("aldaviva.com");
     }
 
@@ -56,10 +53,9 @@ public class GenericParserTest {
 
         using HttpResponseMessage httpResponseMessage = new() { Content = new StringContent(responseBody) };
 
-        reader.CanRead<PhysicalAddress>(null, null).Should().BeTrue();
+        reader.CanRead<PhysicalAddress>(null).Should().BeTrue();
 
-        PhysicalAddress actual = await reader.Read<PhysicalAddress>(await httpResponseMessage.Content.ReadAsStreamAsync(), httpResponseMessage.StatusCode, httpResponseMessage.Headers,
-            httpResponseMessage.Content.Headers, httpResponseMessage.RequestMessage!, httpResponseMessage, null, null, CancellationToken.None);
+        PhysicalAddress actual = await reader.Read<PhysicalAddress>(httpResponseMessage, null, null, CancellationToken.None);
         actual.Should().Be(new PhysicalAddress([0x11, 0x22, 0x33, 0x44, 0x55, 0x66]));
     }
 

@@ -17,10 +17,16 @@ public sealed class ParsedJsonDocumentBodyReader: AbstractMessageBodyReader {
 
     private static readonly Lazy<ConcurrentDictionary<Type, MethodInfo?>> PARSERS = new(LazyThreadSafetyMode.PublicationOnly);
 
+    // Don't inline: this ensures Corvus.Text.Json is on the assembly path, otherwise fail early so WebTarget.Responses can exclude this reader rather than crashing at HTTP response time
+    private static readonly Type PARSEDJSONDOCUMENT_TYPE = typeof(ParsedJsonDocument<>);
+
+    /// <see href="https://csharpindepth.com/Articles/BeforeFieldInit"/>
+    static ParsedJsonDocumentBodyReader() {}
+
     /// <inheritdoc />
     public override bool CanRead<T>(MediaTypeHeaderValue? contentType) =>
         PARSERS.Value.GetOrAdd(typeof(T), type => typeof(IJsonElement<>).MakeGenericType(typeof(T)).IsAssignableFrom(type)
-            ? typeof(ParsedJsonDocument<>).MakeGenericType(type).GetMethod("ParseAsync", BindingFlags.Public | BindingFlags.Static, null,
+            ? PARSEDJSONDOCUMENT_TYPE.MakeGenericType(type).GetMethod("ParseAsync", BindingFlags.Public | BindingFlags.Static, null,
                 [typeof(Stream), typeof(JsonDocumentOptions), typeof(CancellationToken)], null)
             : null) != null;
 

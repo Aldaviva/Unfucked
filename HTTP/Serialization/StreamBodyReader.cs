@@ -6,8 +6,10 @@ namespace Unfucked.HTTP.Serialization;
 
 public sealed class StreamBodyReader: AbstractMessageBodyReader {
 
+    /// <inheritdoc />
     public override bool CanRead<T>(MediaTypeHeaderValue? contentType) => typeof(T) == typeof(Stream);
 
+    /// <inheritdoc />
     public override async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) =>
         (T) (object) new ResponseDisposingStream(await GetBodyStream(response, cancellationToken), response);
 

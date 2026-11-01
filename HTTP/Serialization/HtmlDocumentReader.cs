@@ -17,8 +17,10 @@ public sealed class HtmlDocumentReader: AbstractMessageBodyReader {
         BROWSERS_BY_USER_AGENT.Removal += (_, _, value, _) => value.Dispose();
     }
 
+    /// <inheritdoc />
     public override bool CanRead<T>(MediaTypeHeaderValue? contentType) => typeof(T) == typeof(IDocument);
 
+    /// <inheritdoc />
     public override async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
         IBrowsingContext browser = await BROWSERS_BY_USER_AGENT.Get(response.RequestMessage?.Headers.UserAgent.ToString() ?? string.Empty, cancellationToken: cancellationToken).ConfigureAwait(false);
 

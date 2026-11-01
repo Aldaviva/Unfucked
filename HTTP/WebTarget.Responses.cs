@@ -33,6 +33,12 @@ public partial class WebTarget {
             // library consumer doesn't depend on AngleSharp, so skip this reader
         }
 
+        try {
+            defaultMessageBodyReaders.Add(new ParsedJsonDocumentBodyReader());
+        } catch (TypeInitializationException) {
+            // library consumer doesn't depend on Corvus.Text.Json, so skip this reader
+        }
+
         defaultMessageBodyReaders.Add(new GenericBodyReader());
 
         DEFAULT_MESSAGE_BODY_READERS = defaultMessageBodyReaders.AsReadOnlyList();

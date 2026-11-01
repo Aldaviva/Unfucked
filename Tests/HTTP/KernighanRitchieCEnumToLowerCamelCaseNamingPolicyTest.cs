@@ -56,10 +56,7 @@ public class KernighanRitchieCEnumToLowerCamelCaseNamingPolicyTest {
     [SuppressMessage("ReSharper", "InconsistentNaming")] // this exact spelling is the point of this class and its test
     private enum MyEnum {
 
-        NO,
-        YES,
-        MAYBE,
-        YES_OR_MAYBE
+        NO, YES, MAYBE, YES_OR_MAYBE
 
     }
 
@@ -76,15 +73,41 @@ public class KernighanRitchieCEnumToLowerCamelCaseNamingPolicyTest {
     [InlineData("FOO_BAR_BAZ", "fooBarBaz")]
     [InlineData("_foo_bar_baz", "_fooBarBaz")]
     [InlineData("__8021X", "__8021X")]
-    public void CamelCaseSerializing(string input, string expected) {
-        string actual = NAMING_POLICY.ConvertName(input);
-        actual.Should().Be(expected);
+    public void LowerCamelCaseSerializing(string csharpName, string jsonName) {
+        string actual = NAMING_POLICY.ConvertName(csharpName);
+        actual.Should().Be(jsonName);
     }
+
+    [Theory, MemberData(nameof(CustomizableSerializingData))]
+    public void CustomizableSerializing(JsonNamingPolicy? jsonNamingPolicy, string csharpName, string jsonName) {
+        new KernighanRitchieCEnumToLowerCamelCaseNamingPolicy(jsonNamingPolicy).ConvertName(csharpName).Should().Be(jsonName);
+    }
+
+    public static TheoryData<JsonNamingPolicy?, string, string> CustomizableSerializingData => new() {
+        { null, "active", "active" },
+        { null, "GO_LIVE", "goLive" },
+        { null, "GoLive", "goLive" },
+        { JsonNamingPolicy.CamelCase, "active", "active" },
+        { JsonNamingPolicy.CamelCase, "GO_LIVE", "goLive" },
+        { JsonNamingPolicy.CamelCase, "GoLive", "goLive" },
+        { JsonNamingPolicy.KebabCaseLower, "active", "active" },
+        { JsonNamingPolicy.KebabCaseLower, "GO_LIVE", "go-live" },
+        { JsonNamingPolicy.KebabCaseLower, "GoLive", "go-live" },
+        { JsonNamingPolicy.KebabCaseUpper, "active", "ACTIVE" },
+        { JsonNamingPolicy.KebabCaseUpper, "GO_LIVE", "GO-LIVE" },
+        { JsonNamingPolicy.KebabCaseUpper, "GoLive", "GO-LIVE" },
+        { JsonNamingPolicy.SnakeCaseLower, "active", "active" },
+        { JsonNamingPolicy.SnakeCaseLower, "GO_LIVE", "go_live" },
+        { JsonNamingPolicy.SnakeCaseLower, "GoLive", "go_live" },
+        { JsonNamingPolicy.SnakeCaseUpper, "active", "ACTIVE" },
+        { JsonNamingPolicy.SnakeCaseUpper, "GO_LIVE", "GO_LIVE" },
+        { JsonNamingPolicy.SnakeCaseUpper, "GoLive", "GO_LIVE" },
+    };
 
     [Theory]
     [MemberData(nameof(CamelCaseSerializingRealWorldData))]
-    public void CamelCaseSerializingRealWorld(string input, string expected) {
-        CamelCaseSerializing(input, expected);
+    public void CamelCaseSerializingRealWorld(string csharpName, string jsonName) {
+        LowerCamelCaseSerializing(csharpName, jsonName);
     }
 
     public static TheoryData<string, string> CamelCaseSerializingRealWorldData => new() {

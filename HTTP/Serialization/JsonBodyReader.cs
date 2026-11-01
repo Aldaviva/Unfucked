@@ -51,15 +51,19 @@ public sealed class JsonBodyReader: PrefixDetectingMessageBodyReader {
                                           Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
         JsonSerializerOptions jsonOptions = (clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions)!;
 
+        // parser assumes and requires response body encoding to be UTF-8
         return (await JsonSerializer.DeserializeAsync<T>(responseBody, jsonOptions, cancellationToken).ConfigureAwait(false))!;
     }
 
 }
 
 /// <summary>
-/// Serialize enums to JSON which have C-style (UPPER_SNAKE_CASE) value names in C#, such as <c>MY_ENUM</c>, which would get serialized to <c>myEnum</c>. Also handles other cases like UpperTitleCase and lowerTitleCase. Deserialization is permissive.
+/// <para>Serialize Kernighan &amp; Ritchie C-style UPPER_SNAKE_CASE C# enums (like <c>MY_ENUM</c>) to various customizable JSON forms, such as <c>myEnum</c> or <c>my-enum</c>. Also handles other C# cases like UpperTitleCase and lowerTitleCase.</para>
+/// <para>This is an improved alternative to <see cref="JsonStringEnumConverter"/> that doesn't require C# enums to always be named in UpperCamelCase or lowerCamelCase.</para>
+/// <para>The JSON form of the enum name defaults to lowerCamelCase, such as <c>myEnum</c>, but can be customized by specifying <paramref name="jsonNamingPolicy"/>.</para>
 /// </summary>
-internal sealed class KernighanRitchieCEnumToLowerCamelCaseNamingPolicy: JsonNamingPolicy {
+/// <param name="jsonNamingPolicy">Controls the style of the JSON names. Defaults to lowerCamelCase JSON names when <c>null</c>. For example, to serialize the C# enum <c>MY_ENUM</c> as <c>my-enum</c> instead, set this argument to <see cref="JsonNamingPolicy.KebabCaseLower"/>.</param>
+public sealed class KernighanRitchieCEnumToLowerCamelCaseNamingPolicy(JsonNamingPolicy? jsonNamingPolicy = null): JsonNamingPolicy {
 
     /// <inheritdoc />
     public override string ConvertName(string name) {
@@ -86,11 +90,14 @@ internal sealed class KernighanRitchieCEnumToLowerCamelCaseNamingPolicy: JsonNam
             isNewWord             = char.IsNumber(c);
         }
 
+        string lowerCamelCaseName =
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1_OR_GREATER
-        return new string(output[..outputIndex]);
+            new(output[..outputIndex]);
 #else
-        return new string(output.Slice(0, outputIndex).ToArray());
+            new(output.Slice(0, outputIndex).ToArray());
 #endif
+
+        return jsonNamingPolicy?.Equals(CamelCase) ?? true ? lowerCamelCaseName : jsonNamingPolicy.ConvertName(lowerCamelCaseName);
     }
 
 }

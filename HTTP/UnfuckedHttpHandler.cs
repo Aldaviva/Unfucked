@@ -192,7 +192,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 
     [Pure]
     public bool Property<T>(PropertyKey<T> key,
-#if !NETSTANDARD2_0
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER
                             [NotNullWhen(true)]
 #endif
                             out T? existingValue) where T: notnull => ClientConfig.Property(key, out existingValue);

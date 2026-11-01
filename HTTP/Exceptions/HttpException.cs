@@ -9,7 +9,7 @@ namespace Unfucked.HTTP.Exceptions;
 /// Base exception class for all network, filtering, deserialization, and HTTP status code errors
 /// </summary>
 public abstract class HttpException(HttpStatusCode? status, string message, Exception? cause, HttpExceptionParams exceptionParams): HttpRequestException(MessageChain(message, cause), cause
-#if !NETSTANDARD2_0
+#if NET5_0_OR_GREATER
     , status
 #endif
 ) {
@@ -68,7 +68,7 @@ public sealed record HttpExceptionParams(
                 response.Content.ReadAsByteArrayAsync();
 #endif
             responseBody = (await readAsByteArrayAsync.ConfigureAwait(false)).AsMemory();
-        } catch (InvalidOperationException) {
+        } catch (InvalidOperationException) {} catch (InvalidDataException) {
             // leave responseBody null
         }
 

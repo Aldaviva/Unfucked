@@ -6,15 +6,19 @@ namespace Unfucked.HTTP.Serialization;
 
 public sealed class ByteArrayBodyReader: MessageBodyReader {
 
+    /// <inheritdoc />
     public bool CanRead<T>(MediaTypeHeaderValue? contentType) => typeof(T) == typeof(byte[]);
 
+    /// <inheritdoc />
     public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) =>
         (T) (object) await ReadByteArray(response, cancellationToken).ConfigureAwait(false);
 
     public sealed class MemoryBodyReader: MessageBodyReader {
 
+        /// <inheritdoc />
         public bool CanRead<T>(MediaTypeHeaderValue? contentType) => typeof(T) == typeof(Memory<byte>);
 
+        /// <inheritdoc />
         public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) =>
             (T) (object) (await ReadByteArray(response, cancellationToken).ConfigureAwait(false)).AsMemory();
 
@@ -22,8 +26,10 @@ public sealed class ByteArrayBodyReader: MessageBodyReader {
 
     public sealed class ReadOnlyMemoryBodyReader: MessageBodyReader {
 
+        /// <inheritdoc />
         public bool CanRead<T>(MediaTypeHeaderValue? contentType) => typeof(T) == typeof(ReadOnlyMemory<byte>);
 
+        /// <inheritdoc />
         public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) =>
             (T) (object) new ReadOnlyMemory<byte>(await ReadByteArray(response, cancellationToken).ConfigureAwait(false));
 

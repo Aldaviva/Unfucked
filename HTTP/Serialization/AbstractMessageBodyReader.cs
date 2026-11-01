@@ -8,7 +8,10 @@ namespace Unfucked.HTTP.Serialization;
 /// <inheritdoc />
 public abstract class AbstractMessageBodyReader: MessageBodyReader {
 
-    /// <summary>Open the HTTP response body as a stream of bytes.</summary>
+    /// <summary>
+    /// <para>Open the HTTP response body as a stream of bytes.</para>
+    /// <para>You don't need to <see cref="IDisposable.Dispose"/> the returned <see cref="Stream"/>, because <see cref="WebTarget.ParseAndDisposeResponseBody"/> will do so automatically.</para>
+    /// </summary>
     /// <param name="response">HTTP response.</param>
     /// <param name="cancellationToken">Cancel.</param>
     /// <returns>HTTP response body byte stream.</returns>

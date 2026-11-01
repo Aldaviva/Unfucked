@@ -17,7 +17,7 @@ public sealed class XmlBodyReader: PrefixDetectingMessageBodyReader {
 #else
         "application/xml";
 #endif
-
+    /// <inheritdoc />
     public override bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) =>
         contentType?.MediaType == MediaTypeNames.Text.Xml ||
         contentType?.MediaType == APPLICATION_XML_MEDIA_TYPE ||
@@ -29,6 +29,7 @@ public sealed class XmlBodyReader: PrefixDetectingMessageBodyReader {
             bodyPrefix.Contains("xmlns", StringComparison.OrdinalIgnoreCase) ||
             bodyPrefix.Contains("<!doctype", StringComparison.OrdinalIgnoreCase)));
 
+    /// <inheritdoc />
     public override Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
                                     Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
         try {
@@ -40,8 +41,10 @@ public sealed class XmlBodyReader: PrefixDetectingMessageBodyReader {
 
     public sealed class XmlDocumentReader: MessageBodyReader {
 
+        /// <inheritdoc />
         public bool CanRead<T>(MediaTypeHeaderValue? contentType) => typeof(T) == typeof(XmlDocument);
 
+        /// <inheritdoc />
         /// <exception cref="XmlException"></exception>
         public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) =>
             (T) (object) await response.Content.ReadDomFromXmlAsync(responseEncoding, cancellationToken).ConfigureAwait(false);
@@ -50,8 +53,10 @@ public sealed class XmlBodyReader: PrefixDetectingMessageBodyReader {
 
     public sealed class XDocumentReader: MessageBodyReader {
 
+        /// <inheritdoc />
         public bool CanRead<T>(MediaTypeHeaderValue? contentType) => typeof(T) == typeof(XDocument);
 
+        /// <inheritdoc />
         public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) =>
             (T) (object) await response.Content.ReadLinqFromXmlAsync(responseEncoding, cancellationToken: cancellationToken).ConfigureAwait(false);
 
@@ -59,8 +64,10 @@ public sealed class XmlBodyReader: PrefixDetectingMessageBodyReader {
 
     public sealed class XPathReader: MessageBodyReader {
 
+        /// <inheritdoc />
         public bool CanRead<T>(MediaTypeHeaderValue? contentType) => typeof(T) == typeof(XPathNavigator);
 
+        /// <inheritdoc />
         /// <exception cref="XmlException"></exception>
         public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) =>
             (T) (object) await response.Content.ReadXPathFromXmlAsync(responseEncoding, cancellationToken).ConfigureAwait(false);

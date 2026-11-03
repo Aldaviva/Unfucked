@@ -85,8 +85,8 @@ public sealed record HttpExceptionParams(
 /// <summary>
 /// Unsuccessful HTTP status code
 /// </summary>
-public class WebApplicationException(HttpStatusCode status, string reasonPhrase, HttpExceptionParams exceptionParams)
-    : HttpException(status, $"{(int) status} {(reasonPhrase.HasText ? reasonPhrase : status.ToString())} from {exceptionParams?.RequestUrl}", null, exceptionParams!) {
+public class WebApplicationException(HttpStatusCode status, string reasonPhrase, string message, HttpExceptionParams exceptionParams)
+    : HttpException(status, message, null, exceptionParams!) {
 
     public string ReasonPhrase => reasonPhrase;
     public HttpResponseHeaders ResponseHeaders => HttpExceptionParams.ResponseHeaders!;
@@ -97,6 +97,10 @@ public class WebApplicationException(HttpStatusCode status, string reasonPhrase,
         new
 #endif
         HttpStatusCode StatusCode => status;
+
+    /// <inheritdoc />
+    public WebApplicationException(HttpStatusCode status, string reasonPhrase, HttpExceptionParams exceptionParams): this(status, reasonPhrase,
+        $"{(int) status} {(reasonPhrase.HasText ? reasonPhrase : status.ToString())} from {exceptionParams?.RequestUrl}", exceptionParams!) {}
 
 }
 
@@ -129,7 +133,7 @@ public sealed class NotSupportedException(string? reasonPhrase, HttpExceptionPar
     : ClientErrorException(HttpStatusCode.UnsupportedMediaType, reasonPhrase ?? "Unsupported Media Type", exceptionParams);
 
 /// <summary>500–599</summary>
-public class ServerErrorException(HttpStatusCode statusCode, string reasonPhrase, HttpExceptionParams exceptionParams): WebApplicationException(statusCode, reasonPhrase, exceptionParams);
+public class ServerErrorException(HttpStatusCode status, string reasonPhrase, HttpExceptionParams exceptionParams): WebApplicationException(status, reasonPhrase, exceptionParams);
 
 /// <summary>500</summary>
 public sealed class InternalServerErrorException(string? reasonPhrase, HttpExceptionParams exceptionParams)
@@ -140,8 +144,9 @@ public sealed class ServiceUnavailableException(string? reasonPhrase, HttpExcept
     : ServerErrorException(HttpStatusCode.ServiceUnavailable, reasonPhrase ?? "Service Unavailable", exceptionParams);
 
 /// <summary>300–399</summary>
-public sealed class RedirectionException(HttpStatusCode statusCode, Uri? destination, string reasonPhrase, HttpExceptionParams exceptionParams)
-    : WebApplicationException(statusCode, reasonPhrase, exceptionParams) {
+public sealed class RedirectionException(HttpStatusCode status, Uri? destination, string reasonPhrase, HttpExceptionParams exceptionParams)
+    : WebApplicationException(status, reasonPhrase, $"{(int) status} {(reasonPhrase.HasText ? reasonPhrase : status.ToString())} from {exceptionParams?.RequestUrl} to {destination}",
+        exceptionParams!) {
 
     public Uri? Destination { get; } = destination;
 

@@ -37,16 +37,19 @@ public interface IUnfuckedHttpHandler: Configurable<IUnfuckedHttpHandler> {
 
 public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
 
-    private static readonly ConcurrentDictionary<int, WeakReference<IUnfuckedHttpHandler>?> HTTP_CLIENT_HANDLER_CACHE = new();
+    private static readonly  ConcurrentDictionary<int, WeakReference<IUnfuckedHttpHandler>?> HTTP_CLIENT_HANDLER_CACHE = new();
+    private static readonly  TimeSpan                                                        DEFAULT_TIMEOUT           = new(0, 0, 30);
+    internal static readonly string                                                          RequestTimedOutProperty   = $"{typeof(UnfuckedHttpHandler).Namespace}.timedOut";
 
     private static readonly Lazy<FieldInfo> HTTP_CLIENT_HANDLER_FIELD = new(static () => typeof(HttpMessageInvoker).GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
         .First(static field => field.FieldType == typeof(HttpMessageHandler)), LazyThreadSafetyMode.PublicationOnly);
 
-    private readonly FilterContext baseFilterContext;
-    private readonly bool          disposeInnerHandler;
+    private readonly FilterContext                                                         baseFilterContext;
+    private readonly bool                                                                  disposeInnerHandler = true;
+    private readonly Lazy<ConcurrentDictionary<HandlerSettings, DelegatingHandlerWrapper>> alternativeHandlers = new();
 
 #if NET8_0_OR_GREATER
-    private readonly IMeterFactory? wireLoggingMeterFactory;
+    private IMeterFactory? wireLoggingMeterFactory;
 #endif
 
     private bool disposed;
@@ -74,30 +77,14 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
     public UnfuckedHttpHandler(): this(null) {}
 
     // HttpClientHandler automatically uses SocketsHttpHandler on .NET Core ≥ 2.1, or HttpClientHandler otherwise
-    public UnfuckedHttpHandler(HttpMessageHandler? innerHandler = null, IClientConfig? configuration = null): base(innerHandler ??
-#if NETCOREAPP2_1_OR_GREATER
-        new SocketsHttpHandler {
-            PooledConnectionLifetime = TimeSpan.FromHours(1),
-            ConnectTimeout           = TimeSpan.FromSeconds(10),
-            AutomaticDecompression   = DecompressionMethods.All,
-            // MaxConnectionsPerServer defaults to MAX_INT, so we don't need to increase it here
-#if NET8_0_OR_GREATER
-            MeterFactory = new WireLogFilter.WireLoggingMeterFactory()
-#endif
-        }
-#else
-        new HttpClientHandler { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate }
-#endif
-    ) {
-        ClientConfig        = configuration ?? new ClientConfig();
-        baseFilterContext   = new FilterContext(this, ClientConfig);
-        disposeInnerHandler = innerHandler == null;
+    public UnfuckedHttpHandler(HttpMessageHandler? innerHandler = null, IClientConfig? configuration = null) {
+        ClientConfig      = configuration ?? new ClientConfig();
+        baseFilterContext = new FilterContext(this, ClientConfig);
 
-#if NET8_0_OR_GREATER
-        if (innerHandler == null) {
-            wireLoggingMeterFactory = ((SocketsHttpHandler) InnerHandler!).MeterFactory;
+        if (innerHandler is not null) {
+            InnerHandler        = innerHandler;
+            disposeInnerHandler = false;
         }
-#endif
     }
 
     public static UnfuckedHttpHandler Create(HttpClient toClone, IClientConfig? configuration = null) =>
@@ -135,20 +122,37 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
         IClientConfig? config        = (request as UnfuckedHttpRequestMessage)?.Config;
         FilterContext  filterContext = baseFilterContext with { Configuration = config ?? baseFilterContext.Configuration };
 
+        TimeSpan                       timeout    = config?.Property(PropertyKey.Timeout, out TimeSpan configuredTimeout) ?? false ? configuredTimeout : DEFAULT_TIMEOUT;
+        using CancellationTokenSource? timeoutCts = timeout != Timeout.InfiniteTimeSpan ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken) : null;
+        cancellationToken = timeoutCts?.Token ?? cancellationToken;
+        timeoutCts?.CancelAfter(timeout);
+#pragma warning disable CS0618
+#if NET5_0_OR_GREATER
+        await using
+#else
+        using
+#endif
+            CancellationTokenRegistration? setTimedOut = timeoutCts?.Token.Register(static parameters => {
+                (HttpRequestMessage req, TimeSpan timeout) = ((HttpRequestMessage req, TimeSpan timeout)) parameters!;
+                req.Properties[RequestTimedOutProperty]    = timeout;
+            }, (request, timeout));
+#pragma warning restore CS0618
+
+        HttpRequestMessage currentRequest = request;
         try {
             foreach (ClientRequestFilter requestFilter in config?.RequestFilters ?? RequestFilters) {
-                HttpRequestMessage newRequest = await requestFilter.Filter(request, filterContext, cancellationToken).ConfigureAwait(false);
-                if (request != newRequest) {
-                    request.Dispose();
-                    request = newRequest;
+                HttpRequestMessage newRequest = await requestFilter.Filter(currentRequest, filterContext, cancellationToken).ConfigureAwait(false);
+                if (currentRequest != newRequest) {
+                    currentRequest.Dispose();
+                    currentRequest = newRequest;
                 }
             }
         } catch (ProcessingException) {
-            request.Dispose();
+            currentRequest.Dispose();
             throw;
         }
 
-        if (request is { Headers.TransferEncodingChunked: false, Content: { Headers.ContentLength: null } requestBody }) {
+        if (currentRequest is { Headers.TransferEncodingChunked: false, Content: { Headers.ContentLength: null } requestBody }) {
             /*
              * The request body is an as-yet unbuffered stream with an unknown length (HttpContent.TryComputeLength returned false),
              * but the user explicitly wants to not send chunked requests because they know the server rejects it,
@@ -157,7 +161,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
             await requestBody.LoadIntoBufferAsync().ConfigureAwait(false);
         }
 
-        HttpResponseMessage response = await TestableSendAsync(request, cancellationToken).ConfigureAwait(false);
+        HttpResponseMessage response = await TestableSendAsync(currentRequest, cancellationToken).ConfigureAwait(false);
 
         try {
             foreach (ClientResponseFilter responseFilter in config?.ResponseFilters ?? ResponseFilters) {
@@ -168,7 +172,7 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
                 }
             }
         } catch (ProcessingException) {
-            request.Dispose();
+            currentRequest.Dispose();
             response.Dispose();
             throw;
         }
@@ -177,7 +181,45 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
     }
 
     /// <inheritdoc />
-    public virtual Task<HttpResponseMessage> TestableSendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => base.SendAsync(request, cancellationToken);
+    public virtual Task<HttpResponseMessage> TestableSendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+        HandlerSettings handlerSettings = new() {
+            AutomaticallyFollowRedirections = !((request as UnfuckedHttpRequestMessage)?.Config?.Property(PropertyKey.AutomaticallyFollowRedirections, out bool follow) ?? false) || follow
+        };
+
+        if (!handlerSettings.Equals(InnerHandler)) {
+            return alternativeHandlers.Value.GetOrAddWithDisposal(handlerSettings, static (settings, innerHandler) =>
+                    new DelegatingHandlerWrapper(BuildInnerHandler(settings, innerHandler)), out _, InnerHandler)
+                .InternalSendAsync(request, cancellationToken);
+        } else if (InnerHandler is null) {
+            var innerHandler = BuildInnerHandler(handlerSettings, null);
+            InnerHandler = innerHandler;
+#if NET8_0_OR_GREATER
+            wireLoggingMeterFactory = innerHandler.MeterFactory;
+#endif
+        }
+        return base.SendAsync(request, cancellationToken);
+    }
+
+    private static
+#if NETCOREAPP2_1_OR_GREATER
+        SocketsHttpHandler
+#else
+        HttpClientHandler
+#endif
+        BuildInnerHandler(HandlerSettings settings, HttpMessageHandler? innerHandler) => new() {
+        AllowAutoRedirect = settings.AutomaticallyFollowRedirections,
+#if NETCOREAPP2_1_OR_GREATER
+        PooledConnectionLifetime = TimeSpan.FromHours(1),
+        ConnectTimeout = TimeSpan.FromSeconds(10),
+        AutomaticDecompression = DecompressionMethods.All,
+        // MaxConnectionsPerServer defaults to MAX_INT, so we don't need to increase it here
+#if NET8_0_OR_GREATER
+        MeterFactory = (innerHandler as SocketsHttpHandler)?.MeterFactory
+#endif
+#else
+        AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+#endif
+    };
 
     private UnfuckedHttpHandler With(IClientConfig newConfig) {
         ClientConfig = newConfig;
@@ -206,6 +248,9 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
             if (disposeInnerHandler) {
                 InnerHandler?.Dispose();
             }
+            foreach (DelegatingHandlerWrapper handler in alternativeHandlers is { IsValueCreated: true, Value: var handlers } ? handlers.Values : []) {
+                handler.Dispose();
+            }
 
             List<KeyValuePair<int, WeakReference<IUnfuckedHttpHandler>?>> evictions =
                 HTTP_CLIENT_HANDLER_CACHE.Where(pair => pair.Value != null && (!pair.Value.TryGetTarget(out IUnfuckedHttpHandler? handler) || handler == this)).ToList();
@@ -224,6 +269,26 @@ public class UnfuckedHttpHandler: DelegatingHandler, IUnfuckedHttpHandler {
         base.Dispose(disposing);
     }
 
+    private readonly struct HandlerSettings: IEquatable<HandlerSettings>, IEquatable<HttpMessageHandler> {
+
+        public bool AutomaticallyFollowRedirections { get; init; }
+
+        public bool Equals(HandlerSettings other) => AutomaticallyFollowRedirections == other.AutomaticallyFollowRedirections;
+        public override bool Equals(object? obj) => (obj is HandlerSettings other && Equals(other)) || (obj is HttpMessageHandler other2 && Equals(other2));
+
+        public bool Equals(HttpMessageHandler? other) =>
+#if NETCOREAPP2_1_OR_GREATER
+            (other as SocketsHttpHandler)?.AllowAutoRedirect == AutomaticallyFollowRedirections ||
+#endif
+            (other as HttpClientHandler)?.AllowAutoRedirect == AutomaticallyFollowRedirections;
+
+        public static bool operator ==(HandlerSettings left, HandlerSettings right) => left.Equals(right);
+        public static bool operator !=(HandlerSettings left, HandlerSettings right) => !left.Equals(right);
+
+        public override int GetHashCode() => AutomaticallyFollowRedirections.GetHashCode();
+
+    }
+
 }
 
 /// <summary>
@@ -233,5 +298,11 @@ internal sealed class IUnfuckedHttpHandlerWrapper(IUnfuckedHttpHandler realHandl
 
     /// <exception cref="ProcessingException"></exception>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => realHandler.FilterAndSendAsync(request, cancellationToken);
+
+}
+
+internal sealed class DelegatingHandlerWrapper(HttpMessageHandler d): DelegatingHandler(d) {
+
+    internal Task<HttpResponseMessage> InternalSendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => SendAsync(request, cancellationToken);
 
 }

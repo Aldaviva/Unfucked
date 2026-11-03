@@ -29,8 +29,11 @@ using Unfucked.HTTP;
 
 - Drop-in subclasses of `HttpClient` and `HttpMessageHandler`, and extension methods
     ```cs
-    HttpClient http = new UnfuckedHttpClient(); // set the subclass
-    http = new UnfuckedHttpClient(new SocketsHttpHandler(){ AllowAutoRedirect = false }); // custom handlers are wrapped automatically
+    using HttpClient http = new UnfuckedHttpClient(); // set the subclass
+    ```
+    ```cs
+    // custom handlers are wrapped automatically
+    using HttpClient http = new UnfuckedHttpClient(new SocketsHttpHandler() { UseCookies = true });
     ```
 
 ## Usage
@@ -44,15 +47,18 @@ using Unfucked.HTTP;
     ```
 - Request and response filtering
     ```cs
-    PrintRequests filter = new PrintRequests();
-    http.Register((ClientRequestFilter) filter);
-    http.Register((ClientResponseFilter) filter);
+    http.Register(new PrintRequests());
+    http.Register(new PrintResponses());
 
-    class PrintRequests: ClientRequestFilter, ClientResponseFilter {
+    class PrintRequests: ClientRequestFilter {
+
         public async ValueTask<HttpRequestMessage> Filter(HttpRequestMessage request, CancellationToken cancellationToken) {
             Console.WriteLine(">> {0} {1}", request.Method, request.RequestUri);
             return request;
         }
+    }
+
+    class PrintResponses: ClientResponseFilter {
 
         public async ValueTask<HttpResponseMessage> Filter(HttpResponseMessage response, CancellationToken cancellationToken) {
             Console.WriteLine("<< {0} {1}", (int) response.StatusCode, response.RequestMessage?.RequestUri);
@@ -72,12 +78,16 @@ using Unfucked.HTTP;
     ```
 - Type-safe property registration
     ```cs
-    // set on shared client or ClientConfig
+    // request properties can be set on a shared HttpClient or ClientConfig
     http.Property(PropertyKey.JsonSerializerOptions, new JsonSerializerOptions()); 
 
-    // set on immutable request target
+    // request properties can also be set on an immutable request target
     WebTarget target = http.Target("https://httpbin.org")
         .Property(PropertyKey.ThrowOnUnsuccessfulStatusCode, false); 
+
+    // request properties can be changed even if the HttpClient has already sent a request
+    http.Property(PropertyKey.Timeout, TimeSpan.FromMinutes(1))
+        .Property(PropertyKey.AutomaticallyFollowRedirections, false);
     ```
 - Automatic response deserialization to given types from XML, JSON, and pluggable custom representations
     ```cs
@@ -85,30 +95,62 @@ using Unfucked.HTTP;
     MyClass response = await http.Target(url).Get<MyClass>();
     ```
     - `HttpResponseMessage` (or just don't pass a generic type parameter to the request method, like `Get()` or `Post()`)
+        - Make sure to `Dispose` this yourself
     - `Stream`
+        - Make sure to `Dispose` this yourself
     - `ReadOnlyMemory<byte>`
     - `Memory<byte>`
     - `byte[]`
     - `string`
-    - JSON (`System.Text.Json`)
+    - JSON ([`System.Text.Json`](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/overview))
         - `JsonDocument`
         - `JsonNode`
         - `JsonObject`
         - `JsonArray`
         - `JsonValue`
         - Any type that can be deserialized from JSON
-    - XML (`System.Xml`)
+    - JSON ([`Corvus.Text.Json`](https://www.nuget.org/packages/Corvus.Text.Json))
+        - `IJsonElement<T>`, which is implemented by types that are [automatically](https://github.com/corvus-dotnet/Corvus.JsonSchema/blob/main/docs/SourceGenerator.md) [generated](https://github.com/corvus-dotnet/Corvus.JsonSchema/blob/main/docs/CodeGenerator.md) from a JSON Schema
+        - *This is a provided dependency, so it must be declared explicitly by dependents*
+    - XML ([`System.Xml`](https://learn.microsoft.com/en-us/dotnet/standard/serialization/xml-and-soap-serialization))
         - `XmlDocument`
         - `XDocument`
         - `XPathNavigator`
         - Any type that can be deserialized from XML
-    - HTML ([AngleSharp](https://www.nuget.org/packages/AngleSharp/), provided dependency, so must be declared explicitly in library consumer)
+    - HTML ([`AngleSharp`](https://www.nuget.org/packages/AngleSharp/)
         - `IDocument`
+        - *This is a provided dependency, so it must be declared explicitly by dependents*
     - `IUtf8SpanParsable`
     - `IParsable`
     - Any type with a public constructor that takes a single `string` parameter
     - Any type `T` with a public static `T Parse(string)` method
     - Any type `T` with a public static `bool TryParse(string, out T?)` method
+    - Any type you write a `MessageBodyReader` for
+        ```cs
+        using var http = new UnfuckedHttpClient()
+            .Register(new ZonedDateTimeReader());
+
+        public class ZonedDateTimeReader: MessageBodyReader {
+
+            private static readonly ZonedDateTimePattern PARSER =
+                ZonedDateTimePattern.CreateWithInvariantCulture("G", DateTimeZoneProviders.Tzdb);
+
+            public bool CanRead<T>(MediaTypeHeaderValue? contentType) =>
+                typeof(T) == typeof(ZonedDateTime);
+
+            public async Task<T> Read<T>(HttpResponseMessage res, Encoding? encoding, Configurable? cfg, CancellationToken ct) =>
+                PARSER.Parse(await res.Content.ReadAsStringAsync(ct)) switch {
+                    { Success: true, Value: var result }  => (T) (object) result,
+                    { Success: false, Exception: var ex } => throw ex
+                };
+
+        }
+        ```
+- To return both the automatically deserialized response body and the response itself so you can inspect the status code or headers, call the request method overloads that assign an `out Task<HttpResponseMessage>` parameter.
+    ```cs
+    MyClass myClass = await target.Get<MyClass>(out Task<HttpResponseMessage> res);
+    Console.WriteLine($"{(int) (await res).StatusCode}: {myClass}");
+    ```
 - Automatic request serialization from types to XML or JSON, the main benefit of which is to consistently apply serializer options, instead of always forgetting to expose and pass around a shared `JsonSerializerOptions` instance
     ```cs
     await http.Target(url).Post(Entity.json(body));

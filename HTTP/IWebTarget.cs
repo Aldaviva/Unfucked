@@ -315,7 +315,7 @@ public interface IWebTarget: Configurable<IWebTarget> {
     /// Finish building the request and send it with an arbitrary verb and optional body, and don't deserialize the response body.
     /// </summary>
     /// <param name="verb">HTTP verb, such as <see cref="HttpMethod.Get"/>. Sometimes called a method.</param>
-    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
     /// <param name="cancellationToken">To stop waiting for the response.</param>
     /// <returns>A raw <see cref="HttpResponseMessage"/>, whose status and headers you can inspect and whose response body you can parse manually. You should dispose this.</returns>
     /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused.</exception>
@@ -326,7 +326,7 @@ public interface IWebTarget: Configurable<IWebTarget> {
     /// </summary>
     /// <typeparam name="T">Type to deserialize the response body into.</typeparam>
     /// <param name="verb">HTTP verb, such as <see cref="HttpMethod.Get"/>. Sometimes called a method.</param>
-    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
     /// <param name="cancellationToken">To stop waiting for the response.</param>
     /// <returns>The <typeparamref name="T"/>  instance deserialized from the response body.</returns>
     /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused; or response body deserialization failed.</exception>
@@ -362,7 +362,7 @@ public interface IWebTarget: Configurable<IWebTarget> {
     /// <summary>
     /// Finish building the request and send it with the POST verb and optional body, and don't deserialize the response body.
     /// </summary>
-    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
     /// <param name="cancellationToken">To stop waiting for the response.</param>
     /// <returns>A raw <see cref="HttpResponseMessage"/>, whose status and headers you can inspect and whose response body you can parse manually. You should dispose this.</returns>
     /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused.</exception>
@@ -372,7 +372,7 @@ public interface IWebTarget: Configurable<IWebTarget> {
     /// Finish building the request and send it with the POST verb and optional body, and deserialize the response body.
     /// </summary>
     /// <typeparam name="T">Type to deserialize the response body into.</typeparam>
-    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
     /// <param name="cancellationToken">To stop waiting for the response.</param>
     /// <returns>The <typeparamref name="T"/>  instance deserialized from the response body.</returns>
     /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused; or response body deserialization failed.</exception>
@@ -382,7 +382,7 @@ public interface IWebTarget: Configurable<IWebTarget> {
     /// <summary>
     /// Finish building the request and send it with the PUT verb and optional body, and don't deserialize the response body.
     /// </summary>
-    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
     /// <param name="cancellationToken">To stop waiting for the response.</param>
     /// <returns>A raw <see cref="HttpResponseMessage"/>, whose status and headers you can inspect and whose response body you can parse manually. You should dispose this.</returns>
     /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused.</exception>
@@ -392,7 +392,7 @@ public interface IWebTarget: Configurable<IWebTarget> {
     /// Finish building the request and send it with the PUT verb and optional body, and deserialize the response body.
     /// </summary>
     /// <typeparam name="T">Type to deserialize the response body into.</typeparam>
-    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
     /// <param name="cancellationToken">To stop waiting for the response.</param>
     /// <returns>The <typeparamref name="T"/>  instance deserialized from the response body.</returns>
     /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused; or response body deserialization failed.</exception>
@@ -402,7 +402,7 @@ public interface IWebTarget: Configurable<IWebTarget> {
     /// <summary>
     /// Finish building the request and send it with the PATCH verb and optional body, and don't deserialize the response body.
     /// </summary>
-    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
     /// <param name="cancellationToken">To stop waiting for the response.</param>
     /// <returns>A raw <see cref="HttpResponseMessage"/>, whose status and headers you can inspect and whose response body you can parse manually. You should dispose this.</returns>
     /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused.</exception>
@@ -412,7 +412,7 @@ public interface IWebTarget: Configurable<IWebTarget> {
     /// Finish building the request and send it with the PATCH verb and optional body, and deserialize the response body.
     /// </summary>
     /// <typeparam name="T">Type to deserialize the response body into.</typeparam>
-    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
     /// <param name="cancellationToken">To stop waiting for the response.</param>
     /// <returns>The <typeparamref name="T"/>  instance deserialized from the response body.</returns>
     /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused; or response body deserialization failed.</exception>
@@ -422,7 +422,7 @@ public interface IWebTarget: Configurable<IWebTarget> {
     /// <summary>
     /// Finish building the request and send it with the DELETE verb and optional body, and don't deserialize the response body.
     /// </summary>
-    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
     /// <param name="cancellationToken">To stop waiting for the response.</param>
     /// <returns>A raw <see cref="HttpResponseMessage"/>, whose status and headers you can inspect and whose response body you can parse manually. You should dispose this.</returns>
     /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused.</exception>
@@ -432,11 +432,83 @@ public interface IWebTarget: Configurable<IWebTarget> {
     /// Finish building the request and send it with the DELETE verb and optional body, and deserialize the response body.
     /// </summary>
     /// <typeparam name="T">Type to deserialize the response body into.</typeparam>
-    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
     /// <param name="cancellationToken">To stop waiting for the response.</param>
     /// <returns>The <typeparamref name="T"/>  instance deserialized from the response body.</returns>
     /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused; or response body deserialization failed.</exception>
     /// <exception cref="WebApplicationException">The server responded with an unsuccessful status code, and <see cref="PropertyKey.ThrowOnUnsuccessfulStatusCode"/> was left enabled.</exception>
     Task<T> Delete<T>(HttpContent? requestBody = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Finish building the request and send it with an arbitrary verb and optional body, and deserialize the response body.
+    /// </summary>
+    /// <typeparam name="T">Type to deserialize the response body into.</typeparam>
+    /// <param name="verb">HTTP verb, such as <see cref="HttpMethod.Get"/>. Sometimes called a method.</param>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="response">Will be set to a <see cref="Task{T}"/> that will be fulfilled with the HTTP response, if you want to inspect the status code or headers but don't want to also manually deserialize the body yourself.</param>
+    /// <param name="cancellationToken">To stop waiting for the response.</param>
+    /// <returns>The <typeparamref name="T"/>  instance deserialized from the response body.</returns>
+    /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused; or response body deserialization failed.</exception>
+    /// <exception cref="WebApplicationException">The server responded with an unsuccessful status code, and <see cref="PropertyKey.ThrowOnUnsuccessfulStatusCode"/> was left enabled.</exception>
+    Task<T> Send<T>(HttpMethod verb, HttpContent? requestBody, out Task<HttpResponseMessage> response, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Finish building the request and send it with the GET verb, and deserialize the response body.
+    /// </summary>
+    /// <typeparam name="T">Type to deserialize the response body into.</typeparam>
+    /// <param name="response">Will be set to a <see cref="Task{T}"/> that will be fulfilled with the HTTP response, if you want to inspect the status code or headers but don't want to also manually deserialize the body yourself.</param>
+    /// <param name="cancellationToken">To stop waiting for the response.</param>
+    /// <returns>The <typeparamref name="T"/>  instance deserialized from the response body.</returns>
+    /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused; or response body deserialization failed</exception>
+    /// <exception cref="WebApplicationException">The server responded with an unsuccessful status code, and <see cref="PropertyKey.ThrowOnUnsuccessfulStatusCode"/> was left enabled.</exception>
+    Task<T> Get<T>(out Task<HttpResponseMessage> response, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Finish building the request and send it with the POST verb and optional body, and deserialize the response body.
+    /// </summary>
+    /// <typeparam name="T">Type to deserialize the response body into.</typeparam>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="response">Will be set to a <see cref="Task{T}"/> that will be fulfilled with the HTTP response, if you want to inspect the status code or headers but don't want to also manually deserialize the body yourself.</param>
+    /// <param name="cancellationToken">To stop waiting for the response.</param>
+    /// <returns>The <typeparamref name="T"/>  instance deserialized from the response body.</returns>
+    /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused; or response body deserialization failed.</exception>
+    /// <exception cref="WebApplicationException">The server responded with an unsuccessful status code, and <see cref="PropertyKey.ThrowOnUnsuccessfulStatusCode"/> was left enabled.</exception>
+    Task<T> Post<T>(HttpContent? requestBody, out Task<HttpResponseMessage> response, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Finish building the request and send it with the PUT verb and optional body, and deserialize the response body.
+    /// </summary>
+    /// <typeparam name="T">Type to deserialize the response body into.</typeparam>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="response">Will be set to a <see cref="Task{T}"/> that will be fulfilled with the HTTP response, if you want to inspect the status code or headers but don't want to also manually deserialize the body yourself.</param>
+    /// <param name="cancellationToken">To stop waiting for the response.</param>
+    /// <returns>The <typeparamref name="T"/>  instance deserialized from the response body.</returns>
+    /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused; or response body deserialization failed.</exception>
+    /// <exception cref="WebApplicationException">The server responded with an unsuccessful status code, and <see cref="PropertyKey.ThrowOnUnsuccessfulStatusCode"/> was left enabled.</exception>
+    Task<T> Put<T>(HttpContent? requestBody, out Task<HttpResponseMessage> response, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Finish building the request and send it with the PATCH verb and optional body, and deserialize the response body.
+    /// </summary>
+    /// <typeparam name="T">Type to deserialize the response body into.</typeparam>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="response">Will be set to a <see cref="Task{T}"/> that will be fulfilled with the HTTP response, if you want to inspect the status code or headers but don't want to also manually deserialize the body yourself.</param>
+    /// <param name="cancellationToken">To stop waiting for the response.</param>
+    /// <returns>The <typeparamref name="T"/>  instance deserialized from the response body.</returns>
+    /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused; or response body deserialization failed.</exception>
+    /// <exception cref="WebApplicationException">The server responded with an unsuccessful status code, and <see cref="PropertyKey.ThrowOnUnsuccessfulStatusCode"/> was left enabled.</exception>
+    Task<T> Patch<T>(HttpContent? requestBody, out Task<HttpResponseMessage> response, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Finish building the request and send it with the DELETE verb and optional body, and deserialize the response body.
+    /// </summary>
+    /// <typeparam name="T">Type to deserialize the response body into.</typeparam>
+    /// <param name="requestBody">Optional body to send with the request, or <c>null</c> to not send a body. Can be created with <see cref="Entity"/>, <see cref="JsonContent"/>, <see cref="StringContent"/>, <see cref="StreamContent"/>, or <see cref="ByteArrayContent"/>, for example.</param>
+    /// <param name="response">Will be set to a <see cref="Task{T}"/> that will be fulfilled with the HTTP response, if you want to inspect the status code or headers but don't want to also manually deserialize the body yourself.</param>
+    /// <param name="cancellationToken">To stop waiting for the response.</param>
+    /// <returns>The <typeparamref name="T"/>  instance deserialized from the response body.</returns>
+    /// <exception cref="ProcessingException">A network error occurred, such a timeout, DNS error, or connection refused; or response body deserialization failed.</exception>
+    /// <exception cref="WebApplicationException">The server responded with an unsuccessful status code, and <see cref="PropertyKey.ThrowOnUnsuccessfulStatusCode"/> was left enabled.</exception>
+    Task<T> Delete<T>(HttpContent? requestBody, out Task<HttpResponseMessage> response, CancellationToken cancellationToken = default);
 
 }

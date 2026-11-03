@@ -680,7 +680,7 @@ public static partial class Enumerables {
     /// <param name="key">key to look up in the <paramref name="dictionary"/></param>
     /// <returns>the value of <paramref name="key"/> in <paramref name="dictionary"/>, or <c>null</c> if <paramref name="key"/> was not found in <paramref name="dictionary"/></returns>
     [System.Diagnostics.Contracts.Pure]
-    public static TValue? GetValueOrNull<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) where TValue: class =>
+    public static TValue? GetValueOrNull<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) where TValue: class? =>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
         dictionary.GetValueOrDefault(key);
 #else
@@ -689,7 +689,7 @@ public static partial class Enumerables {
 
     /// <inheritdoc cref="GetValueOrNull{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
     [System.Diagnostics.Contracts.Pure]
-    public static TValue? GetValueOrNull<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) where TValue: class where TKey: notnull =>
+    public static TValue? GetValueOrNull<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) where TValue: class? where TKey: notnull =>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
         dictionary.AsReadOnlyDictionary().GetValueOrDefault(key);
 #else
@@ -698,7 +698,7 @@ public static partial class Enumerables {
 
     /// <inheritdoc cref="GetValueOrNull{TKey,TValue}(System.Collections.Generic.IReadOnlyDictionary{TKey,TValue},TKey)" />
     [System.Diagnostics.Contracts.Pure]
-    public static TValue? GetValueOrNull<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key) where TValue: class where TKey: notnull =>
+    public static TValue? GetValueOrNull<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key) where TValue: class? where TKey: notnull =>
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
         dictionary.GetValueOrDefault(key);
 #else

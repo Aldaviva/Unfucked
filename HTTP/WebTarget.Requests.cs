@@ -53,6 +53,47 @@ public partial class WebTarget {
     public async Task<T> Delete<T>(HttpContent? requestBody = null, CancellationToken cancellationToken = default) =>
         await ParseAndDisposeResponseBody<T>(await Delete(requestBody, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
 
+    private async Task<T> Send<T>(HttpMethod verb, HttpContent? requestBody, TaskCompletionSource<HttpResponseMessage> responseTask, CancellationToken ct) {
+        try {
+            HttpResponseMessage response = await Send(verb, requestBody, ct).ConfigureAwait(false);
+            responseTask.TrySetResult(response);
+            return await ParseAndDisposeResponseBody<T>(response, ct).ConfigureAwait(false);
+        } catch (Exception e) when (e is not OutOfMemoryException) {
+            if (ct.IsCancellationRequested) {
+                responseTask.TrySetCanceled(ct);
+            } else {
+                responseTask.TrySetException(e);
+            }
+            throw;
+        }
+    }
+
+    /// <inheritdoc />
+    public Task<T> Send<T>(HttpMethod verb, HttpContent? requestBody, out Task<HttpResponseMessage> response, CancellationToken cancellationToken = default) {
+        TaskCompletionSource<HttpResponseMessage> tcs = new();
+        response = tcs.Task;
+        return Send<T>(verb, requestBody, tcs, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<T> Get<T>(out Task<HttpResponseMessage> response, CancellationToken cancellationToken = default) => Send<T>(HttpMethod.Get, null, out response, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<T> Post<T>(HttpContent? requestBody, out Task<HttpResponseMessage> response, CancellationToken cancellationToken = default) =>
+        Send<T>(HttpMethod.Post, requestBody, out response, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<T> Put<T>(HttpContent? requestBody, out Task<HttpResponseMessage> response, CancellationToken cancellationToken = default) =>
+        Send<T>(HttpMethod.Put, requestBody, out response, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<T> Patch<T>(HttpContent? requestBody, out Task<HttpResponseMessage> response, CancellationToken cancellationToken = default) =>
+        Send<T>(PATCH_VERB, requestBody, out response, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<T> Delete<T>(HttpContent? requestBody, out Task<HttpResponseMessage> response, CancellationToken cancellationToken = default) =>
+        Send<T>(HttpMethod.Delete, requestBody, out response, cancellationToken);
+
     private async Task<T> ParseAndDisposeResponseBody<T>(HttpResponseMessage response, CancellationToken cancellationToken) {
         try {
             return await ParseResponseBody<T>(response, cancellationToken).ConfigureAwait(false);

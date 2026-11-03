@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Reflection;
 using Unfucked.HTTP.Config;
 using Unfucked.HTTP.Exceptions;
@@ -38,13 +39,16 @@ public interface IHttpClient: IDisposable {
 /// </summary>
 public class UnfuckedHttpClient: HttpClient, IHttpClient {
 
-    private static readonly TimeSpan DEFAULT_TIMEOUT = new(0, 0, 30);
-
     private static readonly Lazy<(string name, Version version)?> USER_AGENT = new(static () => Assembly.GetEntryAssembly()?.GetName() is { Name: {} programName, Version: {} programVersion }
         ? (programName, programVersion) : null, LazyThreadSafetyMode.PublicationOnly);
 
     /// <inheritdoc />
     public IUnfuckedHttpHandler? Handler { get; }
+
+    /// <summary><see cref="UnfuckedHttpClient"/> uses <see cref="Extensions.Property{T}(IHttpClient,PropertyKey{T},T)"/> with the <see cref="PropertyKey.Timeout"/> key instead of this <see cref="HttpClient.Timeout"/> property, so that it can be configured on a per-request basis instead of forcing you to use the same timeout for all requests with the same <see cref="HttpClient"/> instance.</summary>
+    [Obsolete($"Use .{nameof(Extensions.Property)}({nameof(PropertyKey)}.{nameof(PropertyKey.Timeout)}, {nameof(TimeSpan)}.{nameof(TimeSpan.FromSeconds)}(..)) instead")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public new TimeSpan Timeout { get; set; }
 
     /// <summary>
     /// <para>Create a new <see cref="UnfuckedHttpClient"/> with a default message handler and configuration.</para>
@@ -76,7 +80,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
     private UnfuckedHttpClient(IUnfuckedHttpHandler unfuckedHandler, bool disposeHandler = true): base(unfuckedHandler as HttpMessageHandler ?? new IUnfuckedHttpHandlerWrapper(unfuckedHandler),
         disposeHandler) {
         Handler = unfuckedHandler;
-        Timeout = DEFAULT_TIMEOUT;
+        Timeout = System.Threading.Timeout.InfiniteTimeSpan;
         if (USER_AGENT.Value is var (programName, programVersion)) {
             DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(programName, programVersion.ToString(1, 4)));
         }
@@ -111,7 +115,7 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
 
         UnfuckedHttpClient newClient = new(newHandler, disposeHandler) {
             BaseAddress                  = toClone.BaseAddress,
-            Timeout                      = toClone.Timeout,
+            Timeout                      = System.Threading.Timeout.InfiniteTimeSpan,
             MaxResponseContentBufferSize = toClone.MaxResponseContentBufferSize,
 #if NETCOREAPP3_0_OR_GREATER
             DefaultRequestVersion = toClone.DefaultRequestVersion,
@@ -146,6 +150,12 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
             throw new ProcessingException(e, HttpExceptionParams.FromRequest(req));
         }
 
+#pragma warning disable CS0618
+        if (Timeout != System.Threading.Timeout.InfiniteTimeSpan) {
+            Timeout = System.Threading.Timeout.InfiniteTimeSpan;
+        }
+#pragma warning restore CS0618
+
         // Set wire logging AsyncLocal outside of this async method so it is available higher in the await chain when the response finishes
         return SendAsync(this, req, cancellationToken);
     }
@@ -156,7 +166,14 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
             return await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         } catch (OperationCanceledException e) {
             // Official documentation is wrong: .NET Framework throws a TaskCanceledException for an HTTP request timeout, not an HttpRequestException (https://learn.microsoft.com/dotnet/api/system.net.http.httpclient.sendasync)
-            throw new ProcessingException(e.InnerException as TimeoutException as Exception ?? e, HttpExceptionParams.FromRequest(request));
+            Exception innerException = e.InnerException as TimeoutException as Exception ??
+#pragma warning disable CS0618
+                (request.Properties.GetValueOrNull(UnfuckedHttpHandler.RequestTimedOutProperty) is TimeSpan timeout &&
+                    e is { InnerException: IOException { InnerException: SocketException { ErrorCode: 995 } } }
+                        ? new TimeoutException($"Request timed out after {timeout}", e) { Data = { { "timeout", timeout } } }
+#pragma warning restore CS0618
+                        : e);
+            throw new ProcessingException(innerException, HttpExceptionParams.FromRequest(request));
         } catch (HttpRequestException e) {
             throw new ProcessingException(e.InnerException ?? e, HttpExceptionParams.FromRequest(request));
         } finally {

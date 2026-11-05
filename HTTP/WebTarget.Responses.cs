@@ -77,49 +77,58 @@ public partial class WebTarget {
 #else
         using Stream bodyStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
 #endif
-        const int maxPrefixLengthChars = 32;
-        Encoding  encoding             = responseEncoding ?? Encoding.UTF8;
-
+        const int               maxPrefixLengthChars = 32;
+        PartiallyBufferedStream partiallyBufferedBodyStream;
+        string                  bodyPrefix;
+        try {
+            (partiallyBufferedBodyStream, bodyPrefix) = await BufferStreamPrefix(bodyStream, responseEncoding ?? Encoding.UTF8, maxPrefixLengthChars, cancellationToken).ConfigureAwait(false);
+        } catch (OperationCanceledException e) {
+            throw new ProcessingException(e, await HttpExceptionParams.FromResponse(response, CancellationToken.None).ConfigureAwait(false));
+        }
 #if NET5_0_OR_GREATER
         await using
 #else
         using
 #endif
-            PartiallyBufferedStream partiallyBufferedBodyStream =
-                await PartiallyBufferedStream.CreateAndBuffer(bodyStream, encoding.GetMaxByteCount(maxPrefixLengthChars), cancellationToken).ConfigureAwait(false);
-        using StreamReader bodyReader = new(partiallyBufferedBodyStream, encoding, true);
+            (partiallyBufferedBodyStream) {
+
+            foreach (PrefixDetectingMessageBodyReader reader in messageBodyReaders.OfType<PrefixDetectingMessageBodyReader>()) {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (reader.CanRead<T>(responseContentType, bodyPrefix)) {
+                    try {
+                        return await reader.Read<T>(partiallyBufferedBodyStream, response.StatusCode, response.Headers, response.Content.Headers, response.RequestMessage!, response, responseEncoding,
+                            clientConfig, cancellationToken).ConfigureAwait(false);
+                    } catch (Exception e) when (e is not OutOfMemoryException) {
+                        throw new ProcessingException(e, await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false));
+                    }
+                }
+            }
+
+            HttpExceptionParams httpExceptionParams = await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false);
+            throw new ProcessingException(new SerializationException(
+                    $"Could not find deserializer for response body. You may need to register a new {nameof(MessageBodyReader)} to your {nameof(IHttpClient)}, {nameof(IClientConfig)}, or {nameof(IWebTarget)}. (URI: {httpExceptionParams.RequestUrl}, Content-Type: {responseContentType}, .NET type: {typeof(T)})"),
+                httpExceptionParams);
+        }
+    }
+
+    internal static async Task<(PartiallyBufferedStream partiallyBufferedStream, string prefix)> BufferStreamPrefix(Stream bodyStream, Encoding encoding, int maxPrefixLengthChars,
+                                                                                                                    CancellationToken cancellationToken) {
+        PartiallyBufferedStream partiallyBufferedBodyStream = bodyStream as PartiallyBufferedStream ??
+            await PartiallyBufferedStream.CreateAndBuffer(bodyStream, encoding.GetMaxByteCount(maxPrefixLengthChars), cancellationToken).ConfigureAwait(false);
+        partiallyBufferedBodyStream.Position = 0;
+        using StreamReader bodyReader = new(partiallyBufferedBodyStream, encoding, true, -1, true);
 
         char[] prefixBuffer = new char[maxPrefixLengthChars];
 
         int prefixLengthChars;
 #if NETCOREAPP2_1_OR_GREATER
-        try {
-            prefixLengthChars = await bodyReader.ReadAsync(prefixBuffer.AsMemory(), cancellationToken).ConfigureAwait(false);
-        } catch (OperationCanceledException e) {
-            throw new ProcessingException(e, await HttpExceptionParams.FromResponse(response, CancellationToken.None).ConfigureAwait(false));
-        }
+        prefixLengthChars = await bodyReader.ReadAsync(prefixBuffer.AsMemory(), cancellationToken).ConfigureAwait(false);
 #else
         prefixLengthChars = await bodyReader.ReadAsync(prefixBuffer, 0, prefixBuffer.Length).ConfigureAwait(false);
 #endif
         string bodyPrefix = new string(prefixBuffer, 0, prefixLengthChars).Trim();
         partiallyBufferedBodyStream.Position = 0;
-
-        foreach (PrefixDetectingMessageBodyReader reader in messageBodyReaders.OfType<PrefixDetectingMessageBodyReader>()) {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (reader.CanRead<T>(responseContentType, bodyPrefix)) {
-                try {
-                    return await reader.Read<T>(partiallyBufferedBodyStream, response.StatusCode, response.Headers, response.Content.Headers, response.RequestMessage!, response, responseEncoding,
-                        clientConfig, cancellationToken).ConfigureAwait(false);
-                } catch (Exception e) when (e is not OutOfMemoryException) {
-                    throw new ProcessingException(e, await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false));
-                }
-            }
-        }
-
-        HttpExceptionParams httpExceptionParams = await HttpExceptionParams.FromResponse(response, cancellationToken).ConfigureAwait(false);
-        throw new ProcessingException(new SerializationException(
-                $"Could not find deserializer for response body. You may need to register a new {nameof(MessageBodyReader)} to your {nameof(IHttpClient)}, {nameof(IClientConfig)}, or {nameof(IWebTarget)}. (URI: {httpExceptionParams.RequestUrl}, Content-Type: {responseContentType}, .NET type: {typeof(T)})"),
-            httpExceptionParams);
+        return (partiallyBufferedBodyStream, bodyPrefix);
     }
 
     /// <exception cref="WebApplicationException">the response status code was not successful</exception>

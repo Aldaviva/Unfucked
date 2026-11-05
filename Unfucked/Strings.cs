@@ -441,7 +441,7 @@ public static class Strings {
     /// <param name="encoding">The character encoding to use, or <c>null</c> to use UTF-8.</param>
     /// <returns>A stream of bytes that represent <paramref name="str"/> in the given <paramref name="encoding"/>.</returns>
     [Pure]
-    public static Stream ToByteStream(this string str, Encoding? encoding = null) => new MemoryStream((encoding ?? Utf8).GetBytes(str), false);
+    public static Stream ToByteStream(this string str, Encoding? encoding = null) => new MemoryStream(str.ToByteArray(encoding), false);
 
     /// <summary>
     /// Serialize a string to an array of bytes.

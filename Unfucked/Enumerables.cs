@@ -324,7 +324,7 @@ public static partial class Enumerables {
         }
     }
 
-    /// <summary>
+    /*/// <summary>
     /// Convert an <see cref="IAsyncEnumerator{T}"/> to a list by fully enumerating all of its items.
     /// </summary>
     /// <param name="source">An <see cref="IAsyncEnumerator{T}"/> of finite size.</param>
@@ -341,7 +341,7 @@ public static partial class Enumerables {
             result.Add(source.Current);
         }
         return new ReadOnlyCollection<T>(result);
-    }
+    }*/
 
     /// <summary>
     /// Like <see cref="Enumerable.FirstOrDefault{TSource}(System.Collections.Generic.IEnumerable{TSource})"/>, but returns <c>null</c> for value types instead of <c>default</c> when <paramref name="source"/> is empty, because nullable chaining and coalescing is easier than ambiguous defaults that can't be chained.

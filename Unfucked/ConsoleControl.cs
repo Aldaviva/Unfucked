@@ -194,7 +194,7 @@ public static partial class ConsoleControl {
         }
 
         // https://learn.microsoft.com/windows/terminal/tutorials/progress-bar-sequences
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT && EnableColorSupport()) {
+        if (options.EnableWindowsTaskbarProgress && Environment.OSVersion.Platform == PlatformID.Win32NT && EnableColorSupport()) {
             rendered.Append("\e]9;4;")
                 .Append(progress < 1 ? 1 : 0)
                 .Append(';')
@@ -223,10 +223,10 @@ public static partial class ConsoleControl {
         /// <summary>Foreground and background colors used to render the right, incomplete side of the progress bar. Defaults to the console's regular text and background colors when null. Takes RGB values and overrides <see cref="IncompleteConsoleColor"/> if both are provided.</summary>
         public (Color? Foreground, Color? Background)? IncompleteColor { get; init; } = null;
 
-        /// <summary>Foreground and background colors used to render the left, completed side of the progress bar. Defaults to the console's regular text and background colors when null. Takes 4-bit user-customizable color presets, and is overridden <see cref="CompleteColor"/> if both are provided.</summary>
+        /// <summary>Foreground and background colors used to render the left, completed side of the progress bar. Defaults to the console's regular text and background colors when null. Takes 4-bit user-customizable color presets, and is overridden by <see cref="CompleteColor"/> if both are provided.</summary>
         public (ConsoleColor? Foreground, ConsoleColor? Background)? CompleteConsoleColor { get; init; } = null;
 
-        /// <summary>Foreground and background colors used to render the right, incomplete side of the progress bar. Defaults to the console's regular text and background colors when null. Takes 4-bit user-customizable color presets, and is overridden <see cref="IncompleteColor"/> if both are provided.</summary>
+        /// <summary>Foreground and background colors used to render the right, incomplete side of the progress bar. Defaults to the console's regular text and background colors when null. Takes 4-bit user-customizable color presets, and is overridden by <see cref="IncompleteColor"/> if both are provided.</summary>
         public (ConsoleColor? Foreground, ConsoleColor? Background)? IncompleteConsoleColor { get; init; } = null;
 
         /// <summary>The character that is printed on the left side of the progress bar to represent the completed portion. By default, this is ━ (U+2501 Box Drawings Heavy Horizontal). If non-ASCII characters like this render as ?, try setting <see cref="Console.OutputEncoding"/> to <see cref="Encoding.UTF8"/>.</summary>
@@ -234,6 +234,9 @@ public static partial class ConsoleControl {
 
         /// <summary>The character that is printed on the right side of the progress bar to represent the incomplete portion. By default, this is ─ (U+2500 Box Drawings Light Horizontal). If non-ASCII characters like this render as ?, try setting <see cref="Console.OutputEncoding"/> to <see cref="Encoding.UTF8"/>.</summary>
         public char IncompleteChar { get; init; } = '\u2500';
+
+        /// <summary><c>true</c> to also render this progress bar in the Windows taskbar button and Windows Terminal tab for this console, or <c>false</c> to not change the taskbar or tab.</summary>
+        public bool EnableWindowsTaskbarProgress { get; init; } = true;
 
         internal static string? RenderColor((Color? Foreground, Color? Background)? color, (ConsoleColor? Foreground, ConsoleColor? Background)? consoleColor) {
             Color?        fg1 = color?.Foreground;

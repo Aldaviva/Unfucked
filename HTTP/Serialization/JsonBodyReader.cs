@@ -1,10 +1,14 @@
+using NodaTime;
+using NodaTime.Serialization.SystemTextJson;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Unfucked.HTTP.Config;
+using BindingFlags = System.Reflection.BindingFlags;
 #if NET6_0_OR_GREATER
 using System.Net.Mime;
 #endif
@@ -20,12 +24,25 @@ public sealed class JsonBodyReader: PrefixDetectingMessageBodyReader {
         "application/json";
 #endif
 
-    internal static readonly JsonSerializerOptions DefaultJsonOptions = new(JsonSerializerDefaults.Web) {
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        Converters = {
-            new JsonStringEnumConverter(new KernighanRitchieCEnumToLowerCamelCaseNamingPolicy())
+    internal static readonly JsonSerializerOptions DefaultJsonOptions;
+
+    private static MethodInfo? deserializeAsyncEnumerableMethod;
+
+    static JsonBodyReader() {
+        DefaultJsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) {
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true,
+            Converters = {
+                new JsonStringEnumConverter(new KernighanRitchieCEnumToLowerCamelCaseNamingPolicy())
+            }
+        };
+
+        try {
+            NodaTimeSerializationLoader.ConfigureJsonSerializerOptionsForNodaTime(DefaultJsonOptions, DateTimeZoneProviders.Tzdb);
+        } catch (FileNotFoundException) {
+            // NodaTime.Serialization.SystemTextJson dependency is missing, skip
         }
-    };
+    }
 
     /// <inheritdoc />
     public override bool CanRead<T>(MediaTypeHeaderValue? contentType, string? bodyPrefix) =>
@@ -51,8 +68,38 @@ public sealed class JsonBodyReader: PrefixDetectingMessageBodyReader {
                                           Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
         JsonSerializerOptions jsonOptions = (clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions)!;
 
-        // parser assumes and requires response body encoding to be UTF-8
-        return (await JsonSerializer.DeserializeAsync<T>(responseBody, jsonOptions, cancellationToken).ConfigureAwait(false))!;
+        if (typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>)) {
+            deserializeAsyncEnumerableMethod ??= typeof(JsonSerializer).GetMethod(nameof(JsonSerializer.DeserializeAsyncEnumerable), BindingFlags.Public | BindingFlags.Static, null,
+                    [typeof(Stream), typeof(bool), typeof(JsonSerializerOptions), typeof(CancellationToken)], null)
+                ?? typeof(JsonSerializer).GetMethod(nameof(JsonSerializer.DeserializeAsyncEnumerable), BindingFlags.Public | BindingFlags.Static, null,
+                    [typeof(Stream), typeof(JsonSerializerOptions), typeof(CancellationToken)], null)!;
+
+            bool       canParseMultipleRootNodes                        = deserializeAsyncEnumerableMethod.GetParameters().Length == 4;
+            MethodInfo deserializeAsyncEnumerableMethodWithGenericTypes = deserializeAsyncEnumerableMethod.MakeGenericMethod(typeof(T).GetGenericArguments()[0]);
+
+            if (canParseMultipleRootNodes) {
+                (PartiallyBufferedStream partiallyBufferedStream, string prefix) =
+                    await WebTarget.BufferStreamPrefix(responseBody, responseEncoding ?? Encoding.UTF8, 32, cancellationToken).ConfigureAwait(false);
+                bool rootNodeIsArray = prefix.StartsWith('['); // this heuristic is imperfect, because the JSON file could have multiple top-level arrays, such as [1][2]
+                return (T) deserializeAsyncEnumerableMethodWithGenericTypes.Invoke(null, [partiallyBufferedStream, !rootNodeIsArray, jsonOptions, cancellationToken])!;
+            } else {
+                return (T) deserializeAsyncEnumerableMethodWithGenericTypes.Invoke(null, [responseBody, jsonOptions, cancellationToken])!;
+            }
+        } else {
+            // parser assumes and requires response body encoding to be UTF-8
+            return (await JsonSerializer.DeserializeAsync<T>(responseBody, jsonOptions, cancellationToken).ConfigureAwait(false))!;
+        }
+    }
+
+    /// <summary>Separate class to isolate <see cref="JsonBodyReader"/> from <see cref="FileNotFoundException"/> if this provided dependency is missing, which will happen when the consuming library does not depend on <c>NodaTime.Serialization.SystemTextJson</c></summary>
+    private static class NodaTimeSerializationLoader {
+
+        public static JsonSerializerOptions ConfigureJsonSerializerOptionsForNodaTime(JsonSerializerOptions options, IDateTimeZoneProvider timeZoneProvider) =>
+            options.ConfigureForNodaTime(timeZoneProvider);
+
+        public static JsonSerializerOptions ConfigureJsonSerializerOptionsForNodaTime(JsonSerializerOptions options, NodaJsonSettings jsonSettings) =>
+            options.ConfigureForNodaTime(jsonSettings);
+
     }
 
 }

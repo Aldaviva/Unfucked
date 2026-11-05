@@ -15,6 +15,16 @@ public sealed class StreamBodyReader: AbstractMessageBodyReader {
 
     private sealed class ResponseDisposingStream(Stream actualStream, IDisposable alsoDispose): Stream {
 
+        protected override void Dispose(bool disposing) {
+            if (disposing) {
+                actualStream.Dispose();
+                alsoDispose.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region delegated
+
         public override bool CanRead => actualStream.CanRead;
         public override bool CanSeek => actualStream.CanSeek;
         public override bool CanWrite => actualStream.CanWrite;
@@ -65,14 +75,6 @@ public sealed class StreamBodyReader: AbstractMessageBodyReader {
 
         public override void WriteByte(byte value) => actualStream.WriteByte(value);
 
-        protected override void Dispose(bool disposing) {
-            if (disposing) {
-                actualStream.Dispose();
-                alsoDispose.Dispose();
-            }
-            base.Dispose(disposing);
-        }
-
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_0_OR_GREATER
         public override void CopyTo(Stream destination, int bufferSize) => actualStream.CopyTo(destination, bufferSize);
 #endif
@@ -98,6 +100,8 @@ public sealed class StreamBodyReader: AbstractMessageBodyReader {
             await base.DisposeAsync().ConfigureAwait(false);
         }
 #endif
+
+        #endregion
 
     }
 

@@ -38,9 +38,9 @@ public sealed class JsonBodyReader: PrefixDetectingMessageBodyReader {
         };
 
         try {
-            NodaTimeSerializationLoader.ConfigureJsonSerializerOptionsForNodaTime(DefaultJsonOptions, DateTimeZoneProviders.Tzdb);
+            NodaTimeSerializationLoader.ConfigureJsonSerializerOptionsForNodaTime(DefaultJsonOptions);
         } catch (FileNotFoundException) {
-            // NodaTime.Serialization.SystemTextJson dependency is missing, skip
+            // NodaTime or NodaTime.Serialization.SystemTextJson dependencies are missing, skip
         }
     }
 
@@ -94,11 +94,8 @@ public sealed class JsonBodyReader: PrefixDetectingMessageBodyReader {
     /// <summary>Separate class to isolate <see cref="JsonBodyReader"/> from <see cref="FileNotFoundException"/> if this provided dependency is missing, which will happen when the consuming library does not depend on <c>NodaTime.Serialization.SystemTextJson</c></summary>
     private static class NodaTimeSerializationLoader {
 
-        public static JsonSerializerOptions ConfigureJsonSerializerOptionsForNodaTime(JsonSerializerOptions options, IDateTimeZoneProvider timeZoneProvider) =>
-            options.ConfigureForNodaTime(timeZoneProvider);
-
-        public static JsonSerializerOptions ConfigureJsonSerializerOptionsForNodaTime(JsonSerializerOptions options, NodaJsonSettings jsonSettings) =>
-            options.ConfigureForNodaTime(jsonSettings);
+        public static JsonSerializerOptions ConfigureJsonSerializerOptionsForNodaTime(JsonSerializerOptions options) =>
+            options.ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
 
     }
 

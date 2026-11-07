@@ -629,6 +629,27 @@ using Unfucked;
     XDocument doc = XDocument.Parse(xmlString);
     IEnumerable<XElement> els = doc.Descendants("head", "body");
     ```
+- Omit XML Schema `xsi` and `xsd` namespace definitions from root element during serialization.
+    - Before
+        ```cs
+        new XmlSerializer(typeof(MyElement))
+            .Serialize(stream, new MyElement());
+        ```
+        ```xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <MyElement xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
+        ```
+    - After
+        ```cs
+        new XmlSerializer(typeof(MyElement))
+            .Serialize(stream, new MyElement(), XmlSerializer.OmitXmlSchemaNamespaces);
+        ```
+        ```xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <MyElement />
+        ```
+    - The `<?xml … ?>` prolog can be removed separately by setting [`XmlWriterSettings.OmitXmlDeclaration`](https://learn.microsoft.com/en-us/dotnet/api/system.xml.xmlwritersettings.omitxmldeclaration) to `false` in the [`XmlWriter`](https://learn.microsoft.com/en-us/dotnet/api/system.xml.xmlwriter) passed to [`XmlSerializer.Serialize`](https://learn.microsoft.com/en-us/dotnet/api/system.xml.serialization.xmlserializer.serialize#system-xml-serialization-xmlserializer-serialize(system-xml-xmlwriter-system-object-system-xml-serialization-xmlserializernamespaces)).
 
 ## All Unfucked libraries
 - **Unfucked**

@@ -12,12 +12,13 @@ namespace Unfucked;
 public static class XmlExtensions {
 
     private static readonly IDictionary<Type, XmlSerializer> XML_SERIALIZER_CACHE = new Dictionary<Type, XmlSerializer>();
+    private static readonly XmlSerializerNamespaces          NO_NAMESPACES        = new([new XmlQualifiedName(string.Empty)]);
 
     /// <summary>
     /// Parse an XML LINQ document (not mapping to an object or DOM) from an HTTP response body.
     /// </summary>
     /// <param name="content">HTTP response body.</param>
-    /// <param name="encoding">Character encoding of the HTTP response body.</param>
+    /// <param name="encoding">Character encoding of the HTTP response body, defaults to UTF-8.</param>
     /// <param name="xmlReaderSettings">Settings for the <see cref="XmlReader"/>.</param>
     /// <param name="xmlLoadOptions">Optional XML parsing configuration.</param>
     /// <param name="cancellationToken">If you want to cancel the operation before it completes.</param>
@@ -40,7 +41,7 @@ public static class XmlExtensions {
     /// Parse an XML LINQ document (not mapping to an object or DOM) from a stream.
     /// </summary>
     /// <param name="stream">A readable stream.</param>
-    /// <param name="encoding">Character encoding of the stream.</param>
+    /// <param name="encoding">Character encoding of the stream, defaults to UTF-8.</param>
     /// <param name="xmlReaderSettings">Settings for the <see cref="XmlReader"/>.</param>
     /// <param name="xmlLoadOptions">Optional XML parsing configuration.</param>
     /// <param name="cancellationToken">If you want to cancel the operation before it completes.</param>
@@ -49,8 +50,8 @@ public static class XmlExtensions {
     public static async Task<XDocument> ReadLinqFromXmlAsync(Stream stream, Encoding? encoding = null, XmlReaderSettings? xmlReaderSettings = null, LoadOptions xmlLoadOptions = LoadOptions.None,
                                                              CancellationToken cancellationToken = default) {
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-        xmlReaderSettings       ??= new XmlReaderSettings();
-        xmlReaderSettings.Async =   true;
+        xmlReaderSettings ??= new XmlReaderSettings();
+        xmlReaderSettings.Async = true;
 #endif
 
         using StreamReader streamReader = new(stream, encoding ?? Strings.Utf8, encoding == null);
@@ -67,7 +68,7 @@ public static class XmlExtensions {
     /// Parse an XML document and map it to an object (not as DOM or LINQ) from an HTTP response body.
     /// </summary>
     /// <param name="content">HTTP response body.</param>
-    /// <param name="encoding">Character encoding of the HTTP response body.</param>
+    /// <param name="encoding">Character encoding of the HTTP response body, defaults to UTF-8.</param>
     /// <param name="defaultNamespace">Default XML namespace to use for all the XML elements.</param>
     /// <param name="cancellationToken">If you want to cancel the operation before it completes.</param>
     /// <typeparam name="T">Type of the object to map the XML document to.</typeparam>
@@ -87,7 +88,7 @@ public static class XmlExtensions {
     /// Parse an XML document and map it to an object (not as DOM or LINQ) from a stream.
     /// </summary>
     /// <param name="stream">A readable stream.</param>
-    /// <param name="encoding">Character encoding of the stream.</param>
+    /// <param name="encoding">Character encoding of the stream, defaults to UTF-8.</param>
     /// <param name="defaultNamespace">Default XML namespace to use for all the XML elements.</param>
     /// <typeparam name="T">Type of the object to map the XML document to.</typeparam>
     /// <returns>An object that was mapped from the XML document.</returns>
@@ -102,7 +103,7 @@ public static class XmlExtensions {
     /// Parse an XML DOM document (not mapping it to an object or LINQ) from an HTTP response body.
     /// </summary>
     /// <param name="content">HTTP response body.</param>
-    /// <param name="encoding">Character encoding of the HTTP response body.</param>
+    /// <param name="encoding">Character encoding of the HTTP response body, defaults to UTF-8.</param>
     /// <param name="cancellationToken">If you want to cancel the operation before it completes.</param>
     /// <returns>An XML DOM document parsed from the HTTP response.</returns>
     /// <exception cref="XmlException"></exception>
@@ -121,7 +122,7 @@ public static class XmlExtensions {
     /// Parse an XML DOM document (not mapping it to an object or LINQ) from a stream.
     /// </summary>
     /// <param name="stream">A readable stream.</param>
-    /// <param name="encoding">Character encoding of the stream.</param>
+    /// <param name="encoding">Character encoding of the stream, defaults to UTF-8.</param>
     /// <returns>An XML DOM document parsed from the stream.</returns>
     /// <exception cref="XmlException"></exception>
     [Pure]
@@ -136,7 +137,7 @@ public static class XmlExtensions {
     /// Parse an XML document and select XPath expressions on it from an HTTP response body.
     /// </summary>
     /// <param name="content">HTTP response body.</param>
-    /// <param name="encoding">Character encoding of the HTTP response body.</param>
+    /// <param name="encoding">Character encoding of the HTTP response body, defaults to UTF-8.</param>
     /// <param name="cancellationToken">If you want to cancel the operation before it completes.</param>
     /// <returns>An XPath navigator on an XML document parsed from the HTTP response.</returns>
     /// <exception cref="XmlException"></exception>
@@ -155,7 +156,7 @@ public static class XmlExtensions {
     /// Parse an XML document and select XPath expressions on it from a stream.
     /// </summary>
     /// <param name="stream">A readable stream.</param>
-    /// <param name="encoding">Character encoding of the stream.</param>
+    /// <param name="encoding">Character encoding of the stream, defaults to UTF-8.</param>
     /// <returns>An XPath navigator on an XML document parsed from the stream.</returns>
     /// <exception cref="XmlException"></exception>
     [Pure]
@@ -172,5 +173,12 @@ public static class XmlExtensions {
     /// <returns>Sequence of XML elements that are descendants of <paramref name="ancestor"/> and whose name is one of the items of <paramref name="names"/></returns>
     [Pure]
     public static IEnumerable<XElement> Descendants(this XContainer ancestor, params IEnumerable<XName> names) => names.SelectMany(ancestor.Descendants);
+
+    extension(XmlSerializer) {
+
+        /// <summary>Pass this to <see cref="XmlSerializer.Serialize(Stream,object?,XmlSerializerNamespaces?)"/> to omit the <c>xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"</c> namespace definitions from the XML root element.</summary>
+        public static XmlSerializerNamespaces OmitXmlSchemaNamespaces => NO_NAMESPACES;
+
+    }
 
 }

@@ -24,24 +24,26 @@ public sealed class JsonBodyReader: PrefixDetectingMessageBodyReader {
         "application/json";
 #endif
 
-    internal static readonly JsonSerializerOptions DefaultJsonOptions;
+    public static readonly JsonSerializerOptions DefaultOptions;
 
     private static MethodInfo? deserializeAsyncEnumerableMethod;
 
     static JsonBodyReader() {
-        DefaultJsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) {
+        DefaultOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) {
             ReadCommentHandling = JsonCommentHandling.Skip,
             AllowTrailingCommas = true,
             Converters = {
-                new JsonStringEnumConverter(new KernighanRitchieCEnumToLowerCamelCaseNamingPolicy())
+                new JsonStringEnumConverter(new UpperSnakeCaseAwareJsonNamingPolicy())
             }
         };
 
         try {
-            NodaTimeSerializationLoader.ConfigureJsonSerializerOptionsForNodaTime(DefaultJsonOptions);
+            NodaTimeSerializationLoader.ConfigureJsonSerializerOptionsForNodaTime(DefaultOptions);
         } catch (FileNotFoundException) {
             // NodaTime or NodaTime.Serialization.SystemTextJson dependencies are missing, skip
         }
+
+        DefaultOptions.MakeReadOnly(true);
     }
 
     /// <inheritdoc />
@@ -66,7 +68,7 @@ public sealed class JsonBodyReader: PrefixDetectingMessageBodyReader {
     /// <exception cref="JsonException"></exception>
     public override async Task<T> Read<T>(Stream responseBody, HttpStatusCode status, HttpResponseHeaders headers, HttpContentHeaders bodyHeaders, HttpRequestMessage request, IDisposable response,
                                           Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {
-        JsonSerializerOptions jsonOptions = (clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultJsonOptions)!;
+        JsonSerializerOptions jsonOptions = (clientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? j) ?? false ? j : DefaultOptions)!;
 
         if (typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(IAsyncEnumerable<>)) {
             deserializeAsyncEnumerableMethod ??= typeof(JsonSerializer).GetMethod(nameof(JsonSerializer.DeserializeAsyncEnumerable), BindingFlags.Public | BindingFlags.Static, null,
@@ -107,7 +109,7 @@ public sealed class JsonBodyReader: PrefixDetectingMessageBodyReader {
 /// <para>The JSON form of the enum name defaults to lowerCamelCase, such as <c>myEnum</c>, but can be customized by specifying <paramref name="jsonNamingPolicy"/>.</para>
 /// </summary>
 /// <param name="jsonNamingPolicy">Controls the style of the JSON names. Defaults to lowerCamelCase JSON names when <c>null</c>. For example, to serialize the C# enum <c>MY_ENUM</c> as <c>my-enum</c> instead, set this argument to <see cref="JsonNamingPolicy.KebabCaseLower"/>.</param>
-public sealed class KernighanRitchieCEnumToLowerCamelCaseNamingPolicy(JsonNamingPolicy? jsonNamingPolicy = null): JsonNamingPolicy {
+public sealed class UpperSnakeCaseAwareJsonNamingPolicy(JsonNamingPolicy? jsonNamingPolicy = null): JsonNamingPolicy {
 
     /// <inheritdoc />
     public override string ConvertName(string name) {

@@ -80,7 +80,9 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
     private UnfuckedHttpClient(IUnfuckedHttpHandler unfuckedHandler, bool disposeHandler = true): base(unfuckedHandler as HttpMessageHandler ?? new IUnfuckedHttpHandlerWrapper(unfuckedHandler),
         disposeHandler) {
         Handler = unfuckedHandler;
+#pragma warning disable CS0618 // Type or member is obsolete
         Timeout = System.Threading.Timeout.InfiniteTimeSpan;
+#pragma warning restore CS0618 // Type or member is obsolete
         if (USER_AGENT.Value is var (programName, programVersion)) {
             DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(programName, programVersion.ToString(1, 4)));
         }
@@ -114,8 +116,10 @@ public class UnfuckedHttpClient: HttpClient, IHttpClient {
         }
 
         UnfuckedHttpClient newClient = new(newHandler, disposeHandler) {
-            BaseAddress                  = toClone.BaseAddress,
-            Timeout                      = System.Threading.Timeout.InfiniteTimeSpan,
+            BaseAddress = toClone.BaseAddress,
+#pragma warning disable CS0618 // Type or member is obsolete
+            Timeout = System.Threading.Timeout.InfiniteTimeSpan,
+#pragma warning restore CS0618 // Type or member is obsolete
             MaxResponseContentBufferSize = toClone.MaxResponseContentBufferSize,
 #if NETCOREAPP3_0_OR_GREATER
             DefaultRequestVersion = toClone.DefaultRequestVersion,

@@ -30,8 +30,7 @@
         <RestoreEnablePackagePruning>true</RestoreEnablePackagePruning>
     </PropertyGroup>
 
-    <!-- Self version numbers -->
-    <PropertyGroup>
+    <PropertyGroup Label="Self version numbers">
         <UnfuckedVersion>0.0.1-beta.62</UnfuckedVersion>
         <UnfuckedCachingVersion>0.0.1-beta.6</UnfuckedCachingVersion>
     </PropertyGroup>

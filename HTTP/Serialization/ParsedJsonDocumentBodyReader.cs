@@ -25,10 +25,18 @@ public sealed class ParsedJsonDocumentBodyReader: AbstractMessageBodyReader {
 
     /// <inheritdoc />
     public override bool CanRead<T>(MediaTypeHeaderValue? contentType) =>
-        PARSERS.Value.GetOrAdd(typeof(T), type => typeof(IJsonElement<>).MakeGenericType(typeof(T)).IsAssignableFrom(type)
-            ? PARSEDJSONDOCUMENT_TYPE.MakeGenericType(type).GetMethod("ParseAsync", BindingFlags.Public | BindingFlags.Static, null,
-                [typeof(Stream), typeof(JsonDocumentOptions), typeof(CancellationToken)], null)
-            : null) != null;
+        PARSERS.Value.GetOrAdd(typeof(T), type => {
+            Type interfaceType;
+            try {
+                interfaceType = typeof(IJsonElement<>).MakeGenericType(typeof(T));
+            } catch (ArgumentException) {
+                return null; // T does not implement IJsonElement<T>
+            }
+
+            return !interfaceType.IsAssignableFrom(type) ? null :
+                PARSEDJSONDOCUMENT_TYPE.MakeGenericType(type).GetMethod(nameof(ParsedJsonDocument<>.ParseAsync), BindingFlags.Public | BindingFlags.Static, null,
+                    [typeof(Stream), typeof(JsonDocumentOptions), typeof(CancellationToken)], null);
+        }) != null;
 
     /// <inheritdoc />
     public override async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) {

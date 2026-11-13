@@ -19,12 +19,7 @@ public partial class WebTarget {
             new ByteArrayBodyReader.ReadOnlyMemoryBodyReader(),
             new ByteArrayBodyReader.MemoryBodyReader(),
             new ByteArrayBodyReader(),
-            new StringBodyReader(),
-            new JsonBodyReader(),
-            new XmlBodyReader.XDocumentReader(),
-            new XmlBodyReader.XmlDocumentReader(),
-            new XmlBodyReader.XPathReader(),
-            new XmlBodyReader()
+            new StringBodyReader()
         ];
 
         try {
@@ -39,7 +34,14 @@ public partial class WebTarget {
             // library consumer doesn't depend on Corvus.Text.Json, so skip this reader
         }
 
-        defaultMessageBodyReaders.Add(new GenericBodyReader());
+        defaultMessageBodyReaders.AddRange([
+            new JsonBodyReader(),
+            new XmlBodyReader.XDocumentReader(),
+            new XmlBodyReader.XmlDocumentReader(),
+            new XmlBodyReader.XPathReader(),
+            new XmlBodyReader(),
+            new GenericBodyReader()
+        ]);
 
         DEFAULT_MESSAGE_BODY_READERS = defaultMessageBodyReaders.AsReadOnlyList();
     }

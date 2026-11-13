@@ -19,7 +19,7 @@ public readonly record struct HttpRequest {
         ClientConfig = clientConfig;
         Body = body is Entity.JsonHttpContent { JsonOptions: null } jsonBody ? jsonBody.WithJsonOptions(
             ClientConfig?.Property(PropertyKey.JsonSerializerOptions, out JsonSerializerOptions? requestJsonOptions) ?? false
-                ? requestJsonOptions : JsonBodyReader.DefaultJsonOptions) : body;
+                ? requestJsonOptions : JsonBodyReader.DefaultOptions) : body;
     }
 
     public static async Task<HttpRequest> Copy(HttpRequestMessage original) {

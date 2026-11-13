@@ -5,9 +5,9 @@ using Unfucked.HTTP.Serialization;
 
 namespace Tests.HTTP;
 
-public class KernighanRitchieCEnumToLowerCamelCaseNamingPolicyTest {
+public class UpperSnakeCaseAwareJsonNamingPolicyTest {
 
-    private static readonly JsonNamingPolicy NAMING_POLICY = new KernighanRitchieCEnumToLowerCamelCaseNamingPolicy();
+    private static readonly JsonNamingPolicy NAMING_POLICY = new UpperSnakeCaseAwareJsonNamingPolicy();
 
     [Fact]
     public void NoConverter() {
@@ -80,7 +80,7 @@ public class KernighanRitchieCEnumToLowerCamelCaseNamingPolicyTest {
 
     [Theory, MemberData(nameof(CustomizableSerializingData))]
     public void CustomizableSerializing(JsonNamingPolicy? jsonNamingPolicy, string csharpName, string jsonName) {
-        new KernighanRitchieCEnumToLowerCamelCaseNamingPolicy(jsonNamingPolicy).ConvertName(csharpName).Should().Be(jsonName);
+        new UpperSnakeCaseAwareJsonNamingPolicy(jsonNamingPolicy).ConvertName(csharpName).Should().Be(jsonName);
     }
 
     public static TheoryData<JsonNamingPolicy?, string, string> CustomizableSerializingData => new() {

@@ -48,7 +48,8 @@ public sealed class TarHeader(IArchiveEncoding archiveEncoding) {
     internal Stream PackedStream { get; set; }
     internal IArchiveEncoding ArchiveEncoding { get; } = archiveEncoding;
 
-    internal const int BLOCK_SIZE = 512;
+    internal const int BLOCK_SIZE      = 512;
+    private const  int MAX_NAME_LENGTH = 100;
 
     /// <summary>
     /// Serialize the file into the TAR archive.
@@ -61,14 +62,19 @@ public sealed class TarHeader(IArchiveEncoding archiveEncoding) {
         WriteOctalBytes(UserId, buffer, 108, 8);                  // owner ID fixed by Ben: not hardcoded to 0
         WriteOctalBytes(GroupId, buffer, 116, 8);                 // group ID fixed by Ben: not hardcoded to 0
 
-        int nameByteCount = ArchiveEncoding.GetEncoding().GetByteCount(Name);
-        if (nameByteCount > 100) {
+        int nameByteCount = ArchiveEncoding.GetEncoding().GetByteCount(Name), linkByteCount = 0;
+        if (nameByteCount > MAX_NAME_LENGTH) {
             // Set mock filename and filetype to indicate the next block is the actual name of the file
-            WriteStringBytes("././@LongLink", buffer, 0, 100);
+            WriteStringBytes("././@LongLink", buffer, 0, MAX_NAME_LENGTH);
             buffer[156] = (byte) EntryType.LongName;
             WriteOctalBytes(nameByteCount + 1, buffer, 124, 12);
+        } else if (EntryType == EntryType.SymLink && (linkByteCount = ArchiveEncoding.GetEncoding().GetByteCount(LinkName)) > MAX_NAME_LENGTH) {
+            // added by Ben: long symlink targets (https://stackoverflow.com/questions/2078778/what-exactly-is-the-gnu-tar-longlink-trick)
+            WriteStringBytes("././@LongLink", buffer, 0, MAX_NAME_LENGTH);
+            buffer[156] = (byte) EntryType.LongLink;
+            WriteOctalBytes(linkByteCount + 1, buffer, 124, 12);
         } else {
-            WriteStringBytes(ArchiveEncoding.Encode(Name), buffer, 100);
+            WriteStringBytes(ArchiveEncoding.Encode(Name), buffer, MAX_NAME_LENGTH);
             WriteOctalBytes(Size, buffer, 124, 12);
             long time = (long) (LastModifiedTime.ToUniversalTime() - EPOCH).TotalSeconds;
             WriteOctalBytes(time, buffer, 136, 12);
@@ -83,7 +89,7 @@ public sealed class TarHeader(IArchiveEncoding archiveEncoding) {
 
             // added by Ben: serialize symlinks
             if (EntryType == EntryType.SymLink) {
-                WriteStringBytes(ArchiveEncoding.Encode(LinkName), buffer.AsSpan(157, 100), 100);
+                WriteStringBytes(ArchiveEncoding.Encode(LinkName), buffer.AsSpan(157, MAX_NAME_LENGTH), MAX_NAME_LENGTH);
             }
         }
 
@@ -92,8 +98,8 @@ public sealed class TarHeader(IArchiveEncoding archiveEncoding) {
 
         output.Write(buffer, 0, buffer.Length);
 
-        if (nameByteCount > 100) {
-            WriteLongFilenameHeader(output);
+        if (nameByteCount > MAX_NAME_LENGTH) {
+            WriteLongNameHeader(output, Name);
             // update to short name lower than 100 - [max bytes of one character].
             // subtracting bytes is needed because preventing infinite loop(example code is here).
             //
@@ -101,17 +107,20 @@ public sealed class TarHeader(IArchiveEncoding archiveEncoding) {
             // var truncated = Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(bytes, 0, 100));
             //
             // and then infinite recursion is occured in WriteLongFilenameHeader because truncated.Length is 102.
-            Name = ArchiveEncoding.Decode(
-                ArchiveEncoding.Encode(Name),
-                0,
-                100 - ArchiveEncoding.GetEncoding().GetMaxByteCount(1)
-            );
+            Name = truncateName(Name);
+            Write(output);
+        } else if (linkByteCount > MAX_NAME_LENGTH) {
+            // added by Ben: symlinks
+            WriteLongNameHeader(output, LinkName);
+            LinkName = truncateName(LinkName);
             Write(output);
         }
+
+        string truncateName(string name) => ArchiveEncoding.Decode(ArchiveEncoding.Encode(name), 0, MAX_NAME_LENGTH - ArchiveEncoding.GetEncoding().GetMaxByteCount(1));
     }
 
-    private void WriteLongFilenameHeader(Stream output) {
-        byte[] nameBytes = ArchiveEncoding.Encode(Name);
+    private void WriteLongNameHeader(Stream output, string name) { // added by Ben: symlinks
+        byte[] nameBytes = ArchiveEncoding.Encode(name);
         output.Write(nameBytes, 0, nameBytes.Length);
 
         // pad to multiple of BlockSize bytes, and make sure a terminating null is added

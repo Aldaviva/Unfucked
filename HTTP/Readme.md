@@ -100,6 +100,8 @@ using Unfucked.HTTP;
         - Make sure to `Dispose` this yourself
     - `ReadOnlyMemory<byte>`
     - `Memory<byte>`
+    - `ReadOnlyMemoryStream`
+    - `MemoryStream`
     - `byte[]`
     - `string`
     - JSON ([`System.Text.Json`](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/overview))

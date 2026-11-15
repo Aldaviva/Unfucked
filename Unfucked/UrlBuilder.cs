@@ -57,14 +57,17 @@ public sealed class UrlBuilder {
     /// <param name="uri">URI to populate builder with.</param>
     public UrlBuilder(Uri uri) {
         NameValueCollection originalQuery = uri.QueryParams;
-        _scheme          = uri.Scheme.EmptyToNull;
-        _userInfo        = uri.UserInfo.EmptyToNull;
-        _hostname        = uri.Host.EmptyToNull;
-        _port            = uri.Port == -1 ? null : (ushort?) uri.Port;
-        _path            = uri.Segments.SkipWhile(static s => s == "/").Select(static s => s.TrimEnd('/')).ToImmutableList();
-        _trailingSlash   = uri.Segments.LastOrDefault()?.EndsWith('/') ?? false;
-        _queryParameters = originalQuery.Keys.Cast<string>().Select(k => new KeyValuePair<string, object>(k, originalQuery[k] ?? VALUELESS_QUERY_PARAM)).ToImmutableList();
-        _fragment        = uri.Fragment.TrimStart(1, '#').EmptyToNull;
+        _scheme        = uri.Scheme.EmptyToNull;
+        _userInfo      = uri.UserInfo.EmptyToNull is {} userInfo ? UrlEncoder.Decode(userInfo, UrlEncoder.Component.UserInfo).ToString() : null;
+        _hostname      = uri.Host.EmptyToNull is {} hostname ? UrlEncoder.Decode(hostname, UrlEncoder.Component.Host).ToString() : null;
+        _port          = uri.Port == -1 ? null : (ushort?) uri.Port;
+        _path          = uri.Segments.SkipWhile(static s => s == "/").Select(static s => UrlEncoder.Decode(s.TrimEnd('/'), UrlEncoder.Component.PathSegment).ToString()).ToImmutableList();
+        _trailingSlash = uri.Segments.LastOrDefault()?.EndsWith('/') ?? false;
+        _queryParameters = originalQuery.Keys.Cast<string>().Select(k => new KeyValuePair<string, object>(
+                UrlEncoder.Decode(k, UrlEncoder.Component.QueryParameter).ToString(),
+                originalQuery[k] is {} val ? UrlEncoder.Decode(val, UrlEncoder.Component.QueryParameter).ToString() : VALUELESS_QUERY_PARAM))
+            .ToImmutableList(); // TODO decode query parameters
+        _fragment = uri.Fragment.TrimStart(1, '#').EmptyToNull is {} fragment ? UrlEncoder.Decode(fragment, UrlEncoder.Component.Fragment).ToString() : null;
     }
 
     /// <summary>
@@ -72,17 +75,20 @@ public sealed class UrlBuilder {
     /// </summary>
     /// <param name="uriBuilder"><see cref="UriBuilder"/> to populate builder with.</param>
     public UrlBuilder(UriBuilder uriBuilder) {
-        _scheme        = uriBuilder.Scheme.EmptyToNull;
-        _userInfo      = uriBuilder.UserName.HasLength || uriBuilder.Password.HasLength ? $"{uriBuilder.UserName}:{uriBuilder.Password}" : null;
-        _hostname      = uriBuilder.Host.EmptyToNull;
-        _port          = uriBuilder.Port == -1 ? null : (ushort?) uriBuilder.Port;
-        _path          = uriBuilder.Path.TrimStart('/').Split(PATH_SEPARATORS, StringSplitOptions.RemoveEmptyEntries).ToImmutableList();
+        _scheme   = uriBuilder.Scheme.EmptyToNull;
+        _userInfo = uriBuilder.UserName.HasLength || uriBuilder.Password.HasLength ? $"{uriBuilder.UserName}:{uriBuilder.Password}" : null;
+        _hostname = uriBuilder.Host.EmptyToNull is {} hostname ? UrlEncoder.Decode(hostname, UrlEncoder.Component.Host).ToString() : null;
+        _port     = uriBuilder.Port == -1 ? null : (ushort?) uriBuilder.Port;
+        _path = uriBuilder.Path.TrimStart('/').Split(PATH_SEPARATORS, StringSplitOptions.RemoveEmptyEntries).Select(segment => UrlEncoder.Decode(segment, UrlEncoder.Component.PathSegment).ToString())
+            .ToImmutableList();
         _trailingSlash = uriBuilder.Path.EndsWith('/');
         _queryParameters = uriBuilder.Query.TrimStart('?').Split(QUERY_PARAM_SEPARATORS, StringSplitOptions.RemoveEmptyEntries).Select(static p => {
             string[] split = p.Split(QUERY_PARAM_KEY_VALUE_SEPARATORS, 2);
-            return new KeyValuePair<string, object>(split[0], split.ElementAtOrDefault(1) ?? VALUELESS_QUERY_PARAM);
+            return new KeyValuePair<string, object>(
+                UrlEncoder.Decode(split[0], UrlEncoder.Component.QueryParameter).ToString(),
+                split.ElementAtOrDefault(1) is {} val ? UrlEncoder.Decode(val, UrlEncoder.Component.QueryParameter).ToString() : VALUELESS_QUERY_PARAM);
         }).ToImmutableList();
-        _fragment = uriBuilder.Fragment.TrimStart(1, '#').EmptyToNull;
+        _fragment = uriBuilder.Fragment.TrimStart(1, '#').EmptyToNull is {} fragment ? UrlEncoder.Decode(fragment, UrlEncoder.Component.Fragment).ToString() : null;
     }
 
     private UrlBuilder(UrlBuilder other) {
@@ -515,6 +521,7 @@ public sealed class UrlBuilder {
 
 internal static partial class UrlEncoder {
 
+    // These are the characters that are legal in each URL component, which are then negated with [^] to get the illegal characters
     private const string       URI_ILLEGAL_PATTERN             = @"[^a-z0-9_\-!.~'()*,;:$&+=?/\[\]@]"; // lang=regex
     private const string       USER_INFO_ILLEGAL_PATTERN       = @"[^a-z0-9_\-!.~'()*,;:$&+=]";        // lang=regex
     private const string       PATH_SEGMENT_ILLEGAL_PATTERN    = @"[^a-z0-9_\-!.~'()*,;:$&+=@]";       // lang=regex
@@ -554,7 +561,7 @@ internal static partial class UrlEncoder {
             Strings.Utf8.GetBytes(match.Value, 0, match.Length, utf8Buffer, 0);
 #endif
 
-        return string.Join(null, utf8Buffer.Take(utf8BytesUsed).Select(static b => $"%{b:X2}"));
+        return string.Concat(utf8Buffer.Take(utf8BytesUsed).Select(static b => $"%{b:X2}"));
     }
 
     public static ReadOnlySpan<char> Decode(ReadOnlySpan<char> encoded, Component component) {
@@ -565,6 +572,7 @@ internal static partial class UrlEncoder {
             throw new ArgumentException($"Malformed encoded octet in URI component {encoded.ToString()}");
         }
         return component switch {
+            Component.Host           => DecodeHost(encoded, length),
             Component.QueryParameter => DecodeQueryParam(encoded, length),
             _                        => Decode(encoded, length)
         };
@@ -656,12 +664,53 @@ internal static partial class UrlEncoder {
 #endif
 
     private static ReadOnlySpan<char> DecodeQueryParam(ReadOnlySpan<char> encoded, int length) {
-        throw new NotImplementedException();
+        StringBuilder decoded = new(length);
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER
+        ArrayBufferWriter<byte>? decodedBytesExtent = null;
+#else
+        List<byte>? decodedBytesExtent = null;
+#endif
+        for (int index = 0; index < length;) {
+            char c = encoded[index++];
+            if (c != '%') {
+                decoded.Append(c == '+' ? ' ' : c);
+            } else {
+                decodedBytesExtent = UnescapeExtent(encoded, index, decodedBytesExtent);
+                index              = DeserializeBytes(index, decodedBytesExtent, decoded);
+            }
+        }
+        return decoded.ToString();
+    }
+
+    private static ReadOnlySpan<char> DecodeHost(ReadOnlySpan<char> encoded, int length) {
+        StringBuilder decoded = new(length);
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER
+        ArrayBufferWriter<byte>? decodedBytesExtent = null;
+#else
+        List<byte>? decodedBytesExtent = null;
+#endif
+        bool betweenBrackets = false;
+        for (int index = 0; index < length;) {
+            char c = encoded[index++];
+            if (c == '[') {
+                betweenBrackets = true;
+            } else if (betweenBrackets && c == ']') {
+                betweenBrackets = false;
+            }
+
+            if (c != '%' || betweenBrackets) {
+                decoded.Append(c);
+            } else {
+                decodedBytesExtent = UnescapeExtent(encoded, index, decodedBytesExtent);
+                index              = DeserializeBytes(index, decodedBytesExtent, decoded);
+            }
+        }
+        return decoded.ToString();
     }
 
     public enum Component {
 
-        UserInfo, PathSegment, QueryParameter, Fragment
+        UserInfo, Host, PathSegment, QueryParameter, Fragment
 
     }
 

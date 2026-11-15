@@ -18,6 +18,10 @@ public partial class WebTarget {
             new StreamBodyReader(),
             new ByteArrayBodyReader.ReadOnlyMemoryBodyReader(),
             new ByteArrayBodyReader.MemoryBodyReader(),
+#if NET11_0_OR_GREATER
+            new ByteArrayBodyReader.ReadOnlyMemoryStreamBodyReader(),
+#endif
+            new ByteArrayBodyReader.MemoryStreamBodyReader(),
             new ByteArrayBodyReader(),
             new StringBodyReader()
         ];

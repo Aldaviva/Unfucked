@@ -35,6 +35,30 @@ public sealed class ByteArrayBodyReader: MessageBodyReader {
 
     }
 
+    public sealed class MemoryStreamBodyReader: MessageBodyReader {
+
+        /// <inheritdoc />
+        public bool CanRead<T>(MediaTypeHeaderValue? contentType) => typeof(T) == typeof(MemoryStream);
+
+        /// <inheritdoc />
+        public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) =>
+            (T) (object) new MemoryStream(await ReadByteArray(response, cancellationToken).ConfigureAwait(false), false);
+
+    }
+
+#if NET11_0_OR_GREATER
+    public sealed class ReadOnlyMemoryStreamBodyReader: MessageBodyReader {
+
+        /// <inheritdoc />
+        public bool CanRead<T>(MediaTypeHeaderValue? contentType) => typeof(T) == typeof(ReadOnlyMemoryStream);
+
+        /// <inheritdoc />
+        public async Task<T> Read<T>(HttpResponseMessage response, Encoding? responseEncoding, Configurable? clientConfig, CancellationToken cancellationToken) =>
+            (T) (object) new ReadOnlyMemoryStream(await ReadByteArray(response, cancellationToken).ConfigureAwait(false));
+
+    }
+#endif
+
     private static async Task<byte[]> ReadByteArray(HttpResponseMessage response, CancellationToken cancellationToken) {
         Task<byte[]> bodyTask =
 #if NET5_0_OR_GREATER

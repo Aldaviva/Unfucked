@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
-        <Version>0.0.1-beta.42</Version>
+        <TargetFrameworks>netstandard2.0;net8.0;net11.0</TargetFrameworks>
+        <Version>0.0.1-beta.43</Version>
         <Description>Fix egregiously broken or missing functionality in System.Net.Http.HttpClient.</Description>
         <PackageTags>http HttpClient web request $(PackageTags)</PackageTags>
     </PropertyGroup>

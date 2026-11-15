@@ -1,4 +1,4 @@
-﻿namespace Tests.Unfucked;
+namespace Tests.Unfucked;
 
 public class UrlBuilderTest {
 
@@ -128,5 +128,21 @@ public class UrlBuilderTest {
         { new UrlBuilder("https", "aldaviva.com").Path("a/b/c"), "https://aldaviva.com/a/b/c" },
         { new UrlBuilder("https", "aldaviva.com").Path("a/b/c/"), "https://aldaviva.com/a/b/c/" }
     };
+
+    [Fact]
+    public void NoDoubleEscaping() {
+        string input = "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jre_x64_windows_hotspot_25.0.5_8.zip";
+
+        Uri inputUrl = new(input);
+        inputUrl.AbsoluteUri.Should().Be(input, "URI constructor should not be escaping anything");
+
+        UrlBuilder builder = new(inputUrl);
+
+        Uri    actual   = builder.ToUrl();
+        string expected = "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5+8/OpenJDK25U-jre_x64_windows_hotspot_25.0.5_8.zip";
+        actual.AbsoluteUri.Should().Be(expected, "UrlBuilder should not double-escape an existing URI");
+
+        new UrlBuilder(new UriBuilder(input)).ToUrl().Should().Be(expected, "UriBuilder");
+    }
 
 }

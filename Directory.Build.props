@@ -31,7 +31,7 @@
     </PropertyGroup>
 
     <PropertyGroup Label="Self version numbers">
-        <UnfuckedVersion>0.0.1-beta.62</UnfuckedVersion>
+        <UnfuckedVersion>0.0.1-beta.63</UnfuckedVersion>
         <UnfuckedCachingVersion>0.0.1-beta.6</UnfuckedCachingVersion>
     </PropertyGroup>
 

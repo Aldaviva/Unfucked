@@ -1,6 +1,10 @@
+using JetBrains.Annotations;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
+#if NET8_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 
 namespace Unfucked;
 
@@ -13,9 +17,15 @@ namespace Unfucked;
 /// </summary>
 public static partial class ConsoleControl {
 
-    private const string KERNEL32 = "kernel32.dll";
+    private const string KERNEL32           = "kernel32.dll";
+    private const string TASKBAR_LIST_CLSID = "56FDF344-FD6D-11d0-958A-006097C9A090";
 
-    private static readonly IntPtr INVALID_HANDLE_VALUE = new(-1);
+    private static readonly IntPtr              INVALID_HANDLE_VALUE = new(-1);
+    private static readonly bool                IS_WINDOWS_TERMINAL  = Environment.GetEnvironmentVariable("WT_SESSION", EnvironmentVariableTarget.Process) is not null;
+    private static readonly Lazy<ITaskbarList3> TASKBAR_LIST         = new(GetTaskbarList, LazyThreadSafetyMode.ExecutionAndPublication);
+    private static readonly Lazy<IntPtr>        MAIN_WINDOW          = new(GetConsoleWindow, LazyThreadSafetyMode.PublicationOnly);
+
+    private static CancellationTokenSource? completeProgressBarLingerCancellation;
 
     /// <summary>
     /// The color that the console would have used if you never changed its color. For example, this can be used to reset the text color back to its default color (like white) after changing it to blue.
@@ -38,7 +48,7 @@ public static partial class ConsoleControl {
     public const string ClearLine = "\r\e[2K";
 
     /// <summary>
-    /// Clear screen and move to the top-left position
+    /// Clear screen and move to the top-left position.
     /// </summary>
     [ExcludeFromCodeCoverage]
     public static void WriteClear() {
@@ -50,7 +60,7 @@ public static partial class ConsoleControl {
     }
 
     /// <summary>
-    /// Clear the line and move to the leftmost position
+    /// Clear the line and move to the leftmost position.
     /// </summary>
     [ExcludeFromCodeCoverage]
     public static void WriteClearLine() {
@@ -64,88 +74,54 @@ public static partial class ConsoleControl {
     /// <summary>
     /// Get ANSI control characters to change the foreground and background colors.
     /// </summary>
-    /// <param name="foregroundColor">Foreground text color, or <c>null</c> to leave unchanged</param>
-    /// <param name="backgroundColor">Background color, or <c>null</c> to leave unchanged</param>
+    /// <param name="foregroundColor">Foreground text color, or <c>null</c> to leave unchanged.</param>
+    /// <param name="backgroundColor">Background color, or <c>null</c> to leave unchanged.</param>
     /// <returns>An ANSI escape sequence that changes the text and background color, if specified.</returns>
-    [Pure]
-    public static string Color(ConsoleColor? foregroundColor, ConsoleColor? backgroundColor = null) {
-        if (EnableColorSupport()) {
-            bool hasForegroundAndBackground = foregroundColor != null && backgroundColor != null;
-            return $"\e[{foregroundColor.ToAnsiEscapeCode():D}{(hasForegroundAndBackground ? ";" : "")}{backgroundColor.ToAnsiEscapeCode() + 10:D}m";
-        } else {
-            return string.Empty;
-        }
-    }
-
-    /// <inheritdoc cref="Color(System.ConsoleColor?,System.ConsoleColor?)" />
-    [Pure]
-    public static string Color(Color? foregroundColor, Color? backgroundColor = null) => !EnableColorSupport() ? string.Empty :
-        $"{(foregroundColor != null ? $"\e[38;{colorToControlSequence(foregroundColor)}m" : "")}{(backgroundColor != null ? $"\e[48;{colorToControlSequence(backgroundColor)}m" : "")}";
-
-    private static string colorToControlSequence(Color? color) => color switch {
-        { A: 0 } => "1",
-        {} c     => $"2;{c.R:D};{c.G:D};{c.B:D}",
-        _        => string.Empty,
-    };
+    [System.Diagnostics.Contracts.Pure]
+    public static string Color(TerminalColor? foregroundColor, TerminalColor? backgroundColor = null) =>
+        EnableColorSupport() && (foregroundColor is not null || backgroundColor is not null)
+            ? $"\e[{foregroundColor.ToAnsiEscapeCode(true)}{(foregroundColor != null && backgroundColor != null ? ";" : "")}{backgroundColor.ToAnsiEscapeCode(false)}m"
+            : string.Empty;
 
     /// <summary>
-    /// Wrap text with ANSI control characters to change the foreground and background colors and then reset it to the default colors at the end of the string.
+    /// Wrap text with ANSI control characters to change the foreground and background colors, and then reset it to the default colors at the end of the string.
     /// </summary>
     /// <param name="text">Text to wrap with color</param>
-    /// <param name="foregroundColor">Foreground text color, or <c>null</c> to leave unchanged</param>
-    /// <param name="backgroundColor">Background color, or <c>null</c> to leave unchanged</param>
+    /// <param name="foregroundColor">Foreground text color, or <c>null</c> to leave unchanged.</param>
+    /// <param name="backgroundColor">Background color, or <c>null</c> to leave unchanged.</param>
     /// <returns>An ANSI escape sequence that changes the text and background color, followed by <paramref name="text"/>, followed by the ANSI escape sequence to reset colors back to the console defaults.</returns>
-    [Pure]
-    public static string Color(string text, ConsoleColor? foregroundColor, ConsoleColor? backgroundColor = null) {
-        return Color(foregroundColor, backgroundColor) + text + ResetColor;
-    }
-
-    /// <inheritdoc cref="Color(string,System.ConsoleColor?,System.ConsoleColor?)" />
-    [Pure]
-    public static string Color(string text, Color? foregroundColor, Color? backgroundColor = null) {
-        return Color(foregroundColor, backgroundColor) + text + ResetColor;
-    }
+    [System.Diagnostics.Contracts.Pure]
+    public static string Color(string text, TerminalColor? foregroundColor, TerminalColor? backgroundColor = null) =>
+        Color(foregroundColor, backgroundColor) + text + ResetColor;
 
     /// <summary>
     /// Print colored text to the console. After calling this method, the console will be reset to its default colors for future text to be printed.
     /// </summary>
-    /// <param name="text">Text to print in color</param>
-    /// <param name="foregroundColor">Foreground text color, or <c>null</c> to leave unchanged</param>
-    /// <param name="backgroundColor">Background color, or <c>null</c> to leave unchanged</param>
+    /// <param name="text">Text to print in color.</param>
+    /// <param name="foregroundColor">Foreground text color, or <c>null</c> to leave unchanged.</param>
+    /// <param name="backgroundColor">Background color, or <c>null</c> to leave unchanged.</param>
     [ExcludeFromCodeCoverage]
-    public static void Write(string text, ConsoleColor? foregroundColor, ConsoleColor? backgroundColor = null) {
+    public static void Write(string text, TerminalColor? foregroundColor, TerminalColor? backgroundColor = null) =>
         Console.Write(Color(text, foregroundColor, backgroundColor));
-    }
-
-    /// <inheritdoc cref="Write(string,System.ConsoleColor?,System.ConsoleColor?)" />
-    [ExcludeFromCodeCoverage]
-    public static void Write(string text, Color? foregroundColor, Color? backgroundColor = null) {
-        Console.Write(Color(text, foregroundColor, backgroundColor));
-    }
 
     /// <summary>
     /// Print colored text to the console, followed by a line break. After calling this method, the console will be reset to its default colors for future text to be printed.
     /// </summary>
     /// <param name="text">Text to print in color</param>
-    /// <param name="foregroundColor">Foreground text color, or <c>null</c> to leave unchanged</param>
-    /// <param name="backgroundColor">Background color, or <c>null</c> to leave unchanged</param>
+    /// <param name="foregroundColor">Foreground text color, or <c>null</c> to leave unchanged.</param>
+    /// <param name="backgroundColor">Background color, or <c>null</c> to leave unchanged.</param>
     [ExcludeFromCodeCoverage]
-    public static void WriteLine(string text, ConsoleColor? foregroundColor, ConsoleColor? backgroundColor = null) {
+    public static void WriteLine(string text, TerminalColor? foregroundColor, TerminalColor? backgroundColor = null) =>
         Console.WriteLine(Color(text, foregroundColor, backgroundColor));
-    }
-
-    /// <inheritdoc cref="WriteLine(string,System.ConsoleColor?,System.ConsoleColor?)" />
-    [ExcludeFromCodeCoverage]
-    public static void WriteLine(string text, Color? foregroundColor, Color? backgroundColor = null) {
-        Console.WriteLine(Color(text, foregroundColor, backgroundColor));
-    }
 
     /// <summary>
     /// <para>On Windows, you have to call a method to explicitly turn on ANSI escape sequence processing, otherwise you will see the raw escape codes printed as text.</para>
     /// <para>Requires Windows 10 1511 or later.</para>
+    /// <para>This is automatically called by all of the following methods: <see cref="ConsoleControl"/><c>.Write*</c>, <c>Color</c>, and <c>RenderProgressBar</c>.</para>
+    /// <para>On other operating systems, such as Linux, calling this method always returns <c>true</c> and has no side effects.</para>
     /// </summary>
     /// <remarks><see href="https://learn.microsoft.com/windows/console/console-virtual-terminal-sequences#example-of-enabling-virtual-terminal-processing"/></remarks>
-    /// <returns><c>true</c> if virtual terminal processing is enabled, or <c>false</c> if it is unavailable</returns>
+    /// <returns><c>true</c> if virtual terminal processing is enabled, or <c>false</c> if it is unavailable.</returns>
     [ExcludeFromCodeCoverage]
     public static bool EnableColorSupport() {
         if (virtualTerminalProcessingState == VirtualTerminalProcessing.Disabled) {
@@ -155,6 +131,12 @@ public static partial class ConsoleControl {
                 || !SetConsoleMode(stdout, originalStdoutMode | ConsoleMode.EnableVirtualTerminalProcessing)
                     ? VirtualTerminalProcessing.Unavailable
                     : VirtualTerminalProcessing.Enabled;
+
+            try {
+                Console.OutputEncoding = Strings.Utf8; // make RenderProgressBar not write ?
+            } catch (IOException) {
+                // leave encoding unchanged, maybe the program won't try to write a progress bar with a non-ANSI character
+            }
         }
 
         return virtualTerminalProcessingState == VirtualTerminalProcessing.Enabled;
@@ -168,21 +150,21 @@ public static partial class ConsoleControl {
         progress = progress.Clip(0, 1);
         StringBuilder rendered      = new();
         int           totalWidth    = options.TotalWidth(progress);
-        int           completeWidth = (int) Math.Round(totalWidth * progress);
-        int           column        = 0;
+        int           completeWidth = (int) Math.Floor(totalWidth * progress);
+        int           column;
 
-        string? colorEscapeSequence = completeWidth != 0 ? ProgressBarOptions.RenderColor(options.CompleteColor, options.CompleteConsoleColor) : null;
+        string? colorEscapeSequence = completeWidth != 0 ? Color(options.CompleteForegroundColor, options.CompleteBackgroundColor) : null;
         if (colorEscapeSequence != null) {
             rendered.Append(colorEscapeSequence);
         }
-        for (; column < completeWidth; column++) {
+        for (column = 0; column < completeWidth; column++) {
             rendered.Append(options.CompleteChar);
         }
         if (colorEscapeSequence != null) {
             rendered.Append(ResetColor);
         }
 
-        colorEscapeSequence = completeWidth != totalWidth ? ProgressBarOptions.RenderColor(options.IncompleteColor, options.IncompleteConsoleColor) : null;
+        colorEscapeSequence = completeWidth != totalWidth ? Color(options.IncompleteForegroundColor, options.IncompleteBackgroundColor) : null;
         if (colorEscapeSequence != null) {
             rendered.Append(colorEscapeSequence);
         }
@@ -194,40 +176,61 @@ public static partial class ConsoleControl {
         }
 
         // https://learn.microsoft.com/windows/terminal/tutorials/progress-bar-sequences
-        if (options.EnableWindowsTaskbarProgress && Environment.OSVersion.Platform == PlatformID.Win32NT && EnableColorSupport()) {
-            rendered.Append("\e]9;4;")
-                .Append(progress < 1 ? 1 : 0)
-                .Append(';')
-                .Append((int) Math.Round(progress * 100))
-                .Append('\a');
+        if (options.EnableWindowsProgress && Environment.OSVersion.Platform == PlatformID.Win32NT) {
+            if (IS_WINDOWS_TERMINAL && EnableColorSupport()) {
+                rendered.Append("\e]9;4;")
+                    .Append(progress < 1 ? 1 : 0)
+                    .Append(';')
+                    .Append((int) Math.Round(progress * 100))
+                    .Append('\a');
+            } else {
+                try {
+                    completeProgressBarLingerCancellation?.Cancel(false);
+                } catch (ObjectDisposedException) {} catch (AggregateException) {}
+
+                TASKBAR_LIST.Value.SetProgressValue(MAIN_WINDOW.Value, (ulong) Math.Floor(progress * uint.MaxValue), uint.MaxValue);
+
+                if (progress >= 1) {
+                    CancellationTokenSource cts = new();
+                    _ = Task.Run(async () => {
+                        try {
+                            await Task.Delay(2000, cts.Token).ConfigureAwait(false);
+                            TASKBAR_LIST.Value.SetProgressState(MAIN_WINDOW.Value, TaskbarProgressBarStatus.NoProgress);
+                        } catch (OperationCanceledException) {}
+                    }, cts.Token);
+                    Interlocked.Exchange(ref completeProgressBarLingerCancellation, cts)?.Dispose();
+                }
+            }
         }
 
         return rendered.ToString();
     }
 
     /// <summary>Control the appearance of the progress bar in <see cref="RenderProgressBar"/>.</summary>
+    [PublicAPI]
     public readonly record struct ProgressBarOptions() {
 
-        /// <summary>Create a new instance with the given color for the foreground text of the complete bar section.</summary>
-        /// <param name="completeForegroundColor">Color to render the foreground text of the complete bar in.</param>
-        public ProgressBarOptions(Color completeForegroundColor): this() {
-            CompleteColor = (completeForegroundColor, null);
+        /// <summary>Construct options where the progress bar will always be <paramref name="consoleWidthDifference"/> columns narrower than the total console width.</summary>
+        /// <param name="consoleWidthDifference">Progress bar width will be equal to (<see cref="Console.WindowWidth"/> - <paramref name="consoleWidthDifference"/>).</param>
+        [SetsRequiredMembers]
+        public ProgressBarOptions(int consoleWidthDifference): this() {
+            TotalWidth = _ => Console.WindowWidth - Math.Abs(consoleWidthDifference);
         }
 
         /// <summary>How wide, in columns, the progress bar should be. To make it the full width of the console window, return <see cref="Console.WindowWidth"/>. The <see cref="double"/> argument is the current progress value.</summary>
-        public required Func<double, int> TotalWidth { get; init; } = null!;
+        public required Func<double, int> TotalWidth { get; init; }
 
-        /// <summary>Foreground and background colors used to render the left, completed side of the progress bar. Defaults to the console's regular text and background colors when null. Takes RGB values and overrides <see cref="CompleteConsoleColor"/> if both are provided.</summary>
-        public (Color? Foreground, Color? Background)? CompleteColor { get; init; } = null;
+        /// <summary>Foreground color used to render the left, completed side of the progress bar. Does not change the console's text color when null. Defaults to <c>0xffaa00</c>.</summary>
+        public TerminalColor? CompleteForegroundColor { get; init; } = System.Drawing.Color.FromArgb(0xff, 0xaa, 0x00);
 
-        /// <summary>Foreground and background colors used to render the right, incomplete side of the progress bar. Defaults to the console's regular text and background colors when null. Takes RGB values and overrides <see cref="IncompleteConsoleColor"/> if both are provided.</summary>
-        public (Color? Foreground, Color? Background)? IncompleteColor { get; init; } = null;
+        /// <summary>Background color used to render the left, completed side of the progress bar. Does not change the console's background color when null, which is the default.</summary>
+        public TerminalColor? CompleteBackgroundColor { get; init; } = null;
 
-        /// <summary>Foreground and background colors used to render the left, completed side of the progress bar. Defaults to the console's regular text and background colors when null. Takes 4-bit user-customizable color presets, and is overridden by <see cref="CompleteColor"/> if both are provided.</summary>
-        public (ConsoleColor? Foreground, ConsoleColor? Background)? CompleteConsoleColor { get; init; } = null;
+        /// <summary>Foreground color used to render the right, incomplete side of the progress bar. Does not change the console's text color when null, which is the default.</summary>
+        public TerminalColor? IncompleteForegroundColor { get; init; } = null;
 
-        /// <summary>Foreground and background colors used to render the right, incomplete side of the progress bar. Defaults to the console's regular text and background colors when null. Takes 4-bit user-customizable color presets, and is overridden by <see cref="IncompleteColor"/> if both are provided.</summary>
-        public (ConsoleColor? Foreground, ConsoleColor? Background)? IncompleteConsoleColor { get; init; } = null;
+        /// <summary>Background color used to render the right, incomplete side of the progress bar. Does not change the console's background color when null, which is the default.</summary>
+        public TerminalColor? IncompleteBackgroundColor { get; init; } = null;
 
         /// <summary>The character that is printed on the left side of the progress bar to represent the completed portion. By default, this is ━ (U+2501 Box Drawings Heavy Horizontal). If non-ASCII characters like this render as ?, try setting <see cref="Console.OutputEncoding"/> to <see cref="Encoding.UTF8"/>.</summary>
         public char CompleteChar { get; init; } = '\u2501';
@@ -235,47 +238,31 @@ public static partial class ConsoleControl {
         /// <summary>The character that is printed on the right side of the progress bar to represent the incomplete portion. By default, this is ─ (U+2500 Box Drawings Light Horizontal). If non-ASCII characters like this render as ?, try setting <see cref="Console.OutputEncoding"/> to <see cref="Encoding.UTF8"/>.</summary>
         public char IncompleteChar { get; init; } = '\u2500';
 
-        /// <summary><c>true</c> to also render this progress bar in the Windows taskbar button and Windows Terminal tab for this console, or <c>false</c> to not change the taskbar or tab.</summary>
-        public bool EnableWindowsTaskbarProgress { get; init; } = true;
-
-        internal static string? RenderColor((Color? Foreground, Color? Background)? color, (ConsoleColor? Foreground, ConsoleColor? Background)? consoleColor) {
-            Color?        fg1 = color?.Foreground;
-            Color?        bg1 = color?.Background;
-            ConsoleColor? fg2 = consoleColor?.Foreground;
-            ConsoleColor? bg2 = consoleColor?.Background;
-
-            string? escapeSequence = null;
-            if ((fg1.HasValue || bg1.HasValue) && EnableColorSupport()) {
-                escapeSequence = Color(fg1, bg1);
-                if ((!fg1.HasValue && fg2.HasValue) || (!bg1.HasValue && bg2.HasValue)) {
-                    escapeSequence += Color(!fg1.HasValue ? fg2 : null, !bg1.HasValue ? bg2 : null);
-                }
-            } else if ((fg2.HasValue || bg2.HasValue) && EnableColorSupport()) {
-                escapeSequence = Color(fg2, bg2);
-            }
-            return escapeSequence;
-        }
+        /// <summary><c>true</c> to also render this progress bar in the Windows Terminal tab and Windows taskbar button for this console, or <c>false</c> to not change the taskbar or tab. Has no effect on non-Windows operating systems.</summary>
+        public bool EnableWindowsProgress { get; init; } = true;
 
     }
 
-    private static int? ToAnsiEscapeCode(this ConsoleColor? color) => color switch {
-        ConsoleColor.Black       => 30,
-        ConsoleColor.Blue        => 94,
-        ConsoleColor.Cyan        => 96,
-        ConsoleColor.DarkBlue    => 34,
-        ConsoleColor.DarkCyan    => 36,
-        ConsoleColor.DarkGray    => 90,
-        ConsoleColor.DarkGreen   => 32,
-        ConsoleColor.DarkMagenta => 35,
-        ConsoleColor.DarkRed     => 31,
-        ConsoleColor.DarkYellow  => 33,
-        ConsoleColor.Gray        => 37,
-        ConsoleColor.Green       => 92,
-        ConsoleColor.Magenta     => 95,
-        ConsoleColor.Red         => 91,
-        ConsoleColor.White       => 97,
-        ConsoleColor.Yellow      => 93,
-        (ConsoleColor) (-1)      => 39,
+    private static string? ToAnsiEscapeCode(this TerminalColor? color, bool isForeground) => color switch {
+        ConsoleColor.Black       => (30 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.Blue        => (94 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.Cyan        => (96 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.DarkBlue    => (34 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.DarkCyan    => (36 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.DarkGray    => (90 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.DarkGreen   => (32 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.DarkMagenta => (35 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.DarkRed     => (31 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.DarkYellow  => (33 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.Gray        => (37 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.Green       => (92 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.Magenta     => (95 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.Red         => (91 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.White       => (97 + (isForeground ? 0 : 10)).ToString(),
+        ConsoleColor.Yellow      => (93 + (isForeground ? 0 : 10)).ToString(),
+        (ConsoleColor) (-1)      => (39 + (isForeground ? 0 : 10)).ToString(),
+        Color { A: 0 }           => 38 + (isForeground ? 0 : 10) + ";1",
+        Color c                  => $"{38 + (isForeground ? 0 : 10)};2;{c.R:D};{c.G:D};{c.B:D}",
         _                        => null
     };
 
@@ -296,9 +283,16 @@ public static partial class ConsoleControl {
     /// <para>If the function fails, the return value is <c>INVALID_HANDLE_VALUE</c>. To get extended error information, call <see cref="Marshal.GetLastWin32Error"/>.</para>
     /// <para>If an application does not have associated standard handles, such as a service running on an interactive desktop, and has not redirected them, the return value is <c>NULL</c>.</para>
     /// </returns>
+#if NET7_0_OR_GREATER
+    [LibraryImport(KERNEL32, SetLastError = true)]
+    private static partial
+#else
     [DllImport(KERNEL32, SetLastError = true)]
-    private static extern IntPtr GetStdHandle(StandardHandle handle);
+    private static extern
+#endif
+        IntPtr GetStdHandle(StandardHandle handle);
 
+    [SuppressMessage("ReSharper", "CommentTypo")]
     private enum StandardHandle: uint {
 
         /*/// <summary>
@@ -325,9 +319,15 @@ public static partial class ConsoleControl {
     /// <param name="consoleHandle">A handle to the console input buffer or the console screen buffer. The handle must have the <c>GENERIC_READ</c> access right. For more information, see <see href="https://learn.microsoft.com/windows/console/console-buffer-security-and-access-rights"/> Console Buffer Security and Access Rights.</param>
     /// <param name="mode">A pointer to a variable that receives the current mode of the specified buffer.</param>
     /// <returns>If the function succeeds, the return value is nonzero. If the function fails, the return value is zero. To get extended error information, call <see cref="Marshal.GetLastWin32Error"/>.</returns>
-    [DllImport(KERNEL32, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetConsoleMode(IntPtr consoleHandle, [Out] out ConsoleMode mode);
+#if NET7_0_OR_GREATER
+    [LibraryImport(KERNEL32, SetLastError = true)]
+    private static partial
+#else
+    [DllImport(KERNEL32, SetLastError = true)]
+    private static extern
+#endif
+        bool GetConsoleMode(IntPtr consoleHandle, out ConsoleMode mode);
 
     /// <summary>
     /// Sets the input mode of a console's input buffer or the output mode of a console screen buffer.
@@ -336,9 +336,24 @@ public static partial class ConsoleControl {
     /// <param name="consoleHandle">A handle to the console input buffer or the console screen buffer. The handle must have the <c>GENERIC_READ</c> access right. For more information, see <see href="https://learn.microsoft.com/windows/console/console-buffer-security-and-access-rights"/> Console Buffer Security and Access Rights.</param>
     /// <param name="mode">The input or output mode to be set.</param>
     /// <returns>If the function succeeds, the return value is nonzero. If the function fails, the return value is zero. To get extended error information, call <see cref="Marshal.GetLastWin32Error"/>.</returns>
-    [DllImport(KERNEL32, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool SetConsoleMode(IntPtr consoleHandle, ConsoleMode mode);
+#if NET7_0_OR_GREATER
+    [LibraryImport(KERNEL32, SetLastError = true)]
+    private static partial
+#else
+    [DllImport(KERNEL32, SetLastError = true)]
+    private static extern
+#endif
+        bool SetConsoleMode(IntPtr consoleHandle, ConsoleMode mode);
+
+#if NET7_0_OR_GREATER
+    [LibraryImport(KERNEL32)]
+    private static partial
+#else
+    [DllImport(KERNEL32)]
+    private static extern
+#endif
+        nint GetConsoleWindow();
 
     /// <summary>
     /// <see href="https://learn.microsoft.com/windows/console/setconsolemode#parameters"/>
@@ -364,5 +379,79 @@ public static partial class ConsoleControl {
         ENABLE_LVB_GRID_WORLDWIDE          = 1 << 4*/
 
     }
+
+#if NET8_0_OR_GREATER
+    private static ITaskbarList3 GetTaskbarList() {
+        Guid interfaceId = new(ITaskbarList3.InterfaceId);
+        Guid clsid       = new(TASKBAR_LIST_CLSID);
+        // Are you fucking kidding me with this shit? How is this "as easy as built-in COM"?
+        Marshal.ThrowExceptionForHR(CoCreateInstance(ref clsid, 0 /* No aggregation */, 1 /* INPROC_SERVER */, ref interfaceId, out object comObject));
+        return (ITaskbarList3) comObject;
+    }
+
+    [LibraryImport("ole32.dll")]
+    private static partial int CoCreateInstance(ref Guid clsid, nint aggregateIUnknownInterface, uint classExecutionContext, ref Guid interfaceId,
+                                                [MarshalUsing(typeof(UniqueComInterfaceMarshaller<object>))] out object comObject);
+
+    [GeneratedComInterface]
+#else
+    private static ITaskbarList3 GetTaskbarList() {
+        ITaskbarList3 instance = new();
+        instance.HrInit();
+        return instance;
+    }
+
+    [ComImport, Guid(TASKBAR_LIST_CLSID), ClassInterface(ClassInterfaceType.None)]
+    private class CTaskbarList;
+
+    [ComImport]
+    [CoClass(typeof(CTaskbarList))]
+#endif
+
+    [Guid(InterfaceId)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal partial interface ITaskbarList3 {
+
+        // ITaskbarList
+        [PreserveSig]
+        void HrInit();
+
+        [PreserveSig]
+        void AddTab(nint hwnd);
+
+        [PreserveSig]
+        void DeleteTab(nint hwnd);
+
+        [PreserveSig]
+        void ActivateTab(nint hwnd);
+
+        [PreserveSig]
+        void SetActiveAlt(nint hwnd);
+
+        // ITaskbarList2
+        [PreserveSig]
+        void MarkFullscreenWindow(nint hwnd, [MarshalAs(UnmanagedType.Bool)] bool fullscreen);
+
+        // ITaskbarList3
+        [PreserveSig]
+        void SetProgressValue(nint hwnd, ulong completed, ulong total);
+
+        [PreserveSig]
+        void SetProgressState(nint hwnd, TaskbarProgressBarStatus state);
+
+        internal const string InterfaceId = "c43dc798-95d1-4bea-9030-bb99e2983a1a";
+
+    }
+
+    internal enum TaskbarProgressBarStatus {
+
+        NoProgress = 0, Indeterminate = 1, Normal = 2, Error = 4, Paused = 8
+
+    }
+
+    /// <summary>
+    /// A color that can be used in a terminal window, either a 4-bit preset <see cref="ConsoleColor"/> that follows the user's preferences, or a 24-bit custom <see cref="System.Drawing.Color"/> that always renders the same way (semitransparency is ignored).
+    /// </summary>
+    public readonly union TerminalColor(Color, ConsoleColor);
 
 }

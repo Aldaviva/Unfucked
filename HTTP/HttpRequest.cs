@@ -1,9 +1,11 @@
+using JetBrains.Annotations;
 using System.Text.Json;
 using Unfucked.HTTP.Config;
 using Unfucked.HTTP.Serialization;
 
 namespace Unfucked.HTTP;
 
+[PublicAPI]
 public readonly record struct HttpRequest {
 
     public HttpMethod Verb { get; init; }

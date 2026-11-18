@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
         <IsPackable>false</IsPackable>
-        <Version>0.0.1-beta.1</Version>
+        <Version>0.0.1-beta.2</Version>
         <Authors>Ben Hutchison</Authors>
         <Copyright>© 2026 $(Authors)</Copyright>
         <Company>$(Authors)</Company>
@@ -16,7 +16,18 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Build.Utilities.Core" PrivateAssets="all" ExcludeAssets="runtime" />
+        <PackageReference Include="Microsoft.Build.TaskAuthoring.Analyzer" PrivateAssets="all" />
+        
+        <!-- multithreading added in 18.10.1 -->
+        <PackageReference Include="Microsoft.Build.Utilities.Core" PrivateAssets="all" ExcludeAssets="runtime" IncludeAssets="compile; build; native; contentfiles; analyzers; buildtransitive" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EditorConfigFiles Remove="C:\Users\Ben\Documents\Projects\Unfucked\BuildInfoGenerator\.editorconfig" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="C:\Users\Ben\Documents\Projects\Unfucked\BuildInfoGenerator\.editorconfig" />
     </ItemGroup>
 
 </Project>

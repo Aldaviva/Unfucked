@@ -6,35 +6,47 @@ using MsBuildTask = Microsoft.Build.Utilities.Task;
 
 namespace Unfucked.BuildInfoGenerator;
 
-public class GenerateBuildInfo: MsBuildTask {
+[MSBuildMultiThreadableTask]
+public class GenerateBuildInfo: MsBuildTask, IMultiThreadableTask {
 
     private static readonly Encoding UTF8 = new UTF8Encoding(false, true);
 
+    private static int initRan;
+
+    public TaskEnvironment TaskEnvironment { get; set; }
+
+    public GenerateBuildInfo(TaskEnvironment taskEnvironment) {
+        TaskEnvironment = taskEnvironment;
+
 #if DEBUG
-    static GenerateBuildInfo() {
         // During development, Workspace Resolution scans for this value to kill the hosting MSBuild process when it needs to install a new version of this package into the local package cache, if MSBuild holds a lock on this library file.
-        const string envVarName      = "MSBUILD_TASKS"; // used by WorkspaceResolution.Services.MsBuildService
-        string       selfLibraryName = Path.GetFileName(typeof(GenerateBuildInfo).Assembly.Location);
-        ISet<string> taskFilenames   = new SortedSet<string>(Environment.GetEnvironmentVariable(envVarName)?.Split(';') ?? []);
-        if (taskFilenames.Add(selfLibraryName)) {
-            Environment.SetEnvironmentVariable(envVarName, string.Join(";", taskFilenames));
+        if (0 == Interlocked.Exchange(ref initRan, 1)) {
+            const string envVarName      = "MSBUILD_TASKS"; // used by WorkspaceResolution.Services.MsBuildService
+            string       selfLibraryName = Path.GetFileName(typeof(GenerateBuildInfo).Assembly.Location);
+            ISet<string> taskFilenames   = new SortedSet<string>(taskEnvironment.GetEnvironmentVariable(envVarName)?.Split(';') ?? []);
+            if (taskFilenames.Add(selfLibraryName)) {
+                taskEnvironment.SetEnvironmentVariable(envVarName, string.Join(";", taskFilenames));
+            }
         }
 
         /*using Process currentProcess = Process.GetCurrentProcess();
         MessageBoxW(currentProcess.MainWindowHandle, $"MSBuild custom task library loaded in {currentProcess.ProcessName}:{currentProcess.Id}", "Unfucked.BuildInfoGenerator", 0x40);*/
-    }
 #endif
+    }
 
     [Required]
-    public string ProjectDir { get; set; } = null!;
+    public ITaskItem<DirectoryInfo> ProjectDir { get; set; } = null!;
 
     [Required]
-    public string OutputFile { get; set; } = null!;
+    public ITaskItem<FileInfo> OutputFile { get; set; } = null!;
 
     public override bool Execute() {
         string? gitDirectory = null;
-        for (string? parentDirectory = ProjectDir; gitDirectory is null && !string.IsNullOrEmpty(parentDirectory); parentDirectory = Path.GetDirectoryName(parentDirectory)) {
-            string gitDir = Path.Combine(parentDirectory, ".git");
+        for (DirectoryInfo? parentDirectory = ProjectDir.Value;
+             gitDirectory is null && parentDirectory is not null;
+             parentDirectory = parentDirectory.Parent) {
+
+            string gitDir = Path.Combine(parentDirectory.FullName, ".git");
             gitDirectory = Directory.Exists(gitDir) ? gitDir : null;
         }
 
@@ -49,14 +61,14 @@ public class GenerateBuildInfo: MsBuildTask {
                 }
             }
         } catch (FileNotFoundException) {
-            // leave headCommit null and handle below
+            // leave headCommit null and handle that below
         }
 
         string fileContents =
             $"""[assembly: Unfucked.Versions.BuildInfo(buildDate: "{DateTimeOffset.UtcNow:O}", commitHash: {(headCommit is not null ? $"\"{headCommit}\"" : "null")})]""";
 
         try {
-            using FileStream   fileStream   = File.Open(OutputFile, FileMode.Create, FileAccess.Write, FileShare.Read);
+            using FileStream   fileStream   = OutputFile.Value.Open(FileMode.Create, FileAccess.Write, FileShare.Read);
             using StreamWriter streamWriter = new(fileStream, UTF8);
             streamWriter.WriteLine(fileContents);
         } catch (IOException e) when (e.HResult is unchecked((int) 0x80070020)) {
@@ -66,7 +78,9 @@ public class GenerateBuildInfo: MsBuildTask {
         return true;
     }
 
+#if DEBUG
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
     private static extern int MessageBoxW(IntPtr ownerWindow, string body, string title, uint type);
+#endif
 
 }

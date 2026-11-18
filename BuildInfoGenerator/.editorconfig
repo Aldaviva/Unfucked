@@ -1,0 +1,2 @@
+[*.cs]
+msbuild_task_analyzer.run_mt_analyzers_on_all_tasks = true

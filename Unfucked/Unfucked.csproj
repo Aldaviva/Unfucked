@@ -1,12 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>netstandard2.0;net47;net8.0;net9.0;net10.0</TargetFrameworks>
+        <TargetFrameworks>netstandard2.0;net47;net8.0;net9.0;net10.0;net11.0</TargetFrameworks>
         <Version>$(UnfuckedVersion)</Version> <!-- Defined in ..\Directory.Build.props -->
         <AssemblyName>$(MSBuildProjectName)</AssemblyName>
         <RootNamespace>$(MSBuildProjectName)</RootNamespace>
         <Description>Fix egregiously broken or missing functionality in .NET libraries. Provide useful boilerplate, façades, and polyfills.</Description>
         <NoWarn>$(NoWarn);SYSLIB1054;NU5100</NoWarn>
+        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>

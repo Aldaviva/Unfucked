@@ -3,7 +3,7 @@
     <PropertyGroup>
         <AssemblyName>Unfucked.$(MSBuildProjectName)</AssemblyName>
         <RootNamespace>Unfucked.$(MSBuildProjectName)</RootNamespace>
-        <LangVersion>latest</LangVersion>
+        <LangVersion>preview</LangVersion>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <Authors>Ben Hutchison</Authors>
@@ -31,7 +31,7 @@
     </PropertyGroup>
 
     <PropertyGroup Label="Self version numbers">
-        <UnfuckedVersion>0.0.1-beta.63</UnfuckedVersion>
+        <UnfuckedVersion>0.0.1-beta.64</UnfuckedVersion>
         <UnfuckedCachingVersion>0.0.1-beta.6</UnfuckedCachingVersion>
     </PropertyGroup>
 
@@ -44,7 +44,7 @@
         <None Include="Readme.md" Pack="true" PackagePath="\" Visible="true" />
         <None Include=".\*.sln.DotSettings;.\*.csproj.DotSettings" Visible="false" />
         <AdditionalFiles Include="..\ExceptionAdjustments.txt" Visible="false" />
-        <Compile Include="$(MSBuildThisFileDirectory)\Unfucked\PolyfillAnnotations.cs" Visible="true" Condition="'$(PackageId)' != 'Unfucked'" />
+        <Compile Include="$(MSBuildThisFileDirectory)\Unfucked\Polyfills.cs" Visible="true" Condition="'$(PackageId)' != 'Unfucked'" />
         <InternalsVisibleTo Include="Tests;DynamicProxyGenAssembly2" />
     </ItemGroup>
 

@@ -8,12 +8,13 @@
             System.Text.Json
     -->
   <ItemGroup>
-    <PackageVersion Include="AngleSharp" Version="1.10.2" />
-    <PackageVersion Include="Corvus.Text.Json" Version="5.8.8" />
+    <PackageVersion Include="AngleSharp" Version="1.10.4" />
+    <PackageVersion Include="Corvus.Text.Json" Version="5.8.11" />
     <PackageVersion Include="Ical.Net" Version="5.2.4" />
     <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="11.0.0" />
-    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="17.0.0" />
+    <PackageVersion Include="Microsoft.Build.TaskAuthoring.Analyzer" Version="18.13.0" />
+    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="18.10.1" />
     <PackageVersion Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
@@ -24,10 +25,9 @@
     <PackageVersion Include="OBSClient" Version="[3.0.1,4)" />
     <PackageVersion Include="PgpCore" Version="8.1.1" />
     <PackageVersion Include="ReSharper.ExportAnnotations.Task" Version="1.4.0" />
-    <PackageVersion Include="SharpCompress" Version="0.50.9" />
+    <PackageVersion Include="SharpCompress" Version="0.50.10" />
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
     <PackageVersion Include="System.Net.Http.Json" Version="8.0.1" />
-    <PackageVersion Include="System.Text.Encodings.Web" Version="8.0.0" />
     <PackageVersion Include="System.Text.Json" Version="8.0.6" />
     <PackageVersion Include="System.Threading.Tasks.Dataflow" Version="11.0.0" />
     <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.3" />

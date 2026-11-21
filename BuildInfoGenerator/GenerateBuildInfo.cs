@@ -11,7 +11,9 @@ public class GenerateBuildInfo: MsBuildTask, IMultiThreadableTask {
 
     private static readonly Encoding UTF8 = new UTF8Encoding(false, true);
 
+#if DEBUG
     private static int initRan;
+#endif
 
     public TaskEnvironment TaskEnvironment { get; set; }
 

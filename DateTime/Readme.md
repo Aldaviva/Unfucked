@@ -89,6 +89,7 @@ using Unfucked;
 - [Unfucked.Compression](https://github.com/Aldaviva/Unfucked/tree/master/Compression)
 - **Unfucked.DateTime**
 - [Unfucked.DI](https://github.com/Aldaviva/Unfucked/tree/master/DI)
+- [Unfucked.GitHub](https://github.com/Aldaviva/Unfucked/tree/master/GitHub)
 - [Unfucked.HTTP](https://github.com/Aldaviva/Unfucked/tree/master/HTTP)
 - [Unfucked.ICS](https://github.com/Aldaviva/Unfucked/tree/master/ICS)
 - [Unfucked.OBS](https://github.com/Aldaviva/Unfucked/tree/master/OBS)

@@ -76,6 +76,7 @@ tar.WriteSymLink(source: "./mylink.txt", destination: "./file.txt", DateTime.Now
 - **Unfucked.Compression**
 - [Unfucked.DateTime](https://github.com/Aldaviva/Unfucked/tree/master/DateTime)
 - [Unfucked.DI](https://github.com/Aldaviva/Unfucked/tree/master/DI)
+- [Unfucked.GitHub](https://github.com/Aldaviva/Unfucked/tree/master/GitHub)
 - [Unfucked.HTTP](https://github.com/Aldaviva/Unfucked/tree/master/HTTP)
 - [Unfucked.ICS](https://github.com/Aldaviva/Unfucked/tree/master/ICS)
 - [Unfucked.OBS](https://github.com/Aldaviva/Unfucked/tree/master/OBS)

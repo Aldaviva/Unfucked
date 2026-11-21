@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>netstandard2.0;net5.0</TargetFrameworks>
+        <Version>0.0.1-beta.0</Version>
+        <Description>Fix egregiously broken or missing functionality in Octokit, which was added to the GitHub API after Octokit was abandoned when the only two people who worked on it quit GitHub years ago to work at CrowdStrike and a trading card broker.</Description>
+        <PackageTags>GitHub Octokit $(PackageTags)</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Octokit" />
+    </ItemGroup>
+
+</Project>

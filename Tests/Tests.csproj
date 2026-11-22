@@ -31,6 +31,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Caching\Caching.csproj" />
+        <ProjectReference Include="..\Dataflow\Dataflow.csproj" />
         <ProjectReference Include="..\DateTime\DateTime.csproj" />
         <ProjectReference Include="..\DI\DI.csproj" />
         <ProjectReference Include="..\HTTP\HTTP.csproj" />

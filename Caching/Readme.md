@@ -93,6 +93,7 @@ using Cache<string, int> cache = new InMemoryCache<string, int>(options: new Cac
 - [Unfucked](https://github.com/Aldaviva/Unfucked/tree/master/Unfucked)
 - **Unfucked.Caching**
 - [Unfucked.Compression](https://github.com/Aldaviva/Unfucked/tree/master/Compression)
+- [Unfucked.Dataflow](https://github.com/Aldaviva/Unfucked/tree/master/Dataflow)
 - [Unfucked.DateTime](https://github.com/Aldaviva/Unfucked/tree/master/DateTime)
 - [Unfucked.DI](https://github.com/Aldaviva/Unfucked/tree/master/DI)
 - [Unfucked.GitHub](https://github.com/Aldaviva/Unfucked/tree/master/GitHub)

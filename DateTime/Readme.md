@@ -87,6 +87,7 @@ using Unfucked;
 - [Unfucked](https://github.com/Aldaviva/Unfucked/tree/master/Unfucked)
 - [Unfucked.Caching](https://github.com/Aldaviva/Unfucked/tree/master/Caching)
 - [Unfucked.Compression](https://github.com/Aldaviva/Unfucked/tree/master/Compression)
+- [Unfucked.Dataflow](https://github.com/Aldaviva/Unfucked/tree/master/Dataflow)
 - **Unfucked.DateTime**
 - [Unfucked.DI](https://github.com/Aldaviva/Unfucked/tree/master/DI)
 - [Unfucked.GitHub](https://github.com/Aldaviva/Unfucked/tree/master/GitHub)

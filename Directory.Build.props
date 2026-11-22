@@ -3,7 +3,7 @@
     <PropertyGroup>
         <AssemblyName>Unfucked.$(MSBuildProjectName)</AssemblyName>
         <RootNamespace>Unfucked.$(MSBuildProjectName)</RootNamespace>
-        <LangVersion>preview</LangVersion>
+        <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <Authors>Ben Hutchison</Authors>
@@ -31,7 +31,7 @@
     </PropertyGroup>
 
     <PropertyGroup Label="Self version numbers">
-        <UnfuckedVersion>0.0.1-beta.64</UnfuckedVersion>
+        <UnfuckedVersion>0.0.1-beta.65</UnfuckedVersion>
         <UnfuckedCachingVersion>0.0.1-beta.6</UnfuckedCachingVersion>
     </PropertyGroup>
 

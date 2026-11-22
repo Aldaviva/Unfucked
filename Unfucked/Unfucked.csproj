@@ -25,7 +25,6 @@
     <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETStandard' or $([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">
         <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
         <PackageReference Include="System.Collections.Immutable" />
-        <PackageReference Include="System.Threading.Tasks.Dataflow" PrivateAssets="all" />
     </ItemGroup>
 
     <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">

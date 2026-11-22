@@ -34,6 +34,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildInfoGenerator", "Build
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitHub", "GitHub\GitHub.csproj", "{E5796B10-6FF2-4EF7-B0D2-C8D25B939599}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dataflow", "Dataflow\Dataflow.csproj", "{92C1ECC6-8159-45B5-9686-7106CD467829}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -100,6 +102,10 @@ Global
 		{E5796B10-6FF2-4EF7-B0D2-C8D25B939599}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E5796B10-6FF2-4EF7-B0D2-C8D25B939599}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E5796B10-6FF2-4EF7-B0D2-C8D25B939599}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92C1ECC6-8159-45B5-9686-7106CD467829}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92C1ECC6-8159-45B5-9686-7106CD467829}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92C1ECC6-8159-45B5-9686-7106CD467829}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92C1ECC6-8159-45B5-9686-7106CD467829}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

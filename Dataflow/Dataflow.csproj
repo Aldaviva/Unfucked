@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+        <Version>0.0.1-beta.0</Version>
+        <RootNamespace>Unfucked</RootNamespace>
+        <Description>Fix egregiously broken or missing functionality in System.Threading.Tasks.Dataflow concurrency.</Description>
+        <PackageTags>dataflow task concurrent parallel $(PackageTags)</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" IncludeAssets="compile" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+        <PackageReference Include="System.Threading.Tasks.Dataflow" />
+    </ItemGroup>
+
+</Project>

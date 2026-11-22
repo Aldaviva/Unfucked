@@ -181,7 +181,7 @@ public static partial class ConsoleControl {
                 rendered.Append("\e]9;4;")
                     .Append(progress < 1 ? 1 : 0)
                     .Append(';')
-                    .Append((int) Math.Round(progress * 100))
+                    .Append((int) Math.Floor(progress * 100))
                     .Append('\a');
             } else {
                 try {
@@ -195,7 +195,9 @@ public static partial class ConsoleControl {
                     _ = Task.Run(async () => {
                         try {
                             await Task.Delay(2000, cts.Token).ConfigureAwait(false);
-                            TASKBAR_LIST.Value.SetProgressState(MAIN_WINDOW.Value, TaskbarProgressBarStatus.NoProgress);
+                            if (!cts.Token.IsCancellationRequested) {
+                                TASKBAR_LIST.Value.SetProgressState(MAIN_WINDOW.Value, TaskbarProgressBarStatus.NoProgress);
+                            }
                         } catch (OperationCanceledException) {}
                     }, cts.Token);
                     Interlocked.Exchange(ref completeProgressBarLingerCancellation, cts)?.Dispose();
@@ -450,7 +452,7 @@ public static partial class ConsoleControl {
     }
 
     /// <summary>
-    /// A color that can be used in a terminal window, either a 4-bit preset <see cref="ConsoleColor"/> that follows the user's preferences, or a 24-bit custom <see cref="System.Drawing.Color"/> that always renders the same way (semitransparency is ignored).
+    /// A color that can be used in a terminal window, either a <see href="https://wikipedia.org/wiki/ANSI_escape_code#3-bit_and_4-bit">4-bit preset</see> <see cref="ConsoleColor"/> that follows the user's preferences, or a <see href="https://wikipedia.org/wiki/ANSI_escape_code#24-bit">24-bit custom</see> <see cref="System.Drawing.Color"/> that always renders the same way (semitransparency is ignored).
     /// </summary>
     public readonly union TerminalColor(Color, ConsoleColor);
 

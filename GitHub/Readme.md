@@ -65,6 +65,7 @@ Unfucked.GitHub.GitHubClient gitHub = new(new ProductHeaderValue("MyProgram", "0
 - [Unfucked](https://github.com/Aldaviva/Unfucked/tree/master/Unfucked)
 - [Unfucked.Caching](https://github.com/Aldaviva/Unfucked/tree/master/Caching)
 - [Unfucked.Compression](https://github.com/Aldaviva/Unfucked/tree/master/Compression)
+- [Unfucked.Dataflow](https://github.com/Aldaviva/Unfucked/tree/master/Dataflow)
 - [Unfucked.DateTime](https://github.com/Aldaviva/Unfucked/tree/master/DateTime)
 - [Unfucked.DI](https://github.com/Aldaviva/Unfucked/tree/master/DI)
 - **Unfucked.GitHub**

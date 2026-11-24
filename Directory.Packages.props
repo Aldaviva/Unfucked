@@ -26,7 +26,7 @@
     <PackageVersion Include="Octokit" Version="14.0.0" />
     <PackageVersion Include="PgpCore" Version="8.1.1" />
     <PackageVersion Include="ReSharper.ExportAnnotations.Task" Version="1.4.0" />
-    <PackageVersion Include="SharpCompress" Version="0.50.10" />
+    <PackageVersion Include="SharpCompress" Version="0.50.11" />
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
     <PackageVersion Include="System.Net.Http.Json" Version="8.0.1" />
     <PackageVersion Include="System.Text.Encodings.Web" Version="8.0.0" />
